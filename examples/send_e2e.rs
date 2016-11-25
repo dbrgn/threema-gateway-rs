@@ -29,5 +29,8 @@ fn main() {
     let (ciphertext, nonce) = encrypt(&text);
     let msg_id = send_e2e(&from, &to, &secret, &nonce, &ciphertext);
 
-    println!("Sent. Message id is {}.", &msg_id);
+    match msg_id {
+        Ok(id) => println!("Sent. Message id is {}.", id),
+        Err(e) => println!("Could not send message: {:?}", e),
+    }
 }
