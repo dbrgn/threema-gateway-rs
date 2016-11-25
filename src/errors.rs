@@ -29,3 +29,13 @@ quick_error! {
         }
     }
 }
+
+quick_error! {
+    #[derive(Debug)]
+    pub enum CryptoError {
+        /// Bad key
+        BadKey(msg: String) {
+            from()
+        }
+    }
+}

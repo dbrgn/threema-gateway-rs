@@ -6,16 +6,24 @@ use data_encoding::hex;
 use rand::thread_rng;
 use rand::distributions::{IndependentSample, Range};
 
+use ::errors::CryptoError;
 
-pub fn encrypt(data: &str) -> (Vec<u8>, [u8; 24]) {
+
+/// Encrypt data for the receiver.
+pub fn encrypt(data: &str, pub_key: &str, priv_key: &str) -> Result<(Vec<u8>, [u8; 24]), CryptoError> {
     if !sodiumoxide::init() {
         panic!("Could not initialize sodiumoxide library.");
     }
 
-    let oursk_string: &'static str = "";
-    let theirpk_string: &'static str = "";
-    let oursk = box_::SecretKey::from_slice(&hex::decode(oursk_string.as_bytes()).unwrap()).unwrap();
-    let theirpk = box_::PublicKey::from_slice(&hex::decode(theirpk_string.as_bytes()).unwrap()).unwrap();
+    // TODO: to_uppercase() allocates a new String. This is necessary because
+    // hex decoding only accepts uppercase letters. Would be nice to get rid of
+    // that.
+    let pub_key_bytes = try!(hex::decode(pub_key.to_uppercase().as_bytes())
+                                 .map_err(|e| format!("Could not decode public key hex string: {}", e)));
+    let priv_key_bytes = try!(hex::decode(priv_key.to_uppercase().as_bytes())
+                                 .map_err(|e| format!("Could not decode private key hex string: {}", e)));
+    let oursk = box_::SecretKey::from_slice(&priv_key_bytes).unwrap();
+    let theirpk = box_::PublicKey::from_slice(&pub_key_bytes).unwrap();
 
     let nonce = box_::gen_nonce();
 
@@ -29,5 +37,5 @@ pub fn encrypt(data: &str) -> (Vec<u8>, [u8; 24]) {
     let padded_plaintext: Vec<u8> = msgtype.chain(data.as_bytes().iter().cloned()).chain(padding).collect();
 
     let ciphertext = box_::seal(&padded_plaintext, &nonce, &theirpk, &oursk);
-    (ciphertext, nonce.0)
+    Ok((ciphertext, nonce.0))
 }
