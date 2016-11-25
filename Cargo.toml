@@ -1,0 +1,14 @@
+[package]
+name = "threema_gateway"
+version = "0.1.0"
+authors = ["Danilo Bargen <mail@dbrgn.ch>"]
+
+[dependencies]
+hyper = "0.9"
+url = "1.2.0"
+sodiumoxide = "0.0.12"
+data-encoding = "1.1"
+rand = "0.3"
+
+[dev-dependencies]
+docopt = "0.6"
