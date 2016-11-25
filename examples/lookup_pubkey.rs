@@ -26,5 +26,9 @@ fn main() {
     // Fetch public key
     let pubkey = lookup_pubkey(our_id, their_id, secret);
 
-    println!("Public key for {} is {}.", their_id, pubkey);
+    // Show result
+    match pubkey {
+        Ok(pk) => println!("Public key for {} is {}.", their_id, pk),
+        Err(e) => println!("Could not fetch public key: {:?}", e),
+    }
 }
