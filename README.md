@@ -10,6 +10,34 @@ in Rust.
 [Docs](https://dbrgn.github.io/threema-gateway-rs/threema_gateway/index.html)
 
 
+## Features
+
+**Sending**
+
+- [x] Send simple messages
+- [x] Send end-to-end encrypted messages
+
+**Lookup**
+
+- [ ] Look up ID by phone number
+- [ ] Look up ID by e-mail
+- [ ] Look up ID by phone number hash
+- [ ] Look up ID by e-mail hash
+- [ ] Look up capabilities by ID
+- [x] Look up public key by ID
+- [ ] Look up remaining credits
+
+**Receiving**
+
+- [ ] Verify MAC of incoming message
+- [ ] Decrypt incoming message
+
+**Files**
+
+- [ ] Download files
+- [ ] Upload files
+
+
 ## Usage
 
 Take a look at the examples in the `examples/` directory to see how they're
