@@ -1,3 +1,5 @@
+//! Encrypt and decrypt messages.
+
 use std::iter::repeat;
 
 use sodiumoxide;
