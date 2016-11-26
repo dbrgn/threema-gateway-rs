@@ -3,6 +3,9 @@ name = "threema_gateway"
 version = "0.1.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
 
+[features]
+dev = []
+
 [dependencies]
 hyper = "0.9"
 url = "1.2.0"
