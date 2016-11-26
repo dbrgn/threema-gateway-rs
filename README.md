@@ -2,6 +2,7 @@
 
 [![Travis CI][travis-ci-badge]][travis-ci]
 [![Crates.io][crates-io-badge]][crates-io]
+[![Rust][rust-badge]][github]
 
 This is a work-in-progress implementation of a Threema Gateway client library
 in Rust.
@@ -45,6 +46,8 @@ be dual licensed as above, without any additional terms or conditions.
 
 <!-- Badges -->
 [travis-ci]: https://travis-ci.org/dbrgn/threema-gateway-rs
-[travis-ci-badge]: https://img.shields.io/travis/dbrgn/threema-gateway-rs.svg
+[travis-ci-badge]: https://img.shields.io/travis/dbrgn/threema-gateway-rs.svg?maxAge=3600
 [crates-io]: https://crates.io/crates/threema-gateway
-[crates-io-badge]: https://img.shields.io/crates/v/threema-gateway.svg
+[crates-io-badge]: https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600
+[github]: https://github.com/dbrgn/threema-gateway-rs
+[rust-badge]: https://img.shields.io/badge/rust-1.9%2B-blue.svg?maxAge=3600
