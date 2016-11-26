@@ -178,7 +178,7 @@ mod tests {
     #[test]
     fn test_max_length_too_long() {
         let mut text: String = repeat("à").take(3500 / 2).collect();
-        text += "x";
+        text.push('x');
         let result = send_simple("TESTTEST", &Recipient::new_id("ECHOECHO"), "secret", &text);
         match result {
             Err(ApiError::MessageTooLong) => (),
