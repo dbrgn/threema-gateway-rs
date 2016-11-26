@@ -7,6 +7,8 @@
 This is a work-in-progress implementation of a Threema Gateway client library
 in Rust.
 
+[Docs](https://dbrgn.github.io/threema-gateway-rs/threema_gateway/index.html)
+
 
 ## Usage
 
