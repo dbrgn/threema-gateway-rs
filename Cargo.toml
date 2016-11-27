@@ -11,7 +11,6 @@ hyper = "0.9"
 url = "1.2.0"
 sodiumoxide = "0.0.12"
 data-encoding = "1.1"
-rand = "0.3"
 quick-error = "1.1"
 
 [dev-dependencies]

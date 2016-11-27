@@ -4,12 +4,38 @@ use std::iter::repeat;
 
 use sodiumoxide;
 use sodiumoxide::crypto::box_;
+use sodiumoxide::randombytes::randombytes_into;
 use data_encoding::hex;
-use rand::thread_rng;
-use rand::distributions::{IndependentSample, Range};
 
 use ::errors::CryptoError;
 
+
+/// Return a random number in the range `[1, 255]`.
+fn random_padding_amount() -> u8 {
+    let mut buf: [u8; 1] = [0];
+    loop {
+        randombytes_into(&mut buf);
+        if buf[0] < 255 {
+            return buf[0] + 1;
+        }
+    }
+}
+
+#[test]
+fn test_randombytes_uniform() {
+    for _ in 0..200 {
+        let random = random_padding_amount();
+        assert!(random > 1);
+    }
+}
+
+#[test]
+/// Make sure that not all random numbers are the same.
+fn test_randombytes_uniform_not_stuck() {
+    let random_numbers = (1..100).map(|_| random_padding_amount()).collect::<Vec<u8>>();
+    let first = random_numbers[0];
+    assert!(!random_numbers.iter().all(|n| *n == first));
+}
 
 /// Encrypt data for the receiver.
 pub fn encrypt(data: &str, pub_key: &str, priv_key: &str) -> Result<(Vec<u8>, [u8; 24]), CryptoError> {
@@ -30,10 +56,8 @@ pub fn encrypt(data: &str, pub_key: &str, priv_key: &str) -> Result<(Vec<u8>, [u
     let nonce = box_::gen_nonce();
 
     // Add random amount of PKCS#7 padding
-    // TODO: Use rand until https://github.com/dnaq/sodiumoxide/pull/144 is done
-    let between = Range::new(1, 255);
-    let mut rng = thread_rng();
-    let padding_amount: u8 = between.ind_sample(&mut rng) + 1;
+    // Note: Use randombytes_uniform if https://github.com/dnaq/sodiumoxide/pull/144 is merged
+    let padding_amount = random_padding_amount();
     let padding = repeat(padding_amount).take(padding_amount as usize);
     let msgtype = repeat(1).take(1);
     let padded_plaintext: Vec<u8> = msgtype.chain(data.as_bytes().iter().cloned()).chain(padding).collect();
