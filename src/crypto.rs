@@ -23,9 +23,9 @@ fn random_padding_amount() -> u8 {
 
 #[test]
 fn test_randombytes_uniform() {
-    for _ in 0..200 {
+    for _ in 0..500 {
         let random = random_padding_amount();
-        assert!(random > 1);
+        assert!(random >= 1);
     }
 }
 
