@@ -14,18 +14,24 @@ use ::errors::ApiError;
 
 
 /// Map HTTP response status code to an ApiError if it isn't "200".
-pub fn map_response_codes(response: &Response) -> Result<(), ApiError> {
+/// 
+/// Optionally, you can pass in the meaning of a 400 response code.
+pub fn map_response_codes(response: &Response, bad_request_meaning: Option<ApiError>)
+                          -> Result<(), ApiError> {
     match response.status {
         // 200
         StatusCode::Ok => Ok(()),
         // 400
-        StatusCode::BadRequest => Err(ApiError::BadSenderOrRecipient),
+        StatusCode::BadRequest => match bad_request_meaning {
+            Some(error) => Err(error),
+            None => Err(ApiError::Other(format!("Bad response status code: {}", StatusCode::BadRequest))),
+        },
         // 401
         StatusCode::Unauthorized => Err(ApiError::BadCredentials),
         // 402
         StatusCode::PaymentRequired => Err(ApiError::NoCredits),
         // 404
-        StatusCode::NotFound => Err(ApiError::BadId),
+        StatusCode::NotFound => Err(ApiError::IdNotFound),
         // 413
         StatusCode::PayloadTooLarge => Err(ApiError::MessageTooLong),
         // 500
@@ -95,7 +101,7 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
         .body(&encoded)
         .header(ContentType(Mime(TopLevel::Application, SubLevel::WwwFormUrlEncoded, vec![])))
         .send());
-    try!(map_response_codes(&res));
+    try!(map_response_codes(&res, Some(ApiError::BadSenderOrRecipient)));
 
     // Read and return response body
     let mut body = String::new();
@@ -124,7 +130,7 @@ pub fn send_e2e(from: &str, to: &str, secret: &str, nonce: &[u8], ciphertext: &[
         .body(&encoded)
         .header(ContentType(Mime(TopLevel::Application, SubLevel::WwwFormUrlEncoded, vec![])))
         .send());
-    try!(map_response_codes(&res));
+    try!(map_response_codes(&res, Some(ApiError::BadSenderOrRecipient)));
 
     // Read and return response body
     let mut body = String::new();

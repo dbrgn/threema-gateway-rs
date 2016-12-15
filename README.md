@@ -23,10 +23,10 @@ messages works.
 
 **Lookup**
 
-- [ ] Look up ID by phone number
-- [ ] Look up ID by e-mail
-- [ ] Look up ID by phone number hash
-- [ ] Look up ID by e-mail hash
+- [x] Look up ID by phone number
+- [x] Look up ID by e-mail
+- [x] Look up ID by phone number hash
+- [x] Look up ID by e-mail hash
 - [ ] Look up capabilities by ID
 - [x] Look up public key by ID
 - [ ] Look up remaining credits
@@ -60,6 +60,14 @@ Send simple transport-encrypted encrypted message:
 Send e2e encrypted message:
 
     cargo run --example send_e2e -- <from> <to> <secret> <text>...
+
+Look up Threema ID by phone:
+
+    cargo run --example lookup_id -- by_phone <from> <secret> 41791234567
+
+Look up Threema ID by email hash:
+
+    cargo run --example lookup_id -- by_email_hash <from> <secret> 1ea093239cc5f0e1b6ec81b866265b921f26dc4033025410063309f4d1a8ee2c
 
 
 ## License

@@ -77,7 +77,7 @@ pub mod errors;
 
 pub use connection::{send_simple, send_e2e, Recipient};
 pub use crypto::{encrypt};
-pub use lookup::{lookup_pubkey};
+pub use lookup::{lookup_pubkey, lookup_id, LookupCriterion};
 
 #[cfg(test)]
 mod tests {

@@ -17,13 +17,16 @@ quick_error! {
         NoCredits {}
 
         /// Target ID not found
-        BadId {}
+        IdNotFound {}
 
         /// Message is too long
         MessageTooLong {}
 
         /// Internal server error
         ServerError {}
+
+        /// Wrong hash length
+        BadHashLength {}
 
         /// Error when sending request
         RequestError(err: HyperError) {
