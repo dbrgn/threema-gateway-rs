@@ -1,7 +1,20 @@
 [package]
-name = "threema_gateway"
+name = "threema-gateway"
 version = "0.1.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
+repository = "https://github.com/dbrgn/threema-gateway-rs"
+license = "MIT OR Apache-2.0"
+description = "A client library for the Threema Gateway."
+readme = "README.md"
+keywords = ["threema", "end-to-end", "e2e", "e2ee", "gateway"]
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+]
 
 [features]
 dev = []
