@@ -1,13 +1,17 @@
 # Rust SDK for Threema Gateway
 
 [![Travis CI][travis-ci-badge]][travis-ci]
-[![Crates.io][crates-io-badge]][crates-io]
+[![Crates.io Version][crates-io-badge]][crates-io]
+[![Crates.io Downloads][crates-io-download-badge]][crates-io-download]
 [![Rust][rust-badge]][github]
 
 This is a work-in-progress implementation of a Threema Gateway client library
 in Rust.
 
-[Docs](https://dbrgn.github.io/threema-gateway-rs/threema_gateway/index.html)
+Not everything is implemented yet, but sending simple and end-to-end encrypted
+messages works.
+
+[Docs](https://docs.rs/threema-gateway)
 
 
 ## Features
@@ -79,5 +83,7 @@ be dual licensed as above, without any additional terms or conditions.
 [travis-ci-badge]: https://img.shields.io/travis/dbrgn/threema-gateway-rs.svg?maxAge=3600
 [crates-io]: https://crates.io/crates/threema-gateway
 [crates-io-badge]: https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600
+[crates-io-download]: https://crates.io/crates/threema-gateway
+[crates-io-download-badge]: https://img.shields.io/crates/d/threema-gateway.svg?maxAge=3600
 [github]: https://github.com/dbrgn/threema-gateway-rs
 [rust-badge]: https://img.shields.io/badge/rust-1.9%2B-blue.svg?maxAge=3600
