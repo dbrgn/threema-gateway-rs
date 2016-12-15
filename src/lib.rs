@@ -27,7 +27,7 @@
 //! }
 //! ```
 //!
-//! ## Example: Send e2e-encrypted message
+//! ## Example: Send end-to-end encrypted message
 //!
 //! ```no_run
 //! use threema_gateway::{lookup_pubkey, encrypt, send_e2e};
