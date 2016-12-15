@@ -4,7 +4,8 @@ extern crate threema_gateway;
 use std::process;
 use docopt::Docopt;
 use threema_gateway::crypto::encrypt;
-use threema_gateway::connection::{lookup_pubkey, send_e2e};
+use threema_gateway::lookup::lookup_pubkey;
+use threema_gateway::connection::send_e2e;
 
 
 const USAGE: &'static str = "

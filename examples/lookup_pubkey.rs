@@ -2,7 +2,7 @@ extern crate docopt;
 extern crate threema_gateway;
 
 use docopt::Docopt;
-use threema_gateway::connection::lookup_pubkey;
+use threema_gateway::lookup::lookup_pubkey;
 
 
 const USAGE: &'static str = "

@@ -31,7 +31,8 @@
 //!
 //! ```no_run
 //! use threema_gateway::crypto::encrypt;
-//! use threema_gateway::connection::{lookup_pubkey, send_e2e};
+//! use threema_gateway::connection::send_e2e;
+//! use threema_gateway::lookup::lookup_pubkey;
 //!
 //! let from = "*YOUR_ID";
 //! let to = "ECHOECHO";
@@ -74,6 +75,7 @@ extern crate data_encoding;
 pub mod crypto;
 pub mod connection;
 pub mod errors;
+pub mod lookup;
 
 #[cfg(test)]
 mod tests {
