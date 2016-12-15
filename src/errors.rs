@@ -4,6 +4,7 @@ use std::io::Error as IoError;
 use hyper::error::Error as HyperError;
 
 quick_error! {
+    /// Errors when interacting with the API.
     #[derive(Debug)]
     pub enum ApiError {
         /// The recipient identity is invalid or the account is not set up for basic mode
@@ -42,6 +43,7 @@ quick_error! {
 }
 
 quick_error! {
+    /// Crypto related errors.
     #[derive(Debug)]
     pub enum CryptoError {
         /// Bad key

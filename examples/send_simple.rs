@@ -4,7 +4,7 @@ extern crate threema_gateway;
 use std::borrow::Cow;
 
 use docopt::Docopt;
-use threema_gateway::connection::{send_simple, Recipient};
+use threema_gateway::{send_simple, Recipient};
 
 
 const USAGE: &'static str = "

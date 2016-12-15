@@ -13,7 +13,7 @@
 //! ## Example: Send simple (transport encrypted) message
 //!
 //! ```no_run
-//! use threema_gateway::connection::{Recipient, send_simple};
+//! use threema_gateway::{Recipient, send_simple};
 //!
 //! let from = "*YOUR_ID";
 //! let to = Recipient::new_email("user@example.com");
@@ -30,9 +30,7 @@
 //! ## Example: Send e2e-encrypted message
 //!
 //! ```no_run
-//! use threema_gateway::crypto::encrypt;
-//! use threema_gateway::connection::send_e2e;
-//! use threema_gateway::lookup::lookup_pubkey;
+//! use threema_gateway::{lookup_pubkey, encrypt, send_e2e};
 //!
 //! let from = "*YOUR_ID";
 //! let to = "ECHOECHO";
@@ -72,10 +70,14 @@ extern crate sodiumoxide;
 extern crate data_encoding;
 #[macro_use] extern crate quick_error;
 
-pub mod crypto;
-pub mod connection;
+mod connection;
+mod crypto;
+mod lookup;
 pub mod errors;
-pub mod lookup;
+
+pub use connection::{send_simple, send_e2e, Recipient};
+pub use crypto::{encrypt};
+pub use lookup::{lookup_pubkey};
 
 #[cfg(test)]
 mod tests {
