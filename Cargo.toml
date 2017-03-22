@@ -21,8 +21,7 @@ include = [
 dev = []
 
 [dependencies]
-hyper = "0.9"
-url = "1.2.0"
+reqwest = "0.4"
 sodiumoxide = "0.0.14"
 data-encoding = "1.1"
 quick-error = "1.1"

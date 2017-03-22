@@ -1,7 +1,7 @@
 //! Error types used in this library.
 
 use std::io::Error as IoError;
-use hyper::error::Error as HyperError;
+use reqwest::Error as ReqwestError;
 
 quick_error! {
     /// Errors when interacting with the API.
@@ -28,8 +28,8 @@ quick_error! {
         /// Wrong hash length
         BadHashLength {}
 
-        /// Error when sending request
-        RequestError(err: HyperError) {
+        /// Error when sending request (via reqwest)
+        RequestError(err: ReqwestError) {
             from()
         }
 

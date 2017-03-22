@@ -2,23 +2,21 @@
 
 use std::io::Read;
 use std::borrow::Cow;
+use std::collections::HashMap;
 
-use hyper::client::{Client, Response};
-use hyper::header::{ContentType};
-use hyper::mime::{Mime, TopLevel, SubLevel};
-use hyper::status::{StatusCode};
-use url::form_urlencoded;
+use reqwest::{Client, StatusCode};
+use reqwest::header::Accept;
 use data_encoding::hex;
 
 use ::errors::ApiError;
 
 
 /// Map HTTP response status code to an ApiError if it isn't "200".
-/// 
+///
 /// Optionally, you can pass in the meaning of a 400 response code.
-pub fn map_response_codes(response: &Response, bad_request_meaning: Option<ApiError>)
-                          -> Result<(), ApiError> {
-    match response.status {
+pub fn map_response_code(status: &StatusCode, bad_request_meaning: Option<ApiError>)
+                         -> Result<(), ApiError> {
+    match *status {
         // 200
         StatusCode::Ok => Ok(()),
         // 400
@@ -71,7 +69,8 @@ impl<'a> Recipient<'a> {
 /// encryption, only transport encryption between your host and the Threema
 /// Gateway server.
 pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Result<String, ApiError> {
-    let client = Client::new();
+
+    let client = Client::new().expect("Could not initialize HTTP client");
 
     // Check text length (max 3500 bytes)
     // Note: Strings in Rust are UTF8, so len() returns the byte count.
@@ -79,29 +78,23 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
         return Err(ApiError::MessageTooLong);
     }
 
-    // Encode POST data
-    let mut encoded = String::new();
-    {
-        let mut serializer = form_urlencoded::Serializer::new(&mut encoded);
-        serializer.append_pair("from", from);
-        serializer.append_pair("text", text);
-        serializer.append_pair("secret", secret);
-        match *to {
-            Recipient::Id(ref id) => serializer.append_pair("to", id),
-            Recipient::Phone(ref phone) => serializer.append_pair("phone", phone),
-            Recipient::Email(ref email) => serializer.append_pair("email", email),
-        };
-    }
-
-    println!("{}", &encoded);
+    // Prepare POST data
+    let mut params = HashMap::new();
+    params.insert("from", from);
+    params.insert("text", text);
+    params.insert("secret", secret);
+    match *to {
+        Recipient::Id(ref id) => params.insert("to", id),
+        Recipient::Phone(ref phone) => params.insert("phone", phone),
+        Recipient::Email(ref email) => params.insert("email", email),
+    };
 
     // Send request
-    let mut res = try!(client
-        .post("https://msgapi.threema.ch/send_simple")
-        .body(&encoded)
-        .header(ContentType(Mime(TopLevel::Application, SubLevel::WwwFormUrlEncoded, vec![])))
+    let mut res = try!(client.post("https://msgapi.threema.ch/sendd_simple")
+        .form(&params)
+        .header(Accept::json())
         .send());
-    try!(map_response_codes(&res, Some(ApiError::BadSenderOrRecipient)));
+    try!(map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient)));
 
     // Read and return response body
     let mut body = String::new();
@@ -113,24 +106,23 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
 
 /// Send an already encrypted E2E message to the specified receiver.
 pub fn send_e2e(from: &str, to: &str, secret: &str, nonce: &[u8], ciphertext: &[u8]) -> Result<String, ApiError> {
-    let client = Client::new();
+    let client = Client::new().expect("Could not initialize HTTP client");
 
-    // Encode POST data
-    let encoded: String = form_urlencoded::Serializer::new(String::new())
-        .append_pair("from", from)
-        .append_pair("to", to)
-        .append_pair("secret", secret)
-        .append_pair("nonce", &hex::encode(nonce))
-        .append_pair("box", &hex::encode(ciphertext))
-        .finish();
+    // Prepare POST data
+    let params = [
+        ("from", from),
+        ("to", to),
+        ("secret", secret),
+        ("nonce", &hex::encode(nonce)),
+        ("box", &hex::encode(ciphertext)),
+    ];
 
     // Send request
-    let mut res = try!(client
-        .post("https://msgapi.threema.ch/send_e2e")
-        .body(&encoded)
-        .header(ContentType(Mime(TopLevel::Application, SubLevel::WwwFormUrlEncoded, vec![])))
+    let mut res = try!(client.post("https://msgapi.threema.ch/send_e2e")
+        .form(&params)
+        .header(Accept::json())
         .send());
-    try!(map_response_codes(&res, Some(ApiError::BadSenderOrRecipient)));
+    try!(map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient)));
 
     // Read and return response body
     let mut body = String::new();

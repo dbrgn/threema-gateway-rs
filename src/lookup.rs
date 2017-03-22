@@ -2,10 +2,10 @@
 
 use std::io::Read;
 
-use hyper::client::Client;
+use reqwest::Client;
 
 use ::errors::ApiError;
-use ::connection::map_response_codes;
+use ::connection::map_response_code;
 
 
 #[derive(Debug, PartialEq)]
@@ -37,14 +37,14 @@ pub enum LookupCriterion {
 /// It is strongly recommended that you cache the public keys to avoid querying
 /// the API for each message.
 pub fn lookup_pubkey(our_id: &str, their_id: &str, secret: &str) -> Result<String, ApiError> {
-    let client = Client::new();
+    let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
     let url = format!("https://msgapi.threema.ch/pubkeys/{}?from={}&secret={}", their_id, our_id, secret);
 
     // Send request
     let mut res = try!(client.get(&url).send());
-    try!(map_response_codes(&res, None));
+    try!(map_response_code(res.status(), None));
 
     // Read and return response body
     let mut body = String::new();
@@ -54,7 +54,7 @@ pub fn lookup_pubkey(our_id: &str, their_id: &str, secret: &str) -> Result<Strin
 
 /// Look up an ID in the Threema directory.
 pub fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str) -> Result<String, ApiError> {
-    let client = Client::new();
+    let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
     let url_base = match criterion {
@@ -67,7 +67,7 @@ pub fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str) -> Res
 
     // Send request
     let mut res = try!(client.get(&url).send());
-    try!(map_response_codes(&res, Some(ApiError::BadHashLength)));
+    try!(map_response_code(res.status(), Some(ApiError::BadHashLength)));
 
     // Read and return response body
     let mut body = String::new();
