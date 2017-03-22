@@ -12,6 +12,11 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v0.3.0 (2017-03-22)
+
+- [changed] Upgrade some dependencies
+- [changed] Move from hyper to reqwest
+
 ### v0.2.0 (2016-12-15)
 
 - [added] Implement Threema ID lookups
