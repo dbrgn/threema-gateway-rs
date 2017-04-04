@@ -12,10 +12,15 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v0.3.1 (2017-04-04)
+
+- [added] Add debug logging to lookups
+
 ### v0.3.0 (2017-03-22)
 
 - [changed] Upgrade some dependencies
 - [changed] Move from hyper to reqwest
+- [changed] Require Rust 1.13+
 
 ### v0.2.0 (2016-12-15)
 
