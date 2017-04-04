@@ -1,5 +1,6 @@
 //! ID and public key lookups.
 
+use std::fmt;
 use std::io::Read;
 
 use reqwest::Client;
@@ -26,6 +27,17 @@ pub enum LookupCriterion {
     EmailHash(String),
 }
 
+impl fmt::Display for LookupCriterion {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &LookupCriterion::Phone(ref n) => write!(f, "phone {}", n),
+            &LookupCriterion::PhoneHash(ref nh) => write!(f, "phone hash {}", nh),
+            &LookupCriterion::Email(ref e) => write!(f, "email {}", e),
+            &LookupCriterion::EmailHash(ref eh) => write!(f, "email hash {}", eh),
+        }
+    }
+}
+
 /// Fetch the public key for the specified Threema ID.
 ///
 /// For the end-to-end encrypted mode, you need the public key of the recipient
@@ -41,6 +53,8 @@ pub fn lookup_pubkey(our_id: &str, their_id: &str, secret: &str) -> Result<Strin
 
     // Build URL
     let url = format!("https://msgapi.threema.ch/pubkeys/{}?from={}&secret={}", their_id, our_id, secret);
+
+    debug!("Looking up public key for {}", their_id);
 
     // Send request
     let mut res = try!(client.get(&url).send());
@@ -65,6 +79,8 @@ pub fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str) -> Res
     };
     let url = format!("{}?from={}&secret={}", url_base, our_id, secret);
 
+    debug!("Looking up id key for {}", criterion);
+
     // Send request
     let mut res = try!(client.get(&url).send());
     try!(map_response_code(res.status(), Some(ApiError::BadHashLength)));
@@ -73,4 +89,21 @@ pub fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str) -> Res
     let mut body = String::new();
     try!(res.read_to_string(&mut body));
     Ok(body)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LookupCriterion;
+
+    #[test]
+    fn test_lookup_criterion_display() {
+        let phone = LookupCriterion::Phone("1234".to_string());
+        let phone_hash = LookupCriterion::PhoneHash("1234567890abcdef".to_string());
+        let email = LookupCriterion::Email("user@example.com".to_string());
+        let email_hash = LookupCriterion::EmailHash("1234567890abcdef".to_string());
+        assert_eq!(&phone.to_string(), "phone 1234");
+        assert_eq!(&phone_hash.to_string(), "phone hash 1234567890abcdef");
+        assert_eq!(&email.to_string(), "email user@example.com");
+        assert_eq!(&email_hash.to_string(), "email hash 1234567890abcdef");
+    }
 }
