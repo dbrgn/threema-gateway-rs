@@ -59,7 +59,7 @@ Send simple transport-encrypted encrypted message:
 
 Send e2e encrypted message:
 
-    cargo run --example send_e2e -- <from> <to> <secret> <text>...
+    cargo run --example send_e2e -- <from> <to> <secret> <private-key> <text>...
 
 Look up Threema ID by phone:
 
