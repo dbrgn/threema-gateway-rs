@@ -19,6 +19,7 @@ Commit & tag:
     $ git commit -S${GPG_KEY} -m "Release v${VERSION}"
     $ git tag -s -u ${GPG_KEY} v${VERSION} -m "Version ${VERSION}"
 
-Push:
+Publish:
 
+    $ cargo publish
     $ git push && git push --tags
