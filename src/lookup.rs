@@ -5,8 +5,9 @@ use std::io::Read;
 
 use reqwest::Client;
 
-use ::errors::ApiError;
 use ::connection::map_response_code;
+use ::errors::ApiError;
+use ::MSGAPI_URL;
 
 
 #[derive(Debug, PartialEq)]
@@ -52,7 +53,7 @@ pub fn lookup_pubkey(our_id: &str, their_id: &str, secret: &str) -> Result<Strin
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
-    let url = format!("https://msgapi.threema.ch/pubkeys/{}?from={}&secret={}", their_id, our_id, secret);
+    let url = format!("{}/pubkeys/{}?from={}&secret={}", MSGAPI_URL, their_id, our_id, secret);
 
     debug!("Looking up public key for {}", their_id);
 
@@ -72,10 +73,10 @@ pub fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str) -> Res
 
     // Build URL
     let url_base = match criterion {
-        &LookupCriterion::Phone(ref val) => format!("https://msgapi.threema.ch/lookup/phone/{}", val),
-        &LookupCriterion::PhoneHash(ref val) => format!("https://msgapi.threema.ch/lookup/phone_hash/{}", val),
-        &LookupCriterion::Email(ref val) => format!("https://msgapi.threema.ch/lookup/email/{}", val),
-        &LookupCriterion::EmailHash(ref val) => format!("https://msgapi.threema.ch/lookup/email_hash/{}", val),
+        &LookupCriterion::Phone(ref val) => format!("{}/lookup/phone/{}", MSGAPI_URL, val),
+        &LookupCriterion::PhoneHash(ref val) => format!("{}/lookup/phone_hash/{}", MSGAPI_URL, val),
+        &LookupCriterion::Email(ref val) => format!("{}/lookup/email/{}", MSGAPI_URL, val),
+        &LookupCriterion::EmailHash(ref val) => format!("{}/lookup/email_hash/{}", MSGAPI_URL, val),
     };
     let url = format!("{}?from={}&secret={}", url_base, our_id, secret);
 

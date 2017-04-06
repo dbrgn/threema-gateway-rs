@@ -9,6 +9,7 @@ use reqwest::header::Accept;
 use data_encoding::hex;
 
 use ::errors::ApiError;
+use ::MSGAPI_URL;
 
 
 /// Map HTTP response status code to an ApiError if it isn't "200".
@@ -90,7 +91,7 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
     };
 
     // Send request
-    let mut res = try!(client.post("https://msgapi.threema.ch/send_simple")
+    let mut res = try!(client.post(&format!("{}/send_simple", MSGAPI_URL))
         .form(&params)
         .header(Accept::json())
         .send());
@@ -118,7 +119,7 @@ pub fn send_e2e(from: &str, to: &str, secret: &str, nonce: &[u8], ciphertext: &[
     ];
 
     // Send request
-    let mut res = try!(client.post("https://msgapi.threema.ch/send_e2e")
+    let mut res = try!(client.post(&format!("{}/send_e2e", MSGAPI_URL))
         .form(&params)
         .header(Accept::json())
         .send());

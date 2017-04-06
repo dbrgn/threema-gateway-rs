@@ -79,6 +79,8 @@ pub use connection::{send_simple, send_e2e, Recipient};
 pub use crypto::{encrypt};
 pub use lookup::{lookup_pubkey, lookup_id, LookupCriterion};
 
+const MSGAPI_URL: &'static str = "https://msgapi.threema.ch";
+
 #[cfg(test)]
 mod tests {
     #[test]
