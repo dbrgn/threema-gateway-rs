@@ -12,6 +12,11 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v0.3.2 (2017-04-06)
+
+- [fixed] Fix bad API URL
+- [changed] Update reqwest dependency to 0.5
+
 ### v0.3.1 (2017-04-04)
 
 - [added] Add debug logging to lookups
