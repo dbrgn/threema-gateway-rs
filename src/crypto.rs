@@ -37,7 +37,7 @@ fn test_randombytes_uniform_not_stuck() {
     assert!(!random_numbers.iter().all(|n| *n == first));
 }
 
-/// Encrypt data for the receiver.
+/// Encrypt data for the receiver. Return a tuple `(ciphertext, nonce)`.
 pub fn encrypt(data: &str, pub_key: &str, priv_key: &str) -> Result<(Vec<u8>, [u8; 24]), CryptoError> {
     if !sodiumoxide::init() {
         panic!("Could not initialize sodiumoxide library.");
