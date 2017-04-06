@@ -90,7 +90,7 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
     };
 
     // Send request
-    let mut res = try!(client.post("https://msgapi.threema.ch/sendd_simple")
+    let mut res = try!(client.post("https://msgapi.threema.ch/send_simple")
         .form(&params)
         .header(Accept::json())
         .send());
