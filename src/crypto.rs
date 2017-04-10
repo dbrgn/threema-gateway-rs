@@ -5,9 +5,6 @@ use std::iter::repeat;
 use sodiumoxide;
 use sodiumoxide::crypto::box_::{self, PublicKey, SecretKey};
 use sodiumoxide::randombytes::randombytes_into;
-use data_encoding::hex;
-
-use ::errors::CryptoError;
 
 
 /// Return a random number in the range `[1, 255]`.

@@ -30,7 +30,7 @@
 //! ## Example: Send end-to-end encrypted message
 //!
 //! ```no_run
-//! use threema_gateway::{ApiBuilder, RecipientKey, lookup_pubkey, send_e2e};
+//! use threema_gateway::{ApiBuilder, RecipientKey, send_e2e};
 //!
 //! let from = "*YOUR_ID";
 //! let to = "ECHOECHO";
@@ -38,15 +38,15 @@
 //! let private_key = "your-private-key";
 //! let text = "Very secret message!";
 //!
-//! // Fetch public key
-//! // Note: In a real application, you should cache the public key
-//! let public_key = lookup_pubkey(from, to, secret).unwrap();
-//!
 //! // Create E2eApi instance
 //! let api = ApiBuilder::new(from, secret)
 //!                      .with_private_key_str(private_key)
 //!                      .and_then(|builder| builder.into_e2e())
 //!                      .unwrap();
+//!
+//! // Fetch public key
+//! // Note: In a real application, you should cache the public key
+//! let public_key = api.lookup_pubkey(to).unwrap();
 //!
 //! // Encrypt
 //! let recipient_key = RecipientKey::from_str(&public_key).unwrap();
@@ -86,7 +86,7 @@ pub mod errors;
 pub use api::{ApiBuilder, E2eApi, SimpleApi, RecipientKey};
 pub use connection::{send_simple, send_e2e, Recipient};
 pub use crypto::{EncryptedMessage};
-pub use lookup::{lookup_pubkey, lookup_id, LookupCriterion};
+pub use lookup::{LookupCriterion};
 
 const MSGAPI_URL: &'static str = "https://msgapi.threema.ch";
 

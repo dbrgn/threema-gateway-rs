@@ -2,7 +2,7 @@ extern crate docopt;
 extern crate threema_gateway;
 
 use docopt::Docopt;
-use threema_gateway::lookup_pubkey;
+use threema_gateway::{ApiBuilder};
 
 
 const USAGE: &'static str = "
@@ -24,7 +24,8 @@ fn main() {
     let secret = args.get_str("<secret>");
 
     // Fetch public key
-    let pubkey = lookup_pubkey(our_id, their_id, secret);
+    let api = ApiBuilder::new(our_id, secret).into_simple();
+    let pubkey = api.lookup_pubkey(their_id);
 
     // Show result
     match pubkey {

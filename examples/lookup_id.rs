@@ -3,7 +3,7 @@ extern crate threema_gateway;
 
 use std::process;
 use docopt::Docopt;
-use threema_gateway::{lookup_id, LookupCriterion};
+use threema_gateway::{ApiBuilder, LookupCriterion};
 
 
 const USAGE: &'static str = "
@@ -45,7 +45,8 @@ fn main() {
     });
 
     // Look up ID
-    match lookup_id(&criterion, from, secret) {
+    let api = ApiBuilder::new(from, secret).into_simple();
+    match api.lookup_id(&criterion) {
         Err(e) => {
             println!("Could not look up id: {:?}", e);
             process::exit(1);

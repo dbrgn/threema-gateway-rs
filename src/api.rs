@@ -4,7 +4,8 @@ use data_encoding::hex;
 use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
 
 use ::crypto::{encrypt, EncryptedMessage};
-use ::errors::{ApiBuilderError, CryptoError};
+use ::errors::{ApiBuilderError, CryptoError, ApiError};
+use ::lookup::{LookupCriterion, lookup_id, lookup_pubkey};
 
 /// The public key of a recipient.
 pub struct RecipientKey(pub PublicKey);
@@ -18,6 +19,36 @@ impl From<PublicKey> for RecipientKey {
 impl From<[u8; 32]> for RecipientKey {
     fn from(val: [u8; 32]) -> Self {
         RecipientKey(PublicKey(val))
+    }
+}
+
+/// Implement methods available on both the simple and the e2e API objects.
+macro_rules! impl_common_functionality {
+
+    () => {
+        /// Fetch the public key for the specified Threema ID.
+        ///
+        /// For the end-to-end encrypted mode, you need the public key of the recipient
+        /// in order to encrypt a message. While it's best to obtain this directly from
+        /// the recipient (extract it from the QR code), this may not be convenient,
+        /// and therefore you can also look up the key associated with a given ID from
+        /// the server.
+        ///
+        /// It is strongly recommended that you cache the public keys to avoid querying
+        /// the API for each message.
+        pub fn lookup_pubkey(&self, id: &str) -> Result<String, ApiError> {
+            lookup_pubkey(&self.id, id, &self.secret)
+        }
+
+        /// Look up a Threema ID in the directory.
+        /// 
+        /// An ID can be looked up either by a phone number or an e-mail
+        /// address, in plaintext or hashed form. You can specify one of those
+        /// criteria using the [`LookupCriterion`](enum.LookupCriterion.html)
+        /// enum.
+        pub fn lookup_id(&self, criterion: &LookupCriterion) -> Result<String, ApiError> {
+            lookup_id(criterion, &self.id, &self.secret)
+        }
     }
 }
 
@@ -52,6 +83,8 @@ impl SimpleApi {
     pub fn new<I: Into<String>, S: Into<String>>(id: I, secret: S) -> Self {
         return SimpleApi { id: id.into(), secret: secret.into() }
     }
+
+    impl_common_functionality!();
 }
 
 /// Struct to talk to the E2E API (with end-to-end encryption).
@@ -76,6 +109,8 @@ impl E2eApi {
     pub fn encrypt(&self, data: &[u8], recipient_key: &RecipientKey) -> EncryptedMessage {
         encrypt(data, &recipient_key.0, &self.private_key)
     }
+
+    impl_common_functionality!();
 }
 
 /// A convenient way to set up the API object.

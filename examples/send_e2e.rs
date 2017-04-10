@@ -3,7 +3,7 @@ extern crate threema_gateway;
 
 use std::process;
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, RecipientKey, lookup_pubkey, send_e2e};
+use threema_gateway::{ApiBuilder, RecipientKey, send_e2e};
 
 
 const USAGE: &'static str = "
@@ -26,18 +26,18 @@ fn main() {
     let private_key = args.get_str("<private-key>");
     let text = args.get_vec("<text>").join(" ");
 
-    // Fetch public key
-    // Note: In a real application, you should cache the public key
-    let public_key = lookup_pubkey(from, to, secret).unwrap_or_else(|e| {
-        println!("Could not fetch public key: {:?}", e);
-        process::exit(1);
-    });
-
     // Create E2eApi instance
     let api = ApiBuilder::new(from, secret)
                          .with_private_key_str(private_key)
                          .and_then(|builder| builder.into_e2e())
                          .unwrap();
+
+    // Fetch public key
+    // Note: In a real application, you should cache the public key
+    let public_key = api.lookup_pubkey(to).unwrap_or_else(|e| {
+        println!("Could not fetch public key: {:?}", e);
+        process::exit(1);
+    });
 
     // Encrypt and send
     let recipient_key = RecipientKey::from_str(&public_key).unwrap_or_else(|e| {
