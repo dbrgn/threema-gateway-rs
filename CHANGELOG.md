@@ -12,6 +12,11 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v0.4.0 (2017-04-10)
+
+- [changed] Revamped and simplified entire API, it now uses a more
+  object-oriented approach (#6)
+
 ### v0.3.2 (2017-04-06)
 
 - [fixed] Fix bad API URL
