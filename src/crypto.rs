@@ -21,28 +21,10 @@ fn random_padding_amount() -> u8 {
     }
 }
 
-#[test]
-fn test_randombytes_uniform() {
-    for _ in 0..500 {
-        let random = random_padding_amount();
-        assert!(random >= 1);
-    }
-}
-
-#[test]
-/// Make sure that not all random numbers are the same.
-fn test_randombytes_uniform_not_stuck() {
-    let random_numbers = (1..100).map(|_| random_padding_amount()).collect::<Vec<u8>>();
-    let first = random_numbers[0];
-    assert!(!random_numbers.iter().all(|n| *n == first));
-}
-
-/// Encrypt data for the receiver. Return a tuple `(ciphertext, nonce)`.
-pub fn encrypt(data: &str, pub_key: &str, priv_key: &str) -> Result<(Vec<u8>, [u8; 24]), CryptoError> {
-    if !sodiumoxide::init() {
-        panic!("Could not initialize sodiumoxide library.");
-    }
-
+/// Encrypt data for the receiver. The public and private keys are
+/// automatically decoded from a hex string. Return a tuple `(ciphertext,
+/// nonce)`.
+pub fn encrypt_from_str(data: &str, pub_key: &str, priv_key: &str) -> Result<(Vec<u8>, [u8; 24]), CryptoError> {
     // TODO: to_uppercase() allocates a new String. This is necessary because
     // hex decoding only accepts uppercase letters. Would be nice to get rid of
     // that.
@@ -50,13 +32,21 @@ pub fn encrypt(data: &str, pub_key: &str, priv_key: &str) -> Result<(Vec<u8>, [u
                                  .map_err(|e| format!("Could not decode public key hex string: {}", e)));
     let priv_key_bytes = try!(hex::decode(priv_key.to_uppercase().as_bytes())
                                  .map_err(|e| format!("Could not decode private key hex string: {}", e)));
-    let oursk = box_::SecretKey::from_slice(&priv_key_bytes).unwrap();
-    let theirpk = box_::PublicKey::from_slice(&pub_key_bytes).unwrap();
+    encrypt(data, &pub_key_bytes, &priv_key_bytes)
+}
+
+/// Encrypt data for the receiver. Return a tuple `(ciphertext, nonce)`.
+pub fn encrypt(data: &str, pub_key: &[u8], priv_key: &[u8]) -> Result<(Vec<u8>, [u8; 24]), CryptoError> {
+    if !sodiumoxide::init() {
+        panic!("Could not initialize sodiumoxide library.");
+    }
+
+    let oursk = box_::SecretKey::from_slice(pub_key).unwrap();
+    let theirpk = box_::PublicKey::from_slice(priv_key).unwrap();
 
     let nonce = box_::gen_nonce();
 
-    // Add random amount of PKCS#7 padding
-    // Note: Use randombytes_uniform if https://github.com/dnaq/sodiumoxide/pull/144 is merged
+    // Add random amount of PKCS#7 style padding
     let padding_amount = random_padding_amount();
     let padding = repeat(padding_amount).take(padding_amount as usize);
     let msgtype = repeat(1).take(1);
@@ -64,4 +54,26 @@ pub fn encrypt(data: &str, pub_key: &str, priv_key: &str) -> Result<(Vec<u8>, [u
 
     let ciphertext = box_::seal(&padded_plaintext, &nonce, &theirpk, &oursk);
     Ok((ciphertext, nonce.0))
+}
+
+#[cfg(test)]
+mod test {
+    use super::random_padding_amount;
+
+    #[test]
+    fn test_randombytes_uniform() {
+        for _ in 0..500 {
+            let random = random_padding_amount();
+            assert!(random >= 1);
+        }
+    }
+
+    #[test]
+    /// Make sure that not all random numbers are the same.
+    fn test_randombytes_uniform_not_stuck() {
+        let random_numbers = (1..100).map(|_| random_padding_amount()).collect::<Vec<u8>>();
+        let first = random_numbers[0];
+        assert!(!random_numbers.iter().all(|n| *n == first));
+    }
+
 }
