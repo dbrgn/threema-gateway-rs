@@ -55,3 +55,14 @@ quick_error! {
         }
     }
 }
+
+quick_error! {
+    /// Errors when interacting with the [`ApiBuilder`](struct.ApiBuilder.html).
+    #[derive(Debug)]
+    pub enum ApiBuilderError {
+        /// No private key has been set.
+        MissingKey {}
+        /// Invalid libsodium private key.
+        InvalidKey(msg: String) {}
+    }
+}

@@ -70,11 +70,13 @@ extern crate reqwest;
 extern crate sodiumoxide;
 #[macro_use] extern crate quick_error;
 
+mod api;
 mod connection;
 mod crypto;
 mod lookup;
 pub mod errors;
 
+pub use api::{ApiBuilder, E2eApi, SimpleApi};
 pub use connection::{send_simple, send_e2e, Recipient};
 pub use crypto::{encrypt};
 pub use lookup::{lookup_pubkey, lookup_id, LookupCriterion};
