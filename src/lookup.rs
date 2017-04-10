@@ -10,6 +10,7 @@ use ::errors::ApiError;
 use ::MSGAPI_URL;
 
 
+/// Different ways to look up a Threema ID in the directory.
 #[derive(Debug, PartialEq)]
 pub enum LookupCriterion {
     /// The phone number must be passed in E.164 format, without the leading `+`.
@@ -40,15 +41,6 @@ impl fmt::Display for LookupCriterion {
 }
 
 /// Fetch the public key for the specified Threema ID.
-///
-/// For the end-to-end encrypted mode, you need the public key of the recipient
-/// in order to encrypt a message. While it's best to obtain this directly from
-/// the recipient (extract it from the QR code), this may not be convenient,
-/// and therefore you can also look up the key associated with a given ID from
-/// the server.
-///
-/// It is strongly recommended that you cache the public keys to avoid querying
-/// the API for each message.
 pub fn lookup_pubkey(our_id: &str, their_id: &str, secret: &str) -> Result<String, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 

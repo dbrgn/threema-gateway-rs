@@ -39,7 +39,7 @@ pub fn map_response_code(status: &StatusCode, bad_request_meaning: Option<ApiErr
     }
 }
 
-/// Different ways to specify a message recipient in basic mode
+/// Different ways to specify a message recipient in basic mode.
 #[derive(Debug)]
 pub enum Recipient<'a> {
     /// Recipient identity (8 characters)
@@ -65,10 +65,6 @@ impl<'a> Recipient<'a> {
 }
 
 /// Send a message to the specified recipient in basic mode.
-///
-/// Note that this mode of sending messages does not provide end-to-end
-/// encryption, only transport encryption between your host and the Threema
-/// Gateway server.
 pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Result<String, ApiError> {
 
     let client = Client::new().expect("Could not initialize HTTP client");
@@ -105,7 +101,7 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
 }
 
 
-/// Send an already encrypted E2E message to the specified receiver.
+/// Send an encrypted E2E message to the specified recipient.
 pub fn send_e2e(from: &str, to: &str, secret: &str, nonce: &[u8], ciphertext: &[u8]) -> Result<String, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 

@@ -4,7 +4,7 @@ extern crate threema_gateway;
 use std::borrow::Cow;
 
 use docopt::Docopt;
-use threema_gateway::{send_simple, Recipient};
+use threema_gateway::{ApiBuilder, Recipient};
 
 
 const USAGE: &'static str = "
@@ -27,7 +27,7 @@ fn main() {
     let secret = args.get_str("<secret>");
     let text = args.get_vec("<text>").join(" ");
 
-    // Send without encrypting
+    // Determine recipient
     let recipient = if args.get_bool("id") {
         Recipient::Id(Cow::from(args.get_str("<to-id>")))
     } else if args.get_bool("email") {
@@ -38,7 +38,9 @@ fn main() {
         unreachable!();
     };
 
-    let msg_id = send_simple(&from, &recipient, &secret, &text);
+    // Send
+    let api = ApiBuilder::new(from, secret).into_simple();
+    let msg_id = api.send(&recipient, &text);
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {:?}", e),

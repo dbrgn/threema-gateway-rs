@@ -13,7 +13,7 @@
 //! ## Example: Send simple (transport encrypted) message
 //!
 //! ```no_run
-//! use threema_gateway::{Recipient, send_simple};
+//! use threema_gateway::{ApiBuilder, Recipient};
 //!
 //! let from = "*YOUR_ID";
 //! let to = Recipient::new_email("user@example.com");
@@ -21,7 +21,8 @@
 //! let text = "Very secret message!";
 //!
 //! // Send
-//! match send_simple(&from, &to, &secret, &text) {
+//! let api = ApiBuilder::new(from, secret).into_simple();
+//! match api.send(&to, &text) {
 //!     Ok(msg_id) => println!("Sent. Message id is {}.", msg_id),
 //!     Err(e) => println!("Could not send message: {:?}", e),
 //! }
@@ -30,7 +31,7 @@
 //! ## Example: Send end-to-end encrypted message
 //!
 //! ```no_run
-//! use threema_gateway::{lookup_pubkey, encrypt, send_e2e};
+//! use threema_gateway::{ApiBuilder, RecipientKey};
 //!
 //! let from = "*YOUR_ID";
 //! let to = "ECHOECHO";
@@ -38,15 +39,22 @@
 //! let private_key = "your-private-key";
 //! let text = "Very secret message!";
 //!
+//! // Create E2eApi instance
+//! let api = ApiBuilder::new(from, secret)
+//!                      .with_private_key_str(private_key)
+//!                      .and_then(|builder| builder.into_e2e())
+//!                      .unwrap();
+//!
 //! // Fetch public key
 //! // Note: In a real application, you should cache the public key
-//! let public_key = lookup_pubkey(from, to, secret).unwrap();
+//! let public_key = api.lookup_pubkey(to).unwrap();
 //!
 //! // Encrypt
-//! let (ciphertext, nonce) = encrypt(&text, &public_key, &private_key).unwrap();
+//! let recipient_key = RecipientKey::from_str(&public_key).unwrap();
+//! let encrypted = api.encrypt(text.as_bytes(), &recipient_key);
 //!
 //! // Send
-//! match send_e2e(&from, &to, &secret, &nonce, &ciphertext) {
+//! match api.send(&to, &encrypted) {
 //!     Ok(msg_id) => println!("Sent. Message id is {}.", msg_id),
 //!     Err(e) => println!("Could not send message: {:?}", e),
 //! }
@@ -70,14 +78,16 @@ extern crate reqwest;
 extern crate sodiumoxide;
 #[macro_use] extern crate quick_error;
 
+mod api;
 mod connection;
 mod crypto;
 mod lookup;
 pub mod errors;
 
-pub use connection::{send_simple, send_e2e, Recipient};
-pub use crypto::{encrypt};
-pub use lookup::{lookup_pubkey, lookup_id, LookupCriterion};
+pub use api::{ApiBuilder, E2eApi, SimpleApi, RecipientKey};
+pub use connection::{Recipient};
+pub use crypto::{EncryptedMessage};
+pub use lookup::{LookupCriterion};
 
 const MSGAPI_URL: &'static str = "https://msgapi.threema.ch";
 
