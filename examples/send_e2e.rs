@@ -3,7 +3,7 @@ extern crate threema_gateway;
 
 use std::process;
 use docopt::Docopt;
-use threema_gateway::{lookup_pubkey, encrypt, send_e2e};
+use threema_gateway::{lookup_pubkey, encrypt_from_str, send_e2e};
 
 
 const USAGE: &'static str = "
@@ -34,7 +34,7 @@ fn main() {
     });
 
     // Encrypt and send
-    let (ciphertext, nonce) = encrypt(&text, &pub_key, &priv_key).unwrap_or_else(|e| {
+    let (ciphertext, nonce) = encrypt_from_str(&text, &pub_key, &priv_key).unwrap_or_else(|e| {
         println!("Could not encrypt message: {:?}", e);
         process::exit(1);
     });

@@ -30,7 +30,7 @@
 //! ## Example: Send end-to-end encrypted message
 //!
 //! ```no_run
-//! use threema_gateway::{lookup_pubkey, encrypt, send_e2e};
+//! use threema_gateway::{lookup_pubkey, encrypt_from_str, send_e2e};
 //!
 //! let from = "*YOUR_ID";
 //! let to = "ECHOECHO";
@@ -43,7 +43,9 @@
 //! let public_key = lookup_pubkey(from, to, secret).unwrap();
 //!
 //! // Encrypt
-//! let (ciphertext, nonce) = encrypt(&text, &public_key, &private_key).unwrap();
+//! // (Note: If you already have your public and private keys available as
+//! // byte arrays, you can use the `encrypt` function instead.
+//! let (ciphertext, nonce) = encrypt_from_str(&text, &public_key, &private_key).unwrap();
 //!
 //! // Send
 //! match send_e2e(&from, &to, &secret, &nonce, &ciphertext) {
@@ -76,7 +78,7 @@ mod lookup;
 pub mod errors;
 
 pub use connection::{send_simple, send_e2e, Recipient};
-pub use crypto::{encrypt};
+pub use crypto::{encrypt, encrypt_from_str};
 pub use lookup::{lookup_pubkey, lookup_id, LookupCriterion};
 
 const MSGAPI_URL: &'static str = "https://msgapi.threema.ch";
