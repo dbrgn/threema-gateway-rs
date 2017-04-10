@@ -74,6 +74,7 @@ impl RecipientKey {
 }
 
 /// Struct to talk to the simple API (without end-to-end encryption).
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SimpleApi {
     id: String,
     secret: String,
@@ -98,6 +99,7 @@ impl SimpleApi {
 }
 
 /// Struct to talk to the E2E API (with end-to-end encryption).
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct E2eApi {
     id: String,
     secret: String,
@@ -157,6 +159,7 @@ impl E2eApi {
 ///                              .and_then(|builder| builder.into_e2e())
 ///                              .unwrap();
 /// ```
+#[derive(Debug)]
 pub struct ApiBuilder {
     pub id: String,
     pub secret: String,

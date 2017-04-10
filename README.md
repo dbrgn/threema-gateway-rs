@@ -88,7 +88,7 @@ be dual licensed as above, without any additional terms or conditions.
 
 <!-- Badges -->
 [travis-ci]: https://travis-ci.org/dbrgn/threema-gateway-rs
-[travis-ci-badge]: https://img.shields.io/travis/dbrgn/threema-gateway-rs.svg?maxAge=3600
+[travis-ci-badge]: https://img.shields.io/travis/dbrgn/threema-gateway-rs.svg?maxAge=300
 [crates-io]: https://crates.io/crates/threema-gateway
 [crates-io-badge]: https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600
 [crates-io-download]: https://crates.io/crates/threema-gateway
