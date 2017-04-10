@@ -101,7 +101,7 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
 }
 
 
-/// Send an already encrypted E2E message to the specified receiver.
+/// Send an encrypted E2E message to the specified recipient.
 pub fn send_e2e(from: &str, to: &str, secret: &str, nonce: &[u8], ciphertext: &[u8]) -> Result<String, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 

@@ -31,7 +31,7 @@
 //! ## Example: Send end-to-end encrypted message
 //!
 //! ```no_run
-//! use threema_gateway::{ApiBuilder, RecipientKey, send_e2e};
+//! use threema_gateway::{ApiBuilder, RecipientKey};
 //!
 //! let from = "*YOUR_ID";
 //! let to = "ECHOECHO";
@@ -54,7 +54,7 @@
 //! let encrypted = api.encrypt(text.as_bytes(), &recipient_key);
 //!
 //! // Send
-//! match send_e2e(&from, &to, &secret, &encrypted.nonce, &encrypted.ciphertext) {
+//! match api.send(&to, &encrypted) {
 //!     Ok(msg_id) => println!("Sent. Message id is {}.", msg_id),
 //!     Err(e) => println!("Could not send message: {:?}", e),
 //! }
@@ -85,7 +85,7 @@ mod lookup;
 pub mod errors;
 
 pub use api::{ApiBuilder, E2eApi, SimpleApi, RecipientKey};
-pub use connection::{send_e2e, Recipient};
+pub use connection::{Recipient};
 pub use crypto::{EncryptedMessage};
 pub use lookup::{LookupCriterion};
 

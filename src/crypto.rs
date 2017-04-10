@@ -24,7 +24,7 @@ pub struct EncryptedMessage {
     pub nonce: [u8; 24],
 }
 
-/// Encrypt data for the receiver. Return an [`EncryptedMessage`](struct.EncryptedMessage.html).
+/// Encrypt data for the recipient. Return an [`EncryptedMessage`](struct.EncryptedMessage.html).
 pub fn encrypt(data: &[u8], public_key: &PublicKey, private_key: &SecretKey) -> EncryptedMessage {
     if !sodiumoxide::init() {
         panic!("Could not initialize sodiumoxide library.");

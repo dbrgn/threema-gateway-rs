@@ -3,7 +3,7 @@ use std::convert::From;
 use data_encoding::hex;
 use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
 
-use ::connection::{Recipient, send_simple};
+use ::connection::{Recipient, send_e2e, send_simple};
 use ::crypto::{encrypt, EncryptedMessage};
 use ::errors::{ApiBuilderError, CryptoError, ApiError};
 use ::lookup::{LookupCriterion, lookup_id, lookup_pubkey};
@@ -120,6 +120,11 @@ impl E2eApi {
         encrypt(data, &recipient_key.0, &self.private_key)
     }
 
+    /// Send an encrypted E2E message to the specified Threema ID.
+    pub fn send(&self, to: &str, message: &EncryptedMessage) -> Result<String, ApiError> {
+        send_e2e(&self.id, to, &self.secret, &message.nonce, &message.ciphertext)
+    }
+
     impl_common_functionality!();
 }
 
@@ -220,13 +225,13 @@ mod test {
     fn test_recipient_key_from_publickey() {
         let bytes = [0; 32];
         let key = PublicKey::from_slice(&bytes).unwrap();
-        let recipient: RecipientKey = key.into();
+        let _: RecipientKey = key.into();
     }
 
     #[test]
     fn test_recipient_key_from_arr() {
         let bytes = [0; 32];
-        let recipient: RecipientKey = bytes.into();
+        let _: RecipientKey = bytes.into();
     }
 
     #[test]
