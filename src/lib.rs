@@ -13,7 +13,7 @@
 //! ## Example: Send simple (transport encrypted) message
 //!
 //! ```no_run
-//! use threema_gateway::{Recipient, send_simple};
+//! use threema_gateway::{ApiBuilder, Recipient};
 //!
 //! let from = "*YOUR_ID";
 //! let to = Recipient::new_email("user@example.com");
@@ -21,7 +21,8 @@
 //! let text = "Very secret message!";
 //!
 //! // Send
-//! match send_simple(&from, &to, &secret, &text) {
+//! let api = ApiBuilder::new(from, secret).into_simple();
+//! match api.send(&to, &text) {
 //!     Ok(msg_id) => println!("Sent. Message id is {}.", msg_id),
 //!     Err(e) => println!("Could not send message: {:?}", e),
 //! }
@@ -84,7 +85,7 @@ mod lookup;
 pub mod errors;
 
 pub use api::{ApiBuilder, E2eApi, SimpleApi, RecipientKey};
-pub use connection::{send_simple, send_e2e, Recipient};
+pub use connection::{send_e2e, Recipient};
 pub use crypto::{EncryptedMessage};
 pub use lookup::{LookupCriterion};
 

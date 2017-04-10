@@ -3,6 +3,7 @@ use std::convert::From;
 use data_encoding::hex;
 use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
 
+use ::connection::{Recipient, send_simple};
 use ::crypto::{encrypt, EncryptedMessage};
 use ::errors::{ApiBuilderError, CryptoError, ApiError};
 use ::lookup::{LookupCriterion, lookup_id, lookup_pubkey};
@@ -82,6 +83,15 @@ impl SimpleApi {
     /// Initialize the simple API with the Gateway ID and the Gateway Secret.
     pub fn new<I: Into<String>, S: Into<String>>(id: I, secret: S) -> Self {
         return SimpleApi { id: id.into(), secret: secret.into() }
+    }
+
+    /// Send a message to the specified recipient in basic mode.
+    ///
+    /// Note that this mode of sending messages does not provide end-to-end
+    /// encryption, only transport encryption between your host and the Threema
+    /// Gateway server.
+    pub fn send(&self, to: &Recipient, text: &str) -> Result<String, ApiError> {
+        send_simple(&self.id, to, &self.secret, text)
     }
 
     impl_common_functionality!();
