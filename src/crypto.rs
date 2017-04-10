@@ -21,22 +21,6 @@ fn random_padding_amount() -> u8 {
     }
 }
 
-#[test]
-fn test_randombytes_uniform() {
-    for _ in 0..500 {
-        let random = random_padding_amount();
-        assert!(random >= 1);
-    }
-}
-
-#[test]
-/// Make sure that not all random numbers are the same.
-fn test_randombytes_uniform_not_stuck() {
-    let random_numbers = (1..100).map(|_| random_padding_amount()).collect::<Vec<u8>>();
-    let first = random_numbers[0];
-    assert!(!random_numbers.iter().all(|n| *n == first));
-}
-
 /// Encrypt data for the receiver. Return a tuple `(ciphertext, nonce)`.
 pub fn encrypt(data: &str, pub_key: &str, priv_key: &str) -> Result<(Vec<u8>, [u8; 24]), CryptoError> {
     if !sodiumoxide::init() {
@@ -64,4 +48,27 @@ pub fn encrypt(data: &str, pub_key: &str, priv_key: &str) -> Result<(Vec<u8>, [u
 
     let ciphertext = box_::seal(&padded_plaintext, &nonce, &theirpk, &oursk);
     Ok((ciphertext, nonce.0))
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::random_padding_amount;
+
+    #[test]
+    fn test_randombytes_uniform() {
+        for _ in 0..500 {
+            let random = random_padding_amount();
+            assert!(random >= 1);
+        }
+    }
+
+    #[test]
+    /// Make sure that not all random numbers are the same.
+    fn test_randombytes_uniform_not_stuck() {
+        let random_numbers = (1..100).map(|_| random_padding_amount()).collect::<Vec<u8>>();
+        let first = random_numbers[0];
+        assert!(!random_numbers.iter().all(|n| *n == first));
+    }
+
 }
