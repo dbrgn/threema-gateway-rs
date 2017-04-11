@@ -1,4 +1,4 @@
-use std::convert::From;
+use std::convert::{From, Into};
 
 use data_encoding::hex;
 use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
@@ -12,14 +12,30 @@ use ::lookup::{LookupCriterion, lookup_id, lookup_pubkey};
 pub struct RecipientKey(pub PublicKey);
 
 impl From<PublicKey> for RecipientKey {
+    /// Create a `RecipientKey` from a `PublicKey` instance.
     fn from(val: PublicKey) -> Self {
         RecipientKey(val)
     }
 }
 
 impl From<[u8; 32]> for RecipientKey {
+    /// Create a `RecipientKey` from a byte array
     fn from(val: [u8; 32]) -> Self {
         RecipientKey(PublicKey(val))
+    }
+}
+
+impl Into<String> for RecipientKey {
+    /// Encode the key bytes as hex string.
+    fn into(self) -> String {
+        hex::encode(&(self.0).0)
+    }
+}
+
+impl RecipientKey {
+    /// Return a reference to the contained key bytes.
+    pub fn as_bytes(&self) -> &[u8] {
+        &(self.0).0
     }
 }
 
@@ -261,5 +277,25 @@ mod test {
         let invalid = "qyz143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0";
         let recipient = RecipientKey::from_str(&invalid);
         assert!(recipient.is_err());
+    }
+
+    #[test]
+    fn test_recipient_key_as_bytes() {
+        let bytes = [0; 32];
+        let recipient = RecipientKey::from_bytes(&bytes).unwrap();
+        let bytes_ref = recipient.as_bytes();
+        for i in 0..31 {
+            assert_eq!(bytes[i], bytes_ref[i]);
+        }
+    }
+
+    #[test]
+    fn test_recipient_key_as_string() {
+        let mut bytes = [0; 32];
+        bytes[0] = 0xff;
+        bytes[31] = 0xee;
+        let recipient = RecipientKey::from_bytes(&bytes).unwrap();
+        let string: String = recipient.into();
+        assert_eq!(string, "FF000000000000000000000000000000000000000000000000000000000000EE");
     }
 }
