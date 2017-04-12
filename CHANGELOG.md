@@ -12,6 +12,10 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v0.4.1 (2017-04-12)
+
+- [added] Add `as_bytes` and `Into<String>` to `RecipientKey` (#7)
+
 ### v0.4.0 (2017-04-10)
 
 - [changed] Revamped and simplified entire API, it now uses a more
