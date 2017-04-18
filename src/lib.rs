@@ -87,7 +87,7 @@ pub mod errors;
 pub use api::{ApiBuilder, E2eApi, SimpleApi, RecipientKey};
 pub use connection::{Recipient};
 pub use crypto::{EncryptedMessage};
-pub use lookup::{LookupCriterion};
+pub use lookup::{LookupCriterion, Capabilities};
 
 const MSGAPI_URL: &'static str = "https://msgapi.threema.ch";
 

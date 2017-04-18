@@ -6,7 +6,8 @@ use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
 use ::connection::{Recipient, send_e2e, send_simple};
 use ::crypto::{encrypt, EncryptedMessage};
 use ::errors::{ApiBuilderError, CryptoError, ApiError};
-use ::lookup::{LookupCriterion, lookup_id, lookup_pubkey, lookup_credits};
+use ::lookup::{LookupCriterion, Capabilities};
+use ::lookup::{lookup_id, lookup_pubkey, lookup_capabilities, lookup_credits};
 
 /// The public key of a recipient.
 pub struct RecipientKey(pub PublicKey);
@@ -58,13 +59,24 @@ macro_rules! impl_common_functionality {
         }
 
         /// Look up a Threema ID in the directory.
-        /// 
+        ///
         /// An ID can be looked up either by a phone number or an e-mail
         /// address, in plaintext or hashed form. You can specify one of those
         /// criteria using the [`LookupCriterion`](enum.LookupCriterion.html)
         /// enum.
         pub fn lookup_id(&self, criterion: &LookupCriterion) -> Result<String, ApiError> {
             lookup_id(criterion, &self.id, &self.secret)
+        }
+
+        /// Look up the capabilities of a certain Threema ID.
+        ///
+        /// Before you send a file to a Threema ID using the blob upload (+file
+        /// message), you may want to check whether the recipient uses a
+        /// Threema version that supports receiving files. The receiver may be
+        /// using an old version, or a platform where file reception is not
+        /// supported.
+        pub fn lookup_capabilities(&self, id: &str) -> Result<Capabilities, ApiError> {
+            lookup_capabilities(&self.id, id, &self.secret)
         }
 
         /// Look up a remaining gateway credits.
@@ -152,29 +164,29 @@ impl E2eApi {
 }
 
 /// A convenient way to set up the API object.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ## Simple API
-/// 
+///
 /// ```
 /// use threema_gateway::{ApiBuilder, SimpleApi};
-/// 
+///
 /// let gateway_id = "*3MAGWID";
 /// let gateway_secret = "hihghrg98h00ghrg";
-/// 
+///
 /// let api: SimpleApi = ApiBuilder::new(gateway_id, gateway_secret).into_simple();
 /// ```
-/// 
+///
 /// ## E2E API
-/// 
+///
 /// ```
 /// use threema_gateway::{ApiBuilder, E2eApi};
-/// 
+///
 /// let gateway_id = "*3MAGWID";
 /// let gateway_secret = "hihghrg98h00ghrg";
 /// let private_key = "998730fbcac1c57dbb181139de41d12835b3fae6af6acdf6ce91670262e88453";
-/// 
+///
 /// let api: E2eApi = ApiBuilder::new(gateway_id, gateway_secret)
 ///                              .with_private_key_str(private_key)
 ///                              .and_then(|builder| builder.into_e2e())
