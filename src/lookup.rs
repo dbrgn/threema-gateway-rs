@@ -84,6 +84,25 @@ pub fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str) -> Res
     Ok(body)
 }
 
+/// Look up remaining gateway credits.
+pub fn lookup_credits(our_id: &str, secret: &str) -> Result<i64, ApiError> {
+    let client = Client::new().expect("Could not initialize HTTP client");
+
+    let url = format!("{}/credits?from={}&secret={}", MSGAPI_URL, our_id, secret);
+
+    debug!("Looking up remaining credits");
+
+    // Send request
+    let mut res = try!(client.get(&url).send());
+    try!(map_response_code(res.status(), None));
+
+    // Read and return response body
+    let mut body = String::new();
+    try!(res.read_to_string(&mut body));
+    body.trim().parse::<i64>()
+        .map_err(|_| ApiError::ParseError(format!("Could not parse response body as i64: \"{}\"", body)))
+}
+
 #[cfg(test)]
 mod tests {
     use super::LookupCriterion;
