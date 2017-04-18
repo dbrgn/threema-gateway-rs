@@ -102,17 +102,25 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
 
 
 /// Send an encrypted E2E message to the specified recipient.
-pub fn send_e2e(from: &str, to: &str, secret: &str, nonce: &[u8], ciphertext: &[u8]) -> Result<String, ApiError> {
+pub fn send_e2e(from: &str,
+                to: &str,
+                secret: &str,
+                nonce: &[u8],
+                ciphertext: &[u8],
+                additional_params: Option<HashMap<String, String>>)
+                -> Result<String, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Prepare POST data
-    let params = [
-        ("from", from),
-        ("to", to),
-        ("secret", secret),
-        ("nonce", &hex::encode(nonce)),
-        ("box", &hex::encode(ciphertext)),
-    ];
+    let mut params = match additional_params {
+        Some(p) => p,
+        None => HashMap::new(),
+    };
+    params.insert("from".into(), from.into());
+    params.insert("to".into(), to.into());
+    params.insert("secret".into(), secret.into());
+    params.insert("nonce".into(), hex::encode(nonce));
+    params.insert("box".into(), hex::encode(ciphertext));
 
     // Send request
     let mut res = try!(client.post(&format!("{}/send_e2e", MSGAPI_URL))

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::convert::{From, Into};
 
 use data_encoding::hex;
@@ -157,7 +158,17 @@ impl E2eApi {
 
     /// Send an encrypted E2E message to the specified Threema ID.
     pub fn send(&self, to: &str, message: &EncryptedMessage) -> Result<String, ApiError> {
-        send_e2e(&self.id, to, &self.secret, &message.nonce, &message.ciphertext)
+        send_e2e(&self.id, to, &self.secret, &message.nonce, &message.ciphertext, None)
+    }
+
+    /// Used for testing purposes. Not intended to be called by end users.
+    #[doc(hidden)]
+    pub fn send_with_params(&self,
+                            to: &str,
+                            message: &EncryptedMessage,
+                            additional_params: HashMap<String, String>)
+                            -> Result<String, ApiError> {
+        send_e2e(&self.id, to, &self.secret, &message.nonce, &message.ciphertext, Some(additional_params))
     }
 
     impl_common_functionality!();
