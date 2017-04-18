@@ -27,7 +27,7 @@ messages works.
 - [x] Look up ID by e-mail
 - [x] Look up ID by phone number hash
 - [x] Look up ID by e-mail hash
-- [ ] Look up capabilities by ID
+- [x] Look up capabilities by ID
 - [x] Look up public key by ID
 - [x] Look up remaining credits
 
