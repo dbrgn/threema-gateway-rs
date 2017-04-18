@@ -29,7 +29,7 @@ messages works.
 - [x] Look up ID by e-mail hash
 - [ ] Look up capabilities by ID
 - [x] Look up public key by ID
-- [ ] Look up remaining credits
+- [x] Look up remaining credits
 
 **Receiving**
 

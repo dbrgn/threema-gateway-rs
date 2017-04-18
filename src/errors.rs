@@ -31,16 +31,23 @@ quick_error! {
         /// Error when sending request (via reqwest)
         RequestError(err: ReqwestError) {
             from()
+            display("RequestError: {}", err)
         }
 
         /// Error when reading response
         IoError(err: IoError) {
             from()
+            display("IoError: {}", err)
+        }
+
+        /// Error while parsing response
+        ParseError(msg: String) {
+            display("ParseError: {}", msg)
         }
 
         /// Other
         Other(msg: String) {
-            from()
+            display("{}", msg)
         }
     }
 }

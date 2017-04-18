@@ -6,7 +6,7 @@ use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
 use ::connection::{Recipient, send_e2e, send_simple};
 use ::crypto::{encrypt, EncryptedMessage};
 use ::errors::{ApiBuilderError, CryptoError, ApiError};
-use ::lookup::{LookupCriterion, lookup_id, lookup_pubkey};
+use ::lookup::{LookupCriterion, lookup_id, lookup_pubkey, lookup_credits};
 
 /// The public key of a recipient.
 pub struct RecipientKey(pub PublicKey);
@@ -65,6 +65,11 @@ macro_rules! impl_common_functionality {
         /// enum.
         pub fn lookup_id(&self, criterion: &LookupCriterion) -> Result<String, ApiError> {
             lookup_id(criterion, &self.id, &self.secret)
+        }
+
+        /// Look up a remaining gateway credits.
+        pub fn lookup_credits(&self) -> Result<i64, ApiError> {
+            lookup_credits(&self.id, &self.secret)
         }
     }
 }
