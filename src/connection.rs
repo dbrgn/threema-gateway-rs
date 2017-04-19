@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use reqwest::{Client, StatusCode};
 use reqwest::header::{Accept, ContentType};
 use reqwest::mime::{Mime, TopLevel, SubLevel, Attr, Value};
-use data_encoding::hex;
+use data_encoding::HEXLOWER;
 
 use ::errors::ApiError;
 use ::MSGAPI_URL;
@@ -119,8 +119,8 @@ pub fn send_e2e(from: &str,
     params.insert("from".into(), from.into());
     params.insert("to".into(), to.into());
     params.insert("secret".into(), secret.into());
-    params.insert("nonce".into(), hex::encode(nonce));
-    params.insert("box".into(), hex::encode(ciphertext));
+    params.insert("nonce".into(), HEXLOWER.encode(nonce));
+    params.insert("box".into(), HEXLOWER.encode(ciphertext));
 
     // Send request
     let mut res = try!(client.post(&format!("{}/send_e2e", MSGAPI_URL))

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::convert::{From, Into};
 use std::io::Read;
 
-use data_encoding::hex;
+use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
 
 use ::connection::{Recipient, send_e2e, send_simple, blob_upload_raw};
@@ -29,9 +29,9 @@ impl From<[u8; 32]> for RecipientKey {
 }
 
 impl Into<String> for RecipientKey {
-    /// Encode the key bytes as hex string.
+    /// Encode the key bytes as lowercase hex string.
     fn into(self) -> String {
-        hex::encode(&(self.0).0)
+        HEXLOWER.encode(&(self.0).0)
     }
 }
 
@@ -99,10 +99,7 @@ impl RecipientKey {
 
     /// Create a `RecipientKey` from a hex encoded string slice.
     pub fn from_str(val: &str) -> Result<Self, CryptoError> {
-        // TODO: to_uppercase() allocates a new String. This is necessary because
-        // hex decoding only accepts uppercase letters. Would be nice to get rid of
-        // that.
-        let bytes = hex::decode(val.to_uppercase().as_bytes())
+        let bytes = HEXLOWER_PERMISSIVE.decode(val.as_bytes())
             .map_err(|e| CryptoError::BadKey(format!("Could not decode public key hex string: {}", e)))?;
         RecipientKey::from_bytes(bytes.as_slice())
     }
@@ -254,10 +251,7 @@ impl ApiBuilder {
     /// Set the private key from a hex-encoded string reference. Only needed
     /// for E2e mode.
     pub fn with_private_key_str(self, private_key: &str) -> Result<Self, ApiBuilderError> {
-        // TODO: to_uppercase() allocates a new String. This is necessary because
-        // hex decoding only accepts uppercase letters. Would be nice to get rid of
-        // that.
-        let private_key_bytes = hex::decode(private_key.to_uppercase().as_bytes())
+        let private_key_bytes = HEXLOWER_PERMISSIVE.decode(private_key.as_bytes())
             .map_err(|e| {
                 let msg = format!("Could not decode private key hex string: {}", e);
                 ApiBuilderError::InvalidKey(msg)
@@ -310,6 +304,10 @@ mod test {
         let recipient = RecipientKey::from_str(&encoded);
         assert!(recipient.is_ok());
 
+        let encoded = "5CF143CD8F3652F31D9B44786C323FBC222ECFCBB8DAC5CAF5CAA257AC272DF0";
+        let recipient = RecipientKey::from_str(&encoded);
+        assert!(recipient.is_ok());
+
         let too_short = "5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5ca";
         let recipient = RecipientKey::from_str(&too_short);
         assert!(recipient.is_err());
@@ -336,6 +334,6 @@ mod test {
         bytes[31] = 0xee;
         let recipient = RecipientKey::from_bytes(&bytes).unwrap();
         let string: String = recipient.into();
-        assert_eq!(string, "FF000000000000000000000000000000000000000000000000000000000000EE");
+        assert_eq!(string, "ff000000000000000000000000000000000000000000000000000000000000ee");
     }
 }

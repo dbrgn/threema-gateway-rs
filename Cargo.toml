@@ -23,7 +23,7 @@ dev = []
 [dependencies]
 reqwest = "0.5"
 sodiumoxide = "0.0.14"
-data-encoding = "1.1"
+data-encoding = "2.0.0-rc.1"
 quick-error = "1.1"
 log = "0.3"
 
