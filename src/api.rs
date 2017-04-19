@@ -6,7 +6,7 @@ use data_encoding::hex;
 use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
 
 use ::connection::{Recipient, send_e2e, send_simple, blob_upload_raw};
-use ::crypto::{encrypt, EncryptedMessage};
+use ::crypto::{encrypt, EncryptedMessage, MessageType};
 use ::errors::{ApiBuilderError, CryptoError, ApiError};
 use ::lookup::{LookupCriterion, Capabilities};
 use ::lookup::{lookup_id, lookup_pubkey, lookup_capabilities, lookup_credits};
@@ -155,8 +155,8 @@ impl E2eApi {
     }
 
     /// Encrypt a message for the specified recipient public key.
-    pub fn encrypt(&self, data: &[u8], recipient_key: &RecipientKey) -> EncryptedMessage {
-        encrypt(data, &recipient_key.0, &self.private_key)
+    pub fn encrypt(&self, data: &[u8], msgtype: MessageType, recipient_key: &RecipientKey) -> EncryptedMessage {
+        encrypt(data, msgtype, &recipient_key.0, &self.private_key)
     }
 
     /// Send an encrypted E2E message to the specified Threema ID.

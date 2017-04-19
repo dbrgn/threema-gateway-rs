@@ -31,7 +31,7 @@
 //! ## Example: Send end-to-end encrypted message
 //!
 //! ```no_run
-//! use threema_gateway::{ApiBuilder, RecipientKey};
+//! use threema_gateway::{ApiBuilder, RecipientKey, MessageType};
 //!
 //! let from = "*YOUR_ID";
 //! let to = "ECHOECHO";
@@ -51,7 +51,7 @@
 //!
 //! // Encrypt
 //! let recipient_key = RecipientKey::from_str(&public_key).unwrap();
-//! let encrypted = api.encrypt(text.as_bytes(), &recipient_key);
+//! let encrypted = api.encrypt(text.as_bytes(), MessageType::Text, &recipient_key);
 //!
 //! // Send
 //! match api.send(&to, &encrypted) {
@@ -86,7 +86,7 @@ pub mod errors;
 
 pub use api::{ApiBuilder, E2eApi, SimpleApi, RecipientKey};
 pub use connection::{Recipient};
-pub use crypto::{EncryptedMessage};
+pub use crypto::{EncryptedMessage, MessageType};
 pub use lookup::{LookupCriterion, Capabilities};
 
 const MSGAPI_URL: &'static str = "https://msgapi.threema.ch";

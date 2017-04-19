@@ -1,5 +1,6 @@
 //! Encrypt and decrypt messages.
 
+use std::convert::Into;
 use std::iter::repeat;
 
 use sodiumoxide;
@@ -24,8 +25,33 @@ pub struct EncryptedMessage {
     pub nonce: [u8; 24],
 }
 
+/// A message type.
+pub enum MessageType {
+    Text,
+    Image,
+    Video,
+    File,
+    DeliveryReceipt,
+}
+
+impl Into<u8> for MessageType {
+    fn into(self) -> u8 {
+        match self {
+            MessageType::Text => 0x01,
+            MessageType::Image => 0x02,
+            MessageType::Video => 0x13,
+            MessageType::File => 0x17,
+            MessageType::DeliveryReceipt => 0x80,
+        }
+    }
+}
+
 /// Encrypt data for the recipient. Return an [`EncryptedMessage`](struct.EncryptedMessage.html).
-pub fn encrypt(data: &[u8], public_key: &PublicKey, private_key: &SecretKey) -> EncryptedMessage {
+pub fn encrypt(data: &[u8],
+               msgtype: MessageType,
+               public_key: &PublicKey,
+               private_key: &SecretKey)
+               -> EncryptedMessage {
     if !sodiumoxide::init() {
         panic!("Could not initialize sodiumoxide library.");
     }
@@ -37,8 +63,8 @@ pub fn encrypt(data: &[u8], public_key: &PublicKey, private_key: &SecretKey) -> 
     // Note: Use randombytes_uniform if https://github.com/dnaq/sodiumoxide/pull/144 is merged
     let padding_amount = random_padding_amount();
     let padding = repeat(padding_amount).take(padding_amount as usize);
-    let msgtype = repeat(1).take(1);
-    let padded_plaintext: Vec<u8> = msgtype.chain(data.iter().cloned()).chain(padding).collect();
+    let msgtype_byte = repeat(msgtype.into()).take(1);
+    let padded_plaintext: Vec<u8> = msgtype_byte.chain(data.iter().cloned()).chain(padding).collect();
 
     let ciphertext = box_::seal(&padded_plaintext, &nonce, public_key, private_key);
     EncryptedMessage {

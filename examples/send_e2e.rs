@@ -3,7 +3,7 @@ extern crate threema_gateway;
 
 use std::process;
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, RecipientKey};
+use threema_gateway::{ApiBuilder, RecipientKey, MessageType};
 
 
 const USAGE: &'static str = "
@@ -44,7 +44,7 @@ fn main() {
         println!("{}", e);
         process::exit(1);
     });
-    let encrypted = api.encrypt(text.as_bytes(), &recipient_key);
+    let encrypted = api.encrypt(text.as_bytes(), MessageType::Text, &recipient_key);
     let msg_id = api.send(&to, &encrypted);
 
     match msg_id {
