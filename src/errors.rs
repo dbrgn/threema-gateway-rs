@@ -28,6 +28,9 @@ quick_error! {
         /// Wrong hash length
         BadHashLength {}
 
+        /// Bad blob
+        BadBlob {}
+
         /// Error when sending request (via reqwest)
         RequestError(err: ReqwestError) {
             from()

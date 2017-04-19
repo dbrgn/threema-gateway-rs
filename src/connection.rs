@@ -5,7 +5,8 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use reqwest::{Client, StatusCode};
-use reqwest::header::Accept;
+use reqwest::header::{Accept, ContentType};
+use reqwest::mime::{Mime, TopLevel, SubLevel, Attr, Value};
 use data_encoding::hex;
 
 use ::errors::ApiError;
@@ -100,7 +101,6 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
     Ok(body)
 }
 
-
 /// Send an encrypted E2E message to the specified recipient.
 pub fn send_e2e(from: &str,
                 to: &str,
@@ -134,6 +134,44 @@ pub fn send_e2e(from: &str,
     try!(res.read_to_string(&mut body));
 
     Ok(body)
+}
+
+/// Upload a raw blob to the blob server.
+pub fn blob_upload_raw<R: Read>(from: &str, secret: &str, mut data: R) -> Result<String, ApiError> {
+    let client = Client::new().expect("Could not initialize HTTP client");
+
+    // Build URL
+    let url = format!("{}/upload_blob?from={}&secret={}", MSGAPI_URL, from, secret);
+
+    // Build multipart/form-data request body
+    let boundary = "3ma-d84f64f5-a138-4b0a-9e25-339257990c81-3ma".to_string();
+    let mut req_body = String::new();
+    req_body.push_str("--");
+    req_body.push_str(&boundary);
+    req_body.push_str("\r\n");
+    req_body.push_str("Content-Disposition: form-data; name=\"blob\"\r\n");
+    req_body.push_str("Content-Type: application/octet-stream\r\n\r\n");
+    data.read_to_string(&mut req_body)?;
+    req_body.push_str("\r\n--");
+    req_body.push_str(&boundary);
+    req_body.push_str("--\r\n");
+
+    // Send request
+    let mimetype = Mime(TopLevel::Multipart,
+                        SubLevel::FormData,
+                        vec![(Attr::Boundary, Value::Ext(boundary))]);
+    let mut res = client.post(&url)
+        .body(req_body)
+        .header(Accept::text())
+        .header(ContentType(mimetype))
+        .send()?;
+    try!(map_response_code(res.status(), Some(ApiError::BadBlob)));
+
+    // Read response body containing blob ID
+    let mut body = String::new();
+    res.read_to_string(&mut body)?;
+
+    Ok(body.trim().to_owned())
 }
 
 #[cfg(test)]

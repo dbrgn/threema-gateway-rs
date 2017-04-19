@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use std::convert::{From, Into};
+use std::io::Read;
 
 use data_encoding::hex;
 use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
 
-use ::connection::{Recipient, send_e2e, send_simple};
+use ::connection::{Recipient, send_e2e, send_simple, blob_upload_raw};
 use ::crypto::{encrypt, EncryptedMessage};
 use ::errors::{ApiBuilderError, CryptoError, ApiError};
 use ::lookup::{LookupCriterion, Capabilities};
@@ -125,6 +126,8 @@ impl SimpleApi {
     /// Note that this mode of sending messages does not provide end-to-end
     /// encryption, only transport encryption between your host and the Threema
     /// Gateway server.
+    ///
+    /// Cost: 1 credit.
     pub fn send(&self, to: &Recipient, text: &str) -> Result<String, ApiError> {
         send_simple(&self.id, to, &self.secret, text)
     }
@@ -157,6 +160,8 @@ impl E2eApi {
     }
 
     /// Send an encrypted E2E message to the specified Threema ID.
+    ///
+    /// Cost: 1 credit.
     pub fn send(&self, to: &str, message: &EncryptedMessage) -> Result<String, ApiError> {
         send_e2e(&self.id, to, &self.secret, &message.nonce, &message.ciphertext, None)
     }
@@ -172,6 +177,13 @@ impl E2eApi {
     }
 
     impl_common_functionality!();
+
+    /// Upload a raw pre-encrypted blob to the blob server.
+    ///
+    /// Cost: 1 credit.
+    pub fn upload_raw<R: Read>(&self, data: R) -> Result<String, ApiError> {
+        blob_upload_raw(&self.id, &self.secret, data)
+    }
 }
 
 /// A convenient way to set up the API object.
