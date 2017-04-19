@@ -51,7 +51,7 @@
 //!
 //! // Encrypt
 //! let recipient_key = RecipientKey::from_str(&public_key).unwrap();
-//! let encrypted = api.encrypt_text(text, &recipient_key);
+//! let encrypted = api.encrypt_text_msg(text, &recipient_key);
 //!
 //! // Send
 //! match api.send(&to, &encrypted) {

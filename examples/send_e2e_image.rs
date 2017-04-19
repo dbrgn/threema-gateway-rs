@@ -76,7 +76,10 @@ fn main() {
     });
 
     // Create image message
-    let msg = api.encrypt_image(&blob_id, img_data.len() as u32, &encrypted_image.nonce, &recipient_key);
+    let msg = api.encrypt_image_msg(&blob_id,
+                                    img_data.len() as u32,
+                                    &encrypted_image.nonce,
+                                    &recipient_key);
 
     // Send
     let msg_id = api.send(&to, &msg);

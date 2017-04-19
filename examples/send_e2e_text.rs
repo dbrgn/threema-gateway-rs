@@ -44,7 +44,7 @@ fn main() {
         println!("{}", e);
         process::exit(1);
     });
-    let encrypted = api.encrypt_text(&text, &recipient_key);
+    let encrypted = api.encrypt_text_msg(&text, &recipient_key);
     let msg_id = api.send(&to, &encrypted);
 
     match msg_id {

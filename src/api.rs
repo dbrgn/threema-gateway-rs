@@ -158,7 +158,7 @@ impl E2eApi {
     }
 
     /// Encrypt a text message for the specified recipient public key.
-    pub fn encrypt_text(&self, text: &str, recipient_key: &RecipientKey) -> EncryptedMessage {
+    pub fn encrypt_text_msg(&self, text: &str, recipient_key: &RecipientKey) -> EncryptedMessage {
         let data = text.as_bytes();
         let msgtype = MessageType::Text;
         encrypt(data, msgtype, &recipient_key.0, &self.private_key)
@@ -173,12 +173,12 @@ impl E2eApi {
     /// The image size needs to be specified in bytes. Note that the size is
     /// only used for download size displaying purposes and has no security
     /// implications.
-    pub fn encrypt_image(&self,
-                         blob_id: &BlobId,
-                         img_size_bytes: u32,
-                         image_data_nonce: &[u8; 24],
-                         recipient_key: &RecipientKey)
-                         -> EncryptedMessage {
+    pub fn encrypt_image_msg(&self,
+                             blob_id: &BlobId,
+                             img_size_bytes: u32,
+                             image_data_nonce: &[u8; 24],
+                             recipient_key: &RecipientKey)
+                             -> EncryptedMessage {
         let mut data = [0; 44];
         // Since we're writing to an array and not to a file or socket, these
         // write operations should never fail.
@@ -373,7 +373,7 @@ mod test {
     }
 
     #[test]
-    fn test_encrypt_image() {
+    fn test_encrypt_image_msg() {
         // Set up keys
         let own_sec = SecretKey([113,146,154,1,241,143,18,181,240,174,72,16,247,83,161,29,215,123,130,243,235,222,137,151,107,162,47,119,98,145,68,146]);
         let other_pub = PublicKey([153,153,204,118,225,119,78,112,88,6,167,2,67,73,254,255,96,134,225,8,36,229,124,219,43,50,241,185,244,236,55,77]);
@@ -387,7 +387,7 @@ mod test {
 
         // Encrypt
         let recipient_key = RecipientKey(other_pub.clone());
-        let encrypted = api.encrypt_image(&blob_id, 258, &blob_nonce.0, &recipient_key);
+        let encrypted = api.encrypt_image_msg(&blob_id, 258, &blob_nonce.0, &recipient_key);
 
         // Decrypt
         let decrypted = box_::open(&encrypted.ciphertext, &Nonce(encrypted.nonce), &other_pub, &own_sec).unwrap();
