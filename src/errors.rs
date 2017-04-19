@@ -31,6 +31,9 @@ quick_error! {
         /// Bad blob
         BadBlob {}
 
+        /// Invalid blob ID
+        BadBlobId {}
+
         /// Error when sending request (via reqwest)
         RequestError(err: ReqwestError) {
             from()

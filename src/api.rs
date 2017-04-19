@@ -5,7 +5,7 @@ use std::io::Read;
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
 
-use ::connection::{Recipient, send_e2e, send_simple, blob_upload_raw};
+use ::connection::{BlobId, Recipient, send_e2e, send_simple, blob_upload_raw};
 use ::crypto::{encrypt, EncryptedMessage, MessageType};
 use ::errors::{ApiBuilderError, CryptoError, ApiError};
 use ::lookup::{LookupCriterion, Capabilities};
@@ -185,7 +185,7 @@ impl E2eApi {
     /// Upload a raw pre-encrypted blob to the blob server.
     ///
     /// Cost: 1 credit.
-    pub fn upload_raw<R: Read>(&self, data: R) -> Result<String, ApiError> {
+    pub fn upload_raw<R: Read>(&self, data: R) -> Result<BlobId, ApiError> {
         blob_upload_raw(&self.id, &self.secret, data)
     }
 }

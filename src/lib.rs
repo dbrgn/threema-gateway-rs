@@ -85,7 +85,7 @@ mod lookup;
 pub mod errors;
 
 pub use api::{ApiBuilder, E2eApi, SimpleApi, RecipientKey};
-pub use connection::{Recipient};
+pub use connection::{Recipient, BlobId};
 pub use crypto::{EncryptedMessage, MessageType};
 pub use lookup::{LookupCriterion, Capabilities};
 

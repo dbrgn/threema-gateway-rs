@@ -1,17 +1,48 @@
 //! Send and receive messages.
 
-use std::io::Read;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fmt;
+use std::io::Read;
 
 use reqwest::{Client, StatusCode};
 use reqwest::header::{Accept, ContentType};
 use reqwest::mime::{Mime, TopLevel, SubLevel, Attr, Value};
-use data_encoding::HEXLOWER;
+use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 
 use ::errors::ApiError;
 use ::MSGAPI_URL;
 
+
+/// A blob ID. Must contain exactly 16 lowercase hexadecimal characters.
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct BlobId(pub [u8; 16]);
+
+impl BlobId {
+    /// Create a new BlobId.
+    pub fn new(id: [u8; 16]) -> Self {
+        BlobId(id)
+    }
+
+    /// Create a new BlobId from a 32 character hexadecimal String.
+    pub fn from_str(id: &str) -> Result<Self, ApiError> {
+        let bytes = HEXLOWER_PERMISSIVE.decode(id.as_bytes()).map_err(|_| ApiError::BadBlobId)?;
+        if bytes.len() != 16 {
+            return Err(ApiError::BadBlobId);
+        }
+        let mut arr = [0; 16];
+        for i in 0..bytes.len() {
+            arr[i] = bytes[i];
+        }
+        Ok(BlobId(arr))
+    }
+}
+
+impl fmt::Display for BlobId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", HEXLOWER.encode(&self.0))
+    }
+}
 
 /// Map HTTP response status code to an ApiError if it isn't "200".
 ///
@@ -137,7 +168,7 @@ pub fn send_e2e(from: &str,
 }
 
 /// Upload a raw blob to the blob server.
-pub fn blob_upload_raw<R: Read>(from: &str, secret: &str, mut data: R) -> Result<String, ApiError> {
+pub fn blob_upload_raw<R: Read>(from: &str, secret: &str, mut data: R) -> Result<BlobId, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
@@ -171,7 +202,7 @@ pub fn blob_upload_raw<R: Read>(from: &str, secret: &str, mut data: R) -> Result
     let mut body = String::new();
     res.read_to_string(&mut body)?;
 
-    Ok(body.trim().to_owned())
+    BlobId::from_str(body.trim())
 }
 
 #[cfg(test)]
@@ -199,5 +230,19 @@ mod tests {
             Err(ApiError::MessageTooLong) => (),
             _ => panic!(),
         }
+    }
+
+    #[test]
+    fn test_blob_id_from_str() {
+        assert!(BlobId::from_str("0123456789abcdef0123456789abcdef").is_ok());
+        assert!(BlobId::from_str("0123456789abcdef0123456789abcdeF").is_ok());
+        assert!(BlobId::from_str("0123456789abcdef0123456789abcde").is_err());
+        assert!(BlobId::from_str("0123456789abcdef0123456789abcdef\n").is_err());
+        assert!(BlobId::from_str("0123456789abcdef0123456789abcdeg").is_err());
+
+        assert_eq!(
+            BlobId::from_str("000102030405060708090a0b0c0d0eff").unwrap(),
+            BlobId::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xff])
+        );
     }
 }
