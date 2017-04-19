@@ -31,7 +31,7 @@
 //! ## Example: Send end-to-end encrypted message
 //!
 //! ```no_run
-//! use threema_gateway::{ApiBuilder, RecipientKey, MessageType};
+//! use threema_gateway::{ApiBuilder, RecipientKey};
 //!
 //! let from = "*YOUR_ID";
 //! let to = "ECHOECHO";
@@ -51,7 +51,7 @@
 //!
 //! // Encrypt
 //! let recipient_key = RecipientKey::from_str(&public_key).unwrap();
-//! let encrypted = api.encrypt(text.as_bytes(), MessageType::Text, &recipient_key);
+//! let encrypted = api.encrypt_text(text, &recipient_key);
 //!
 //! // Send
 //! match api.send(&to, &encrypted) {

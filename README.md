@@ -21,6 +21,14 @@ messages works.
 - [x] Send simple messages
 - [x] Send end-to-end encrypted messages
 
+**Encrypting**
+
+- [x] Encrypt raw bytes
+- [x] Encrypt text messages
+- [ ] Encrypt image messages
+- [ ] Encrypt file messages
+- [ ] Encrypt delivery receipt messages
+
 **Lookup**
 
 - [x] Look up ID by phone number
@@ -59,7 +67,7 @@ Send simple transport-encrypted encrypted message:
 
 Send e2e encrypted message:
 
-    cargo run --example send_e2e -- <from> <to> <secret> <private-key> <text>...
+    cargo run --example send_e2e_text -- <from> <to> <secret> <private-key> <text>...
 
 Look up Threema ID by phone:
 

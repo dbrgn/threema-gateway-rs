@@ -156,6 +156,13 @@ impl E2eApi {
         encrypt(data, msgtype, &recipient_key.0, &self.private_key)
     }
 
+    /// Encrypt a text message for the specified recipient public key.
+    pub fn encrypt_text(&self, text: &str, recipient_key: &RecipientKey) -> EncryptedMessage {
+        let data = text.as_bytes();
+        let msgtype = MessageType::Text;
+        encrypt(data, msgtype, &recipient_key.0, &self.private_key)
+    }
+
     /// Send an encrypted E2E message to the specified Threema ID.
     ///
     /// Cost: 1 credit.
