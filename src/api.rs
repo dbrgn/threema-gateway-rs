@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::convert::{From, Into};
-use std::io::Read;
+use std::io::Write;
 
+use byteorder::{LittleEndian, WriteBytesExt};
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
 
-use ::connection::{BlobId, Recipient, send_e2e, send_simple, blob_upload_raw};
-use ::crypto::{encrypt, EncryptedMessage, MessageType};
+use ::connection::{BlobId, Recipient, send_e2e, send_simple, blob_upload};
+use ::crypto::{encrypt, encrypt_raw, EncryptedMessage, MessageType};
 use ::errors::{ApiBuilderError, CryptoError, ApiError};
 use ::lookup::{LookupCriterion, Capabilities};
 use ::lookup::{lookup_id, lookup_pubkey, lookup_capabilities, lookup_credits};
@@ -151,9 +152,9 @@ impl E2eApi {
         }
     }
 
-    /// Encrypt a message for the specified recipient public key.
-    pub fn encrypt(&self, data: &[u8], msgtype: MessageType, recipient_key: &RecipientKey) -> EncryptedMessage {
-        encrypt(data, msgtype, &recipient_key.0, &self.private_key)
+    /// Encrypt raw bytes for the specified recipient public key.
+    pub fn encrypt_raw(&self, data: &[u8], recipient_key: &RecipientKey) -> EncryptedMessage {
+        encrypt_raw(data, &recipient_key.0, &self.private_key)
     }
 
     /// Encrypt a text message for the specified recipient public key.
@@ -161,6 +162,31 @@ impl E2eApi {
         let data = text.as_bytes();
         let msgtype = MessageType::Text;
         encrypt(data, msgtype, &recipient_key.0, &self.private_key)
+    }
+
+    /// Encrypt an image message for the specified recipient public key.
+    ///
+    /// Before calling this function, you need to encrypt the image data (JPEG
+    /// format) with [`encrypt_raw`](struct.E2eApi.html#method.encrypt_raw) and
+    /// upload the ciphertext to the blob server.
+    ///
+    /// The image size needs to be specified in bytes. Note that the size is
+    /// only used for download size displaying purposes and has no security
+    /// implications.
+    pub fn encrypt_image(&self,
+                         blob_id: &BlobId,
+                         img_size_bytes: u32,
+                         image_data_nonce: &[u8; 24],
+                         recipient_key: &RecipientKey)
+                         -> EncryptedMessage {
+        let mut data = [0; 44];
+        // Since we're writing to an array and not to a file or socket, these
+        // write operations should never fail.
+        (&mut data[0..16]).write_all(&blob_id.0).expect("Writing to buffer failed");
+        (&mut data[16..20]).write_u32::<LittleEndian>(img_size_bytes).expect("Writing to buffer failed");
+        (&mut data[20..44]).write_all(image_data_nonce).expect("Writing to buffer failed");
+        let msgtype = MessageType::Image;
+        encrypt(&data, msgtype, &recipient_key.0, &self.private_key)
     }
 
     /// Send an encrypted E2E message to the specified Threema ID.
@@ -182,11 +208,11 @@ impl E2eApi {
 
     impl_common_functionality!();
 
-    /// Upload a raw pre-encrypted blob to the blob server.
+    /// Upload encrypted data to the blob server.
     ///
     /// Cost: 1 credit.
-    pub fn upload_raw<R: Read>(&self, data: R) -> Result<BlobId, ApiError> {
-        blob_upload_raw(&self.id, &self.secret, data)
+    pub fn blob_upload(&self, data: &EncryptedMessage) -> Result<BlobId, ApiError> {
+        blob_upload(&self.id, &self.secret, data)
     }
 }
 
@@ -277,9 +303,11 @@ impl ApiBuilder {
 
 #[cfg(test)]
 mod test {
-    use sodiumoxide::crypto::box_::PublicKey;
+    use sodiumoxide::crypto::box_::{self, PublicKey, SecretKey, Nonce};
 
     use super::*;
+    use ::connection::BlobId;
+    use ::crypto::MessageType;
 
     #[test]
     fn test_recipient_key_from_publickey() {
@@ -342,5 +370,42 @@ mod test {
         let recipient = RecipientKey::from_bytes(&bytes).unwrap();
         let string: String = recipient.into();
         assert_eq!(string, "ff000000000000000000000000000000000000000000000000000000000000ee");
+    }
+
+    #[test]
+    fn test_encrypt_image() {
+        // Set up keys
+        let own_sec = SecretKey([113,146,154,1,241,143,18,181,240,174,72,16,247,83,161,29,215,123,130,243,235,222,137,151,107,162,47,119,98,145,68,146]);
+        let other_pub = PublicKey([153,153,204,118,225,119,78,112,88,6,167,2,67,73,254,255,96,134,225,8,36,229,124,219,43,50,241,185,244,236,55,77]);
+
+        // Set up API
+        let api = E2eApi::new("*3MAGWID", "1234", own_sec.clone());
+
+        // Fake a blob upload
+        let blob_id = BlobId::from_str("00112233445566778899aabbccddeeff").unwrap();
+        let blob_nonce = box_::gen_nonce();
+
+        // Encrypt
+        let recipient_key = RecipientKey(other_pub.clone());
+        let encrypted = api.encrypt_image(&blob_id, 258, &blob_nonce.0, &recipient_key);
+
+        // Decrypt
+        let decrypted = box_::open(&encrypted.ciphertext, &Nonce(encrypted.nonce), &other_pub, &own_sec).unwrap();
+
+        // Validate and remove padding
+        let padding_bytes = decrypted[decrypted.len()-1] as usize;
+        assert!(
+            decrypted[decrypted.len()-padding_bytes..decrypted.len()]
+                .iter().all(|b| *b == padding_bytes as u8)
+        );
+        let data: &[u8] = &decrypted[0..decrypted.len()-padding_bytes];
+
+        // Validate message type
+        let msgtype: u8 = MessageType::Image.into();
+        assert_eq!(data[0], msgtype);
+        assert_eq!(data.len(), 44 + 1);
+        assert_eq!(&data[1..17], &blob_id.0);
+        assert_eq!(&data[17..21], &[2, 1, 0, 0]);
+        assert_eq!(&data[21..45], &blob_nonce.0);
     }
 }

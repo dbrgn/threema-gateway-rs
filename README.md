@@ -25,7 +25,7 @@ messages works.
 
 - [x] Encrypt raw bytes
 - [x] Encrypt text messages
-- [ ] Encrypt image messages
+- [x] Encrypt image messages
 - [ ] Encrypt file messages
 - [ ] Encrypt delivery receipt messages
 
@@ -46,8 +46,8 @@ messages works.
 
 **Files**
 
+- [x] Upload files
 - [ ] Download files
-- [ ] Upload files
 
 
 ## Usage

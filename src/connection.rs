@@ -10,6 +10,7 @@ use reqwest::header::{Accept, ContentType};
 use reqwest::mime::{Mime, TopLevel, SubLevel, Attr, Value};
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 
+use ::crypto::EncryptedMessage;
 use ::errors::ApiError;
 use ::MSGAPI_URL;
 
@@ -167,8 +168,8 @@ pub fn send_e2e(from: &str,
     Ok(body)
 }
 
-/// Upload a raw blob to the blob server.
-pub fn blob_upload_raw<R: Read>(from: &str, secret: &str, mut data: R) -> Result<BlobId, ApiError> {
+/// Upload a blob to the blob server.
+pub fn blob_upload(from: &str, secret: &str, data: &EncryptedMessage) -> Result<BlobId, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
@@ -176,16 +177,16 @@ pub fn blob_upload_raw<R: Read>(from: &str, secret: &str, mut data: R) -> Result
 
     // Build multipart/form-data request body
     let boundary = "3ma-d84f64f5-a138-4b0a-9e25-339257990c81-3ma".to_string();
-    let mut req_body = String::new();
-    req_body.push_str("--");
-    req_body.push_str(&boundary);
-    req_body.push_str("\r\n");
-    req_body.push_str("Content-Disposition: form-data; name=\"blob\"\r\n");
-    req_body.push_str("Content-Type: application/octet-stream\r\n\r\n");
-    data.read_to_string(&mut req_body)?;
-    req_body.push_str("\r\n--");
-    req_body.push_str(&boundary);
-    req_body.push_str("--\r\n");
+    let mut req_body = Vec::new();
+    req_body.extend_from_slice("--".as_bytes());
+    req_body.extend_from_slice(&boundary.as_bytes());
+    req_body.extend_from_slice("\r\n".as_bytes());
+    req_body.extend_from_slice("Content-Disposition: form-data; name=\"blob\"\r\n".as_bytes());
+    req_body.extend_from_slice("Content-Type: application/octet-stream\r\n\r\n".as_bytes());
+    req_body.extend_from_slice(&data.ciphertext);
+    req_body.extend_from_slice("\r\n--".as_bytes());
+    req_body.extend_from_slice(&boundary.as_bytes());
+    req_body.extend_from_slice("--\r\n".as_bytes());
 
     // Send request
     let mimetype = Mime(TopLevel::Multipart,

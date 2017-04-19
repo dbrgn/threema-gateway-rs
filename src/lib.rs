@@ -72,11 +72,12 @@
 //! [github]: https://github.com/dbrgn/threema-gateway-rs
 //! [rust-badge]: https://img.shields.io/badge/rust-1.9%2B-blue.svg?maxAge=3600
 
+extern crate byteorder;
 extern crate data_encoding;
 #[macro_use] extern crate log;
+#[macro_use] extern crate quick_error;
 extern crate reqwest;
 extern crate sodiumoxide;
-#[macro_use] extern crate quick_error;
 
 mod api;
 mod connection;

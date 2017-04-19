@@ -47,30 +47,33 @@ impl Into<u8> for MessageType {
 }
 
 /// Encrypt data for the recipient. Return an [`EncryptedMessage`](struct.EncryptedMessage.html).
+pub fn encrypt_raw(data: &[u8], public_key: &PublicKey, private_key: &SecretKey) -> EncryptedMessage {
+    if !sodiumoxide::init() {
+        panic!("Could not initialize sodiumoxide library.");
+    }
+    let nonce = box_::gen_nonce();
+    let ciphertext = box_::seal(&data, &nonce, public_key, private_key);
+    EncryptedMessage {
+        ciphertext: ciphertext,
+        nonce: nonce.0,
+    }
+}
+
+/// Encrypt a message for the recipient. Return an [`EncryptedMessage`](struct.EncryptedMessage.html).
 pub fn encrypt(data: &[u8],
                msgtype: MessageType,
                public_key: &PublicKey,
                private_key: &SecretKey)
                -> EncryptedMessage {
-    if !sodiumoxide::init() {
-        panic!("Could not initialize sodiumoxide library.");
-    }
 
-    // Generate nonce
-    let nonce = box_::gen_nonce();
-
-    // Add random amount of PKCS#7 padding
-    // Note: Use randombytes_uniform if https://github.com/dnaq/sodiumoxide/pull/144 is merged
+    // Add random amount of PKCS#7 style padding
     let padding_amount = random_padding_amount();
     let padding = repeat(padding_amount).take(padding_amount as usize);
     let msgtype_byte = repeat(msgtype.into()).take(1);
     let padded_plaintext: Vec<u8> = msgtype_byte.chain(data.iter().cloned()).chain(padding).collect();
 
-    let ciphertext = box_::seal(&padded_plaintext, &nonce, public_key, private_key);
-    EncryptedMessage {
-        ciphertext: ciphertext,
-        nonce: nonce.0,
-    }
+    // Encrypt
+    encrypt_raw(&padded_plaintext, &public_key, &private_key)
 }
 
 #[cfg(test)]
