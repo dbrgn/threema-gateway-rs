@@ -1,6 +1,10 @@
 use std::fmt;
+use std::string::ToString;
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
+use mime::Mime;
+use serde::ser::{Serialize, Serializer};
+use sodiumoxide::crypto::box_::SecretKey;
 
 use ::errors::ApiError;
 
@@ -24,6 +28,32 @@ impl Into<u8> for MessageType {
             MessageType::DeliveryReceipt => 0x80,
         }
     }
+}
+
+/// A file message.
+#[derive(Debug, Serialize)]
+pub struct FileMessage {
+    #[serde(rename="b")]
+    pub file_blob_id: BlobId,
+    #[serde(rename="t")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thumbnail_blob_id: Option<BlobId>,
+    #[serde(rename="k")]
+    #[serde(serialize_with = "secret_key_to_hex")]
+    pub encryption_key: SecretKey,
+    #[serde(rename="m")]
+    #[serde(serialize_with = "serialize_to_string")]
+    pub mime_type: Mime,
+    #[serde(rename="n")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_name: Option<String>,
+    #[serde(rename="s")]
+    pub file_size_bytes: u32,
+    #[serde(rename="d")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(rename="i")]
+    pub reserved: u8,
 }
 
 /// A blob ID. Must contain exactly 16 lowercase hexadecimal characters.
@@ -56,10 +86,29 @@ impl fmt::Display for BlobId {
     }
 }
 
+impl Serialize for BlobId {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&HEXLOWER.encode(&self.0))
+    }
+}
+
+fn serialize_to_string<S, T>(val: &T, serializer: S)
+        -> Result<S::Ok, S::Error>
+        where S: Serializer, T: ToString {
+    serializer.serialize_str(&val.to_string())
+}
+
+fn secret_key_to_hex<S: Serializer>(val: &SecretKey, serializer: S) -> Result<S::Ok, S::Error> {
+    serializer.serialize_str(&HEXLOWER.encode(&val.0))
+}
+
 
 #[cfg(test)]
 mod test {
-    use super::{BlobId};
+    use std::collections::HashMap;
+    use serde_json as json;
+    use sodiumoxide::crypto::box_::SecretKey;
+    use super::{BlobId, FileMessage};
 
     #[test]
     fn test_blob_id_from_str() {
@@ -73,6 +122,60 @@ mod test {
             BlobId::from_str("000102030405060708090a0b0c0d0eff").unwrap(),
             BlobId::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xff])
         );
+    }
+
+    #[test]
+    fn test_serialize_to_string_minimal() {
+        let pk = SecretKey([1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]);
+        let msg = FileMessage {
+            file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
+            thumbnail_blob_id: None,
+            encryption_key: pk,
+            mime_type: "application/pdf".parse().unwrap(),
+            file_name: None,
+            file_size_bytes: 2048,
+            description: None,
+            reserved: 0,
+        };
+        let data = json::to_string(&msg).unwrap();
+        let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
+
+        assert_eq!(deserialized.keys().len(), 5);
+        assert_eq!(deserialized.get("b").unwrap(), "0123456789abcdef0123456789abcdef");
+        assert_eq!(deserialized.get("t"), None);
+        assert_eq!(deserialized.get("k").unwrap(), "0102030401020304010203040102030401020304010203040102030401020304");
+        assert_eq!(deserialized.get("m").unwrap(), "application/pdf");
+        assert_eq!(deserialized.get("n"), None);
+        assert_eq!(deserialized.get("s").unwrap(), 2048);
+        assert_eq!(deserialized.get("i").unwrap(), 0);
+        assert_eq!(deserialized.get("d"), None);
+    }
+
+    #[test]
+    fn test_serialize_to_string_full() {
+        let pk = SecretKey([1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]);
+        let msg = FileMessage {
+            file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
+            thumbnail_blob_id: Some(BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap()),
+            encryption_key: pk,
+            mime_type: "application/pdf".parse().unwrap(),
+            file_name: Some("secret.pdf".into()),
+            file_size_bytes: 2048,
+            description: Some("This is a fancy file".into()),
+            reserved: 0,
+        };
+        let data = json::to_string(&msg).unwrap();
+        let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
+
+        assert_eq!(deserialized.keys().len(), 8);
+        assert_eq!(deserialized.get("b").unwrap(), "0123456789abcdef0123456789abcdef");
+        assert_eq!(deserialized.get("t").unwrap(), "abcdef0123456789abcdef0123456789");
+        assert_eq!(deserialized.get("k").unwrap(), "0102030401020304010203040102030401020304010203040102030401020304");
+        assert_eq!(deserialized.get("m").unwrap(), "application/pdf");
+        assert_eq!(deserialized.get("n").unwrap(), "secret.pdf");
+        assert_eq!(deserialized.get("s").unwrap(), 2048);
+        assert_eq!(deserialized.get("i").unwrap(), 0);
+        assert_eq!(deserialized.get("d").unwrap(), "This is a fancy file");
     }
 
 }

@@ -27,6 +27,10 @@ data-encoding = "2.0.0-rc.1"
 quick-error = "1.1"
 log = "0.3"
 byteorder = "1.0"
+mime = "0.2"
+serde = "0.9"
+serde_derive = "0.9"
+serde_json = "0.9"
 
 [dev-dependencies]
 docopt = "0.7"
