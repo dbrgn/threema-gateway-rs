@@ -12,9 +12,13 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
-### v0.5.0 (UNRELEASED)
+### v0.5.0 (2017-04-20)
 
 - [changed] Require Rust 1.15+
+- [added] Implement `lookup_credits` (#8)
+- [added] Implement `lookup_capabilities` (#9)
+- [added] Implement blob uploading (#11)
+- [added] Implement encrypting of e2e text, image and file messages (#11)
 
 ### v0.4.1 (2017-04-12)
 
