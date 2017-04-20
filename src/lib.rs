@@ -51,7 +51,7 @@
 //!
 //! // Encrypt
 //! let recipient_key = RecipientKey::from_str(&public_key).unwrap();
-//! let encrypted = api.encrypt(text.as_bytes(), &recipient_key);
+//! let encrypted = api.encrypt_text_msg(text, &recipient_key);
 //!
 //! // Send
 //! match api.send(&to, &encrypted) {
@@ -72,22 +72,29 @@
 //! [github]: https://github.com/dbrgn/threema-gateway-rs
 //! [rust-badge]: https://img.shields.io/badge/rust-1.9%2B-blue.svg?maxAge=3600
 
+extern crate byteorder;
 extern crate data_encoding;
 #[macro_use] extern crate log;
-extern crate reqwest;
-extern crate sodiumoxide;
+extern crate mime;
 #[macro_use] extern crate quick_error;
+extern crate reqwest;
+extern crate serde;
+#[macro_use] extern crate serde_derive;
+extern crate serde_json;
+extern crate sodiumoxide;
 
 mod api;
 mod connection;
 mod crypto;
 mod lookup;
+mod types;
 pub mod errors;
 
-pub use api::{ApiBuilder, E2eApi, SimpleApi, RecipientKey};
+pub use api::{ApiBuilder, E2eApi, SimpleApi};
 pub use connection::{Recipient};
-pub use crypto::{EncryptedMessage};
+pub use crypto::{EncryptedMessage, RecipientKey};
 pub use lookup::{LookupCriterion, Capabilities};
+pub use types::{MessageType, BlobId};
 
 const MSGAPI_URL: &'static str = "https://msgapi.threema.ch";
 

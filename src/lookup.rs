@@ -41,6 +41,7 @@ impl fmt::Display for LookupCriterion {
     }
 }
 
+/// A struct containing flags according to the capabilities of a Threema ID.
 #[derive(Debug, PartialEq)]
 pub struct Capabilities {
     /// Whether the ID can receive text messages.

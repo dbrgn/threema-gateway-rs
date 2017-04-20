@@ -7,7 +7,7 @@ use threema_gateway::{ApiBuilder, RecipientKey};
 
 
 const USAGE: &'static str = "
-Usage: send_e2e [options] <from> <to> <secret> <private-key> <text>...
+Usage: send_e2e_text [options] <from> <to> <secret> <private-key> <text>...
 
 Options:
     -h, --help    Show this help
@@ -44,7 +44,7 @@ fn main() {
         println!("{}", e);
         process::exit(1);
     });
-    let encrypted = api.encrypt(text.as_bytes(), &recipient_key);
+    let encrypted = api.encrypt_text_msg(&text, &recipient_key);
     let msg_id = api.send(&to, &encrypted);
 
     match msg_id {

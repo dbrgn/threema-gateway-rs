@@ -1,14 +1,16 @@
 //! Send and receive messages.
 
-use std::io::Read;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::io::Read;
 
 use reqwest::{Client, StatusCode};
-use reqwest::header::Accept;
-use data_encoding::hex;
+use reqwest::header::{Accept, ContentType};
+use reqwest::mime::{Mime, TopLevel, SubLevel, Attr, Value};
+use data_encoding::HEXLOWER;
 
 use ::errors::ApiError;
+use ::types::BlobId;
 use ::MSGAPI_URL;
 
 
@@ -100,7 +102,6 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
     Ok(body)
 }
 
-
 /// Send an encrypted E2E message to the specified recipient.
 pub fn send_e2e(from: &str,
                 to: &str,
@@ -119,8 +120,8 @@ pub fn send_e2e(from: &str,
     params.insert("from".into(), from.into());
     params.insert("to".into(), to.into());
     params.insert("secret".into(), secret.into());
-    params.insert("nonce".into(), hex::encode(nonce));
-    params.insert("box".into(), hex::encode(ciphertext));
+    params.insert("nonce".into(), HEXLOWER.encode(nonce));
+    params.insert("box".into(), HEXLOWER.encode(ciphertext));
 
     // Send request
     let mut res = try!(client.post(&format!("{}/send_e2e", MSGAPI_URL))
@@ -134,6 +135,44 @@ pub fn send_e2e(from: &str,
     try!(res.read_to_string(&mut body));
 
     Ok(body)
+}
+
+/// Upload a blob to the blob server.
+pub fn blob_upload(from: &str, secret: &str, data: &[u8]) -> Result<BlobId, ApiError> {
+    let client = Client::new().expect("Could not initialize HTTP client");
+
+    // Build URL
+    let url = format!("{}/upload_blob?from={}&secret={}", MSGAPI_URL, from, secret);
+
+    // Build multipart/form-data request body
+    let boundary = "3ma-d84f64f5-a138-4b0a-9e25-339257990c81-3ma".to_string();
+    let mut req_body = Vec::new();
+    req_body.extend_from_slice("--".as_bytes());
+    req_body.extend_from_slice(&boundary.as_bytes());
+    req_body.extend_from_slice("\r\n".as_bytes());
+    req_body.extend_from_slice("Content-Disposition: form-data; name=\"blob\"\r\n".as_bytes());
+    req_body.extend_from_slice("Content-Type: application/octet-stream\r\n\r\n".as_bytes());
+    req_body.extend_from_slice(data);
+    req_body.extend_from_slice("\r\n--".as_bytes());
+    req_body.extend_from_slice(&boundary.as_bytes());
+    req_body.extend_from_slice("--\r\n".as_bytes());
+
+    // Send request
+    let mimetype = Mime(TopLevel::Multipart,
+                        SubLevel::FormData,
+                        vec![(Attr::Boundary, Value::Ext(boundary))]);
+    let mut res = client.post(&url)
+        .body(req_body)
+        .header(Accept::text())
+        .header(ContentType(mimetype))
+        .send()?;
+    try!(map_response_code(res.status(), Some(ApiError::BadBlob)));
+
+    // Read response body containing blob ID
+    let mut body = String::new();
+    res.read_to_string(&mut body)?;
+
+    BlobId::from_str(body.trim())
 }
 
 #[cfg(test)]
@@ -162,4 +201,5 @@ mod tests {
             _ => panic!(),
         }
     }
+
 }

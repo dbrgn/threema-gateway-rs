@@ -12,6 +12,10 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v0.5.0 (UNRELEASED)
+
+- [changed] Require Rust 1.15+
+
 ### v0.4.1 (2017-04-12)
 
 - [added] Add `as_bytes` and `Into<String>` to `RecipientKey` (#7)

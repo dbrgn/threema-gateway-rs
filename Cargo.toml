@@ -23,9 +23,15 @@ dev = []
 [dependencies]
 reqwest = "0.5"
 sodiumoxide = "0.0.14"
-data-encoding = "1.1"
+data-encoding = "2.0.0-rc.1"
 quick-error = "1.1"
 log = "0.3"
+byteorder = "1.0"
+mime = "0.2"
+serde = "0.9"
+serde_derive = "0.9"
+serde_json = "0.9"
 
 [dev-dependencies]
 docopt = "0.7"
+mime_guess = "1.8"
