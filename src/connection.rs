@@ -9,7 +9,6 @@ use reqwest::header::{Accept, ContentType};
 use reqwest::mime::{Mime, TopLevel, SubLevel, Attr, Value};
 use data_encoding::HEXLOWER;
 
-use ::crypto::EncryptedMessage;
 use ::errors::ApiError;
 use ::types::BlobId;
 use ::MSGAPI_URL;
@@ -139,7 +138,7 @@ pub fn send_e2e(from: &str,
 }
 
 /// Upload a blob to the blob server.
-pub fn blob_upload(from: &str, secret: &str, data: &EncryptedMessage) -> Result<BlobId, ApiError> {
+pub fn blob_upload(from: &str, secret: &str, data: &[u8]) -> Result<BlobId, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
@@ -153,7 +152,7 @@ pub fn blob_upload(from: &str, secret: &str, data: &EncryptedMessage) -> Result<
     req_body.extend_from_slice("\r\n".as_bytes());
     req_body.extend_from_slice("Content-Disposition: form-data; name=\"blob\"\r\n".as_bytes());
     req_body.extend_from_slice("Content-Type: application/octet-stream\r\n\r\n".as_bytes());
-    req_body.extend_from_slice(&data.ciphertext);
+    req_body.extend_from_slice(data);
     req_body.extend_from_slice("\r\n--".as_bytes());
     req_body.extend_from_slice(&boundary.as_bytes());
     req_body.extend_from_slice("--\r\n".as_bytes());

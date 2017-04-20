@@ -3,15 +3,19 @@
 use std::convert::Into;
 use std::io::Write;
 use std::iter::repeat;
+use std::string::ToString;
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
+use mime::Mime;
+use serde_json as json;
 use sodiumoxide;
 use sodiumoxide::crypto::box_::{self, PublicKey, SecretKey};
+use sodiumoxide::crypto::secretbox::Key;
 use sodiumoxide::randombytes::randombytes_into;
 
 use ::errors::CryptoError;
-use ::types::{MessageType, BlobId};
+use ::types::{MessageType, BlobId, FileMessage};
 
 
 /// Return a random number in the range `[1, 255]`.
@@ -123,6 +127,26 @@ pub fn encrypt_image_msg(blob_id: &BlobId,
     (&mut data[20..44]).write_all(image_data_nonce).expect("Writing to buffer failed");
     let msgtype = MessageType::Image;
     encrypt(&data, msgtype, public_key, private_key)
+}
+
+/// Encrypt a file message for the recipient.
+pub fn encrypt_file_msg(file_blob_id: &BlobId,
+                        thumbnail_blob_id: Option<&BlobId>,
+                        blob_encryption_key: &Key,
+                        mime_type: &Mime,
+                        file_name: Option<&str>,
+                        file_size_bytes: u32,
+                        description: Option<&str>,
+                        public_key: &PublicKey,
+                        private_key: &SecretKey)
+                        -> EncryptedMessage {
+    let msg = FileMessage::new(file_blob_id.clone(), thumbnail_blob_id.cloned(),
+                               blob_encryption_key.clone(), mime_type.clone(),
+                               file_name.map(ToString::to_string), file_size_bytes,
+                               description.map(ToString::to_string));
+    let data = json::to_string(&msg).unwrap();
+    let msgtype = MessageType::File;
+    encrypt(&data.as_bytes(), msgtype, &public_key, &private_key)
 }
 
 #[cfg(test)]

@@ -34,3 +34,4 @@ serde_json = "0.9"
 
 [dev-dependencies]
 docopt = "0.7"
+mime_guess = "1.8"

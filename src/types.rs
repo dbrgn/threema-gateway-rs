@@ -4,7 +4,7 @@ use std::string::ToString;
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use mime::Mime;
 use serde::ser::{Serialize, Serializer};
-use sodiumoxide::crypto::box_::SecretKey;
+use sodiumoxide::crypto::secretbox::Key;
 
 use ::errors::ApiError;
 
@@ -39,8 +39,8 @@ pub struct FileMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumbnail_blob_id: Option<BlobId>,
     #[serde(rename="k")]
-    #[serde(serialize_with = "secret_key_to_hex")]
-    pub encryption_key: SecretKey,
+    #[serde(serialize_with = "key_to_hex")]
+    pub blob_encryption_key: Key,
     #[serde(rename="m")]
     #[serde(serialize_with = "serialize_to_string")]
     pub mime_type: Mime,
@@ -54,6 +54,29 @@ pub struct FileMessage {
     pub description: Option<String>,
     #[serde(rename="i")]
     pub reserved: u8,
+}
+
+impl FileMessage {
+    /// Create a new file message.
+    pub fn new(file_blob_id: BlobId,
+               thumbnail_blob_id: Option<BlobId>,
+               blob_encryption_key: Key,
+               mime_type: Mime,
+               file_name: Option<String>,
+               file_size_bytes: u32,
+               description: Option<String>)
+               -> Self {
+        FileMessage {
+            file_blob_id: file_blob_id,
+            thumbnail_blob_id: thumbnail_blob_id,
+            blob_encryption_key: blob_encryption_key,
+            mime_type: mime_type,
+            file_name: file_name,
+            file_size_bytes: file_size_bytes,
+            description: description,
+            reserved: 0,
+        }
+    }
 }
 
 /// A blob ID. Must contain exactly 16 lowercase hexadecimal characters.
@@ -98,7 +121,7 @@ fn serialize_to_string<S, T>(val: &T, serializer: S)
     serializer.serialize_str(&val.to_string())
 }
 
-fn secret_key_to_hex<S: Serializer>(val: &SecretKey, serializer: S) -> Result<S::Ok, S::Error> {
+fn key_to_hex<S: Serializer>(val: &Key, serializer: S) -> Result<S::Ok, S::Error> {
     serializer.serialize_str(&HEXLOWER.encode(&val.0))
 }
 
@@ -107,7 +130,7 @@ fn secret_key_to_hex<S: Serializer>(val: &SecretKey, serializer: S) -> Result<S:
 mod test {
     use std::collections::HashMap;
     use serde_json as json;
-    use sodiumoxide::crypto::box_::SecretKey;
+    use sodiumoxide::crypto::secretbox::Key;
     use super::{BlobId, FileMessage};
 
     #[test]
@@ -126,11 +149,11 @@ mod test {
 
     #[test]
     fn test_serialize_to_string_minimal() {
-        let pk = SecretKey([1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]);
+        let pk = Key([1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]);
         let msg = FileMessage {
             file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
             thumbnail_blob_id: None,
-            encryption_key: pk,
+            blob_encryption_key: pk,
             mime_type: "application/pdf".parse().unwrap(),
             file_name: None,
             file_size_bytes: 2048,
@@ -153,11 +176,11 @@ mod test {
 
     #[test]
     fn test_serialize_to_string_full() {
-        let pk = SecretKey([1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]);
+        let pk = Key([1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]);
         let msg = FileMessage {
             file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
             thumbnail_blob_id: Some(BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap()),
-            encryption_key: pk,
+            blob_encryption_key: pk,
             mime_type: "application/pdf".parse().unwrap(),
             file_name: Some("secret.pdf".into()),
             file_size_bytes: 2048,

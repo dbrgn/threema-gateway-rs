@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
 use data_encoding::HEXLOWER_PERMISSIVE;
+use mime::Mime;
 use sodiumoxide::crypto::box_::SecretKey;
+use sodiumoxide::crypto::secretbox::Key;
 
 use ::connection::{Recipient, send_e2e, send_simple, blob_upload};
-use ::crypto::{encrypt, encrypt_raw, encrypt_image_msg};
+use ::crypto::{encrypt, encrypt_raw, encrypt_image_msg, encrypt_file_msg};
 use ::crypto::{EncryptedMessage, RecipientKey};
 use ::errors::{ApiBuilderError, ApiError};
 use ::lookup::{LookupCriterion, Capabilities};
@@ -133,6 +135,32 @@ impl E2eApi {
         encrypt_image_msg(blob_id, img_size_bytes, image_data_nonce, &recipient_key.0, &self.private_key)
     }
 
+    /// Encrypt a file message for the specified recipient public key.
+    ///
+    /// Before calling this function, you need to symetrically encrypt the file
+    /// data (libsodium secretbox, random key) and upload the ciphertext to the
+    /// blob server. If you also want to set a thumbnail, do the same with the
+    /// update data (in JPEG format) and use the same key. Use the nonce
+    /// `000...1` for the file and `000...2` for the thumbnail.
+    ///
+    /// The file size needs to be specified in bytes. Note that the size is
+    /// only used for download size displaying purposes and has no security
+    /// implications.
+    pub fn encrypt_file_msg(&self,
+                            file_blob_id: &BlobId,
+                            thumbnail_blob_id: Option<&BlobId>,
+                            blob_encryption_key: &Key,
+                            mime_type: &Mime,
+                            file_name: Option<&str>,
+                            file_size_bytes: u32,
+                            description: Option<&str>,
+                            recipient_key: &RecipientKey)
+                            -> EncryptedMessage {
+        encrypt_file_msg(file_blob_id, thumbnail_blob_id, blob_encryption_key, mime_type,
+                         file_name, file_size_bytes, description,
+                         &recipient_key.0, &self.private_key)
+    }
+
     /// Send an encrypted E2E message to the specified Threema ID.
     ///
     /// Cost: 1 credit.
@@ -156,6 +184,13 @@ impl E2eApi {
     ///
     /// Cost: 1 credit.
     pub fn blob_upload(&self, data: &EncryptedMessage) -> Result<BlobId, ApiError> {
+        blob_upload(&self.id, &self.secret, &data.ciphertext)
+    }
+
+    /// Upload raw data to the blob server.
+    ///
+    /// Cost: 1 credit.
+    pub fn blob_upload_raw(&self, data: &[u8]) -> Result<BlobId, ApiError> {
         blob_upload(&self.id, &self.secret, data)
     }
 }
