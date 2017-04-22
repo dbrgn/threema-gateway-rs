@@ -95,7 +95,7 @@ fn main() {
 
     // Upload files to blob server
     let file_blob_id = etry!(api.blob_upload_raw(&encrypted_file), "Could not upload file to blob server");
-    let thumb_blob_id = encrypted_thumb.map(|t| etry!(api.blob_upload_raw(&t)"Could not upload thumbnail to blob server"));
+    let thumb_blob_id = encrypted_thumb.map(|t| etry!(api.blob_upload_raw(&t), "Could not upload thumbnail to blob server"));
 
     // Create file message
     let mime_type = guess_mime_type(&filepath);
