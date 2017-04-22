@@ -21,6 +21,17 @@ Options:
     -h, --help    Show this help
 ";
 
+
+/// Try or exit.
+macro_rules! etry {
+    ($result:expr, $msg:expr) => {{
+        $result.unwrap_or_else(|e| {
+            println!("{}: {}", $msg, e);
+            process::exit(1);
+        })
+    }}
+}
+
 fn main() {
     let args = Docopt::new(USAGE)
                       .and_then(|docopt| docopt.parse())
@@ -53,36 +64,18 @@ fn main() {
 
     // Fetch public key
     // Note: In a real application, you should cache the public key
-    let public_key = api.lookup_pubkey(to).unwrap_or_else(|e| {
-        println!("Could not fetch public key: {}", e);
-        process::exit(1);
-    });
-    let recipient_key = RecipientKey::from_str(&public_key).unwrap_or_else(|e| {
-        println!("{}", e);
-        process::exit(1);
-    });
+    let public_key = etry!(api.lookup_pubkey(to), "Could not fetch public key");
+    let recipient_key = etry!(RecipientKey::from_str(&public_key), "Error");
 
     // Read files
-    let mut file = File::open(filepath).unwrap_or_else(|e| {
-        println!("Could not open file: {}", e);
-        process::exit(1);
-    });
+    let mut file = etry!(File::open(filepath), "Could not open file");
     let mut file_data: Vec<u8> = vec![];
-    file.read_to_end(&mut file_data).unwrap_or_else(|e| {
-        println!("Could not read file: {}", e);
-        process::exit(1);
-    });
+    etry!(file.read_to_end(&mut file_data), "Could not read file");
     let thumb_data = match thumbpath {
         Some(p) => {
-            let mut thumb = File::open(p).unwrap_or_else(|e| {
-                println!("Could not open thumbnail {:?}: {}", p, e);
-                process::exit(1);
-            });
+            let mut thumb = etry!(File::open(p), format!("Could not open thumbnail {:?}", p));
             let mut thumb_data: Vec<u8> = vec![];
-            thumb.read_to_end(&mut thumb_data).unwrap_or_else(|e| {
-                println!("Could not read thumbnail {:?}: {}", p, e);
-                process::exit(1);
-            });
+            etry!(thumb.read_to_end(&mut thumb_data), format!("Could not read thumbnail {:?}", p));
             Some(thumb_data)
         },
         None => None
@@ -101,14 +94,8 @@ fn main() {
     let encrypted_thumb = thumb_data.map(|t| secretbox::seal(&t, &thumb_nonce, &key));
 
     // Upload files to blob server
-    let file_blob_id = api.blob_upload_raw(&encrypted_file).unwrap_or_else(|e| {
-        println!("Could not upload file to blob server: {}", e);
-        process::exit(1);
-    });
-    let thumb_blob_id = encrypted_thumb.map(|t| api.blob_upload_raw(&t).unwrap_or_else(|e| {
-        println!("Could not upload thumbnail to blob server: {}", e);
-        process::exit(1);
-    }));
+    let file_blob_id = etry!(api.blob_upload_raw(&encrypted_file), "Could not upload file to blob server");
+    let thumb_blob_id = encrypted_thumb.map(|t| etry!(api.blob_upload_raw(&t)"Could not upload thumbnail to blob server"));
 
     // Create file message
     let mime_type = guess_mime_type(&filepath);
