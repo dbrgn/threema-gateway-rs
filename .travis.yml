@@ -20,7 +20,7 @@ before_script:
   - |
     pip install 'travis-cargo<0.2' --user &&
     export PATH=$HOME/.local/bin:$PATH
-  - cargo install cargo-audit
+  - cargo install --force cargo-audit
 script:
   - |
     travis-cargo build &&
