@@ -12,8 +12,10 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
-### unreleased
+### v0.7.0 (2017-07-17)
 
+- [changed] Update reqwest dependency to 0.7
+- [changed] Update mime dependency to 0.3
 - [changed] Require Rust 1.18+
 
 ### v0.6.0 (2017-05-29)
