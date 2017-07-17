@@ -12,6 +12,10 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### unreleased
+
+- [changed] Require Rust 1.18+
+
 ### v0.6.0 (2017-05-29)
 
 - [changed] Upgrade serde to 1.0.0
