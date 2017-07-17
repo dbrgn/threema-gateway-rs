@@ -127,8 +127,8 @@ pub fn lookup_pubkey(our_id: &str, their_id: &str, secret: &str) -> Result<Strin
     debug!("Looking up public key for {}", their_id);
 
     // Send request
-    let mut res = try!(client.get(&url).send());
-    try!(map_response_code(res.status(), None));
+    let mut res = client.get(&url).expect("Could not parse URL").send()?;
+    try!(map_response_code(&res.status(), None));
 
     // Read and return response body
     let mut body = String::new();
@@ -152,8 +152,8 @@ pub fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str) -> Res
     debug!("Looking up id key for {}", criterion);
 
     // Send request
-    let mut res = try!(client.get(&url).send());
-    try!(map_response_code(res.status(), Some(ApiError::BadHashLength)));
+    let mut res = client.get(&url).expect("Could not parse URL").send()?;
+    try!(map_response_code(&res.status(), Some(ApiError::BadHashLength)));
 
     // Read and return response body
     let mut body = String::new();
@@ -170,8 +170,8 @@ pub fn lookup_credits(our_id: &str, secret: &str) -> Result<i64, ApiError> {
     debug!("Looking up remaining credits");
 
     // Send request
-    let mut res = try!(client.get(&url).send());
-    try!(map_response_code(res.status(), None));
+    let mut res = client.get(&url).expect("Could not parse URL").send()?;
+    try!(map_response_code(&res.status(), None));
 
     // Read, parse and return response body
     let mut body = String::new();
@@ -190,8 +190,8 @@ pub fn lookup_capabilities(our_id: &str, their_id: &str, secret: &str) -> Result
     debug!("Looking up capabilities for {}", their_id);
 
     // Send request
-    let mut res = try!(client.get(&url).send());
-    try!(map_response_code(res.status(), Some(ApiError::BadHashLength)));
+    let mut res = client.get(&url).expect("Could not parse URL").send()?;
+    try!(map_response_code(&res.status(), Some(ApiError::BadHashLength)));
 
     // Read response body
     let mut body = String::new();

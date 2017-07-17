@@ -6,7 +6,7 @@ use std::io::Read;
 
 use reqwest::{Client, StatusCode};
 use reqwest::header::{Accept, ContentType};
-use reqwest::mime::{Mime, TopLevel, SubLevel, Attr, Value};
+use reqwest::mime::Mime;
 use data_encoding::HEXLOWER;
 
 use ::errors::ApiError;
@@ -89,11 +89,12 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
     };
 
     // Send request
-    let mut res = try!(client.post(&format!("{}/send_simple", MSGAPI_URL))
-        .form(&params)
+    let mut res = client.post(&format!("{}/send_simple", MSGAPI_URL))
+        .expect("Could not parse URL")
+        .form(&params)?
         .header(Accept::json())
-        .send());
-    try!(map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient)));
+        .send()?;
+    try!(map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient)));
 
     // Read and return response body
     let mut body = String::new();
@@ -124,11 +125,12 @@ pub fn send_e2e(from: &str,
     params.insert("box".into(), HEXLOWER.encode(ciphertext));
 
     // Send request
-    let mut res = try!(client.post(&format!("{}/send_e2e", MSGAPI_URL))
-        .form(&params)
+    let mut res = client.post(&format!("{}/send_e2e", MSGAPI_URL))
+        .expect("Could not parse URL")
+        .form(&params)?
         .header(Accept::json())
-        .send());
-    try!(map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient)));
+        .send()?;
+    try!(map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient)));
 
     // Read and return response body
     let mut body = String::new();
@@ -158,15 +160,15 @@ pub fn blob_upload(from: &str, secret: &str, data: &[u8]) -> Result<BlobId, ApiE
     req_body.extend_from_slice("--\r\n".as_bytes());
 
     // Send request
-    let mimetype = Mime(TopLevel::Multipart,
-                        SubLevel::FormData,
-                        vec![(Attr::Boundary, Value::Ext(boundary))]);
+    let mimetype: Mime = format!("multipart/form-data; boundary={}", boundary)
+        .parse().expect("Could not parse multipart/form-data mime type");
     let mut res = client.post(&url)
+        .expect("Could not parse URL")
         .body(req_body)
         .header(Accept::text())
         .header(ContentType(mimetype))
         .send()?;
-    try!(map_response_code(res.status(), Some(ApiError::BadBlob)));
+    try!(map_response_code(&res.status(), Some(ApiError::BadBlob)));
 
     // Read response body containing blob ID
     let mut body = String::new();
