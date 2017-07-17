@@ -11,6 +11,8 @@ in Rust.
 Not everything is implemented yet, but sending simple and end-to-end encrypted
 messages works.
 
+This library requires Rust 1.18+.
+
 [Docs](https://docs.rs/threema-gateway)
 
 
