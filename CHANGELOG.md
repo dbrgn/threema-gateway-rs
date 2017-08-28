@@ -12,6 +12,11 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v0.7.1 (2017-08-28)
+
+- [changed] Upgrade data-encoding dependency to 2.0.0-rc.2
+- [changed] Upgrade mime_guess dependency to 2.0.0-alpha.2
+
 ### v0.7.0 (2017-07-17)
 
 - [changed] Update reqwest dependency to 0.7
