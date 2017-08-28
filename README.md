@@ -104,4 +104,4 @@ be dual licensed as above, without any additional terms or conditions.
 [crates-io-download]: https://crates.io/crates/threema-gateway
 [crates-io-download-badge]: https://img.shields.io/crates/d/threema-gateway.svg?maxAge=3600
 [github]: https://github.com/dbrgn/threema-gateway-rs
-[rust-badge]: https://img.shields.io/badge/rust-1.13%2B-blue.svg?maxAge=3600
+[rust-badge]: https://img.shields.io/badge/rust-1.18%2B-blue.svg?maxAge=3600
