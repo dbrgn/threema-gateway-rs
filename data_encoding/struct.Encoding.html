@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Encoding` struct in crate `data_encoding`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Encoding">
+
+    <title>data_encoding::Encoding - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle">
+    
+    <link rel="stylesheet" type="text/css" href="../dark.css">
+    <link rel="stylesheet" type="text/css" href="../main.css" id="themeStyle">
+    <script src="../storage.js"></script>
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct Encoding</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.encode_len">encode_len</a><a href="#method.encode_mut">encode_mut</a><a href="#method.encode">encode</a><a href="#method.decode_len">decode_len</a><a href="#method.decode_mut">decode_mut</a><a href="#method.decode">decode</a><a href="#method.bit_width">bit_width</a><a href="#method.is_canonical">is_canonical</a><a href="#method.specification">specification</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Debug">Debug</a><a href="#impl-Clone">Clone</a><a href="#impl-PartialEq">PartialEq</a><a href="#impl-Eq">Eq</a></div></div><p class='location'><a href='index.html'>data_encoding</a></p><script>window.sidebarCurrent = {name: 'Encoding', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <div class="theme-picker">
+        <button id="theme-picker" aria-label="Pick another theme!">
+            <img src="../brush.svg" width="18" alt="Pick another theme!">
+        </button>
+        <div id="theme-choices"></div>
+    </div>
+    <script src="../theme.js"></script>
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>data_encoding</a>::<wbr><a class="struct" href=''>Encoding</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/data_encoding/lib.rs.html#793' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Encoding(pub InternalEncoding);</pre><div class='docblock'><p>Base-conversion encoding</p>
+<p>See <a href="struct.Specification.html">Specification</a> for technical details or how
+to define a new one.</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../data_encoding/struct.Encoding.html" title="struct data_encoding::Encoding">Encoding</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1145-1403' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.encode_len' class="method"><span id='encode_len.v' class='invisible'><code>pub fn <a href='#method.encode_len' class='fnname'>encode_len</a>(&amp;self, len: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1165-1172' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns the encoded length of an input of length <code>len</code></p>
+<p>See <a href="struct.Encoding.html#method.encode_mut"><code>encode_mut</code></a> for when to use it.</p>
+</div><h4 id='method.encode_mut' class="method"><span id='encode_mut.v' class='invisible'><code>pub fn <a href='#method.encode_mut' class='fnname'>encode_mut</a>(&amp;self, input: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>, output: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;mut [</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>)</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1193-1202' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Encodes <code>input</code> in <code>output</code></p>
+<h1 id="panics" class="section-header"><a href="#panics">Panics</a></h1>
+<p>Panics if the <code>output</code> length does not match the result of
+<a href="struct.Encoding.html#method.encode_len"><code>encode_len</code></a> for the <code>input</code> length.</p>
+<h1 id="examples" class="section-header"><a href="#examples">Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">data_encoding</span>::<span class="ident">BASE64</span>;
+<span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="string">b&quot;Hello world&quot;</span>;
+<span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buffer</span>[<span class="number">0</span> .. <span class="ident">BASE64</span>.<span class="ident">encode_len</span>(<span class="ident">input</span>.<span class="ident">len</span>())];
+<span class="ident">BASE64</span>.<span class="ident">encode_mut</span>(<span class="ident">input</span>, <span class="ident">output</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">output</span>, <span class="string">b&quot;SGVsbG8gd29ybGQ=&quot;</span>);</pre>
+</div><h4 id='method.encode' class="method"><span id='encode.v' class='invisible'><code>pub fn <a href='#method.encode' class='fnname'>encode</a>(&amp;self, input: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1212-1216' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns encoded <code>input</code></p>
+<h1 id="examples-1" class="section-header"><a href="#examples-1">Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">data_encoding</span>::<span class="ident">BASE64</span>;
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">BASE64</span>.<span class="ident">encode</span>(<span class="string">b&quot;Hello world&quot;</span>), <span class="string">&quot;SGVsbG8gd29ybGQ=&quot;</span>);</pre>
+</div><h4 id='method.decode_len' class="method"><span id='decode_len.v' class='invisible'><code>pub fn <a href='#method.decode_len' class='fnname'>decode_len</a>(&amp;self, len: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="struct" href="../data_encoding/struct.DecodeError.html" title="struct data_encoding::DecodeError">DecodeError</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1230-1239' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns the decoded length of an input of length <code>len</code></p>
+<p>See <a href="struct.Encoding.html#method.decode_mut"><code>decode_mut</code></a> for when to use it.</p>
+<h1 id="errors" class="section-header"><a href="#errors">Errors</a></h1>
+<p>Returns an error if <code>len</code> is invalid. The error kind is <a href="enum.DecodeKind.html#variant.Length"><code>Length</code></a> and
+the <a href="struct.DecodeError.html#structfield.position">position</a> is the greatest valid input length.</p>
+</div><h4 id='method.decode_mut' class="method"><span id='decode_mut.v' class='invisible'><code>pub fn <a href='#method.decode_mut' class='fnname'>decode_mut</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self, <br>&nbsp;&nbsp;&nbsp;&nbsp;input: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;output: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;mut [</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>, <a class="struct" href="../data_encoding/struct.DecodePartial.html" title="struct data_encoding::DecodePartial">DecodePartial</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1280-1291' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Decodes <code>input</code> in <code>output</code></p>
+<p>Returns the length of the decoded output. This length may be smaller
+than the output length if the input contained padding or ignored
+characters. The output bytes after the returned length are not
+initialized and should not be read.</p>
+<h1 id="panics-1" class="section-header"><a href="#panics-1">Panics</a></h1>
+<p>Panics if the <code>output</code> length does not match the result of
+<a href="struct.Encoding.html#method.decode_len"><code>decode_len</code></a> for the <code>input</code> length. Also panics if <code>decode_len</code> fails
+for the <code>input</code> length.</p>
+<h1 id="errors-1" class="section-header"><a href="#errors-1">Errors</a></h1>
+<p>Returns an error if <code>input</code> is invalid. See <a href="struct.Encoding.html#method.decode"><code>decode</code></a> for more details.
+The are two differences though:</p>
+<ul>
+<li><a href="enum.DecodeKind.html#variant.Length"><code>Length</code></a> may be returned only if the encoding allows ignored
+characters, because otherwise this is already checked by <a href="struct.Encoding.html#method.decode_len"><code>decode_len</code></a>.</li>
+<li>The <a href="struct.DecodePartial.html#structfield.read"><code>read</code></a> first bytes of the input have been successfully decoded
+to the <a href="struct.DecodePartial.html#structfield.written"><code>written</code></a> first bytes of the output.</li>
+</ul>
+<h1 id="examples-2" class="section-header"><a href="#examples-2">Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">data_encoding</span>::<span class="ident">BASE64</span>;
+<span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="string">b&quot;SGVsbA==byB3b3JsZA==&quot;</span>;
+<span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">buffer</span>[<span class="number">0</span> .. <span class="ident">BASE64</span>.<span class="ident">decode_len</span>(<span class="ident">input</span>.<span class="ident">len</span>()).<span class="ident">unwrap</span>()];
+<span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">BASE64</span>.<span class="ident">decode_mut</span>(<span class="ident">input</span>, <span class="ident">output</span>).<span class="ident">unwrap</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="kw-2">&amp;</span><span class="ident">output</span>[<span class="number">0</span> .. <span class="ident">len</span>], <span class="string">b&quot;Hello world&quot;</span>);</pre>
+</div><h4 id='method.decode' class="method"><span id='decode.v' class='invisible'><code>pub fn <a href='#method.decode' class='fnname'>decode</a>(&amp;self, input: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>&gt;, <a class="struct" href="../data_encoding/struct.DecodeError.html" title="struct data_encoding::DecodeError">DecodeError</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1323-1329' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns decoded <code>input</code></p>
+<h1 id="errors-2" class="section-header"><a href="#errors-2">Errors</a></h1>
+<p>Returns an error if <code>input</code> is invalid. The error kind can be:</p>
+<ul>
+<li><a href="enum.DecodeKind.html#variant.Length"><code>Length</code></a> if the input length is invalid. The <a href="struct.DecodeError.html#structfield.position">position</a> is the
+greatest valid input length.</li>
+<li><a href="enum.DecodeKind.html#variant.Symbol"><code>Symbol</code></a> if the input contains an invalid character. The <a href="struct.DecodeError.html#structfield.position">position</a>
+is the first invalid character.</li>
+<li><a href="enum.DecodeKind.html#variant.Trailing"><code>Trailing</code></a> if the input has non-zero trailing bits. This is only
+possible if the encoding checks trailing bits. The <a href="struct.DecodeError.html#structfield.position">position</a> is the
+first character containing non-zero trailing bits.</li>
+<li><a href="enum.DecodeKind.html#variant.Padding"><code>Padding</code></a> if the input has an invalid padding length. This is only
+possible if the encoding uses padding. The <a href="struct.DecodeError.html#structfield.position">position</a> is the first
+padding character of the first padding of invalid length.</li>
+</ul>
+<h1 id="examples-3" class="section-header"><a href="#examples-3">Examples</a></h1>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">data_encoding</span>::<span class="ident">BASE64</span>;
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">BASE64</span>.<span class="ident">decode</span>(<span class="string">b&quot;SGVsbA==byB3b3JsZA==&quot;</span>).<span class="ident">unwrap</span>(),
+           <span class="string">b&quot;Hello world&quot;</span>);</pre>
+</div><h4 id='method.bit_width' class="method"><span id='bit_width.v' class='invisible'><code>pub fn <a href='#method.bit_width' class='fnname'>bit_width</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1332' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns the bit-width</p>
+</div><h4 id='method.is_canonical' class="method"><span id='is_canonical.v' class='invisible'><code>pub fn <a href='#method.is_canonical' class='fnname'>is_canonical</a>(&amp;self) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1342-1353' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns whether the encoding is canonical</p>
+<p>An encoding is not canonical if one of the following conditions holds:</p>
+<ul>
+<li>trailing bits are not checked</li>
+<li>padding is used</li>
+<li>characters are ignored</li>
+<li>characters are translated</li>
+</ul>
+</div><h4 id='method.specification' class="method"><span id='specification.v' class='invisible'><code>pub fn <a href='#method.specification' class='fnname'>specification</a>(&amp;self) -&gt; <a class="struct" href="../data_encoding/struct.Specification.html" title="struct data_encoding::Specification">Specification</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1356-1392' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns the encoding specification</p>
+</div></div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Debug' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="../data_encoding/struct.Encoding.html" title="struct data_encoding::Encoding">Encoding</a></code><a href='#impl-Debug' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#792' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class="method"><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#792' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
+</div></div><h3 id='impl-Clone' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="../data_encoding/struct.Encoding.html" title="struct data_encoding::Encoding">Encoding</a></code><a href='#impl-Clone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#792' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class="method"><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class="struct" href="../data_encoding/struct.Encoding.html" title="struct data_encoding::Encoding">Encoding</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#792' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class="method"><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/clone.rs.html#112-114' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div><h3 id='impl-PartialEq' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html" title="trait core::cmp::PartialEq">PartialEq</a> for <a class="struct" href="../data_encoding/struct.Encoding.html" title="struct data_encoding::Encoding">Encoding</a></code><a href='#impl-PartialEq' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#792' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.eq' class="method"><span id='eq.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq' class='fnname'>eq</a>(&amp;self, __arg_0: &amp;<a class="struct" href="../data_encoding/struct.Encoding.html" title="struct data_encoding::Encoding">Encoding</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#792' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>This method tests for <code>self</code> and <code>other</code> values to be equal, and is used by <code>==</code>. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq">Read more</a></p>
+</div><h4 id='method.ne' class="method"><span id='ne.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, __arg_0: &amp;<a class="struct" href="../data_encoding/struct.Encoding.html" title="struct data_encoding::Encoding">Encoding</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#792' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>This method tests for <code>!=</code>.</p>
+</div></div><h3 id='impl-Eq' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html" title="trait core::cmp::Eq">Eq</a> for <a class="struct" href="../data_encoding/struct.Encoding.html" title="struct data_encoding::Encoding">Encoding</a></code><a href='#impl-Eq' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#792' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt><kbd>?</kbd></dt>
+                    <dd>Show this help dialog</dd>
+                    <dt><kbd>S</kbd></dt>
+                    <dd>Focus the search field</dd>
+                    <dt><kbd>↑</kbd></dt>
+                    <dd>Move up in search results</dd>
+                    <dt><kbd>↓</kbd></dt>
+                    <dd>Move down in search results</dd>
+                    <dt><kbd>↹</kbd></dt>
+                    <dd>Switch tab</dd>
+                    <dt><kbd>&#9166;</kbd></dt>
+                    <dd>Go to active search result</dd>
+                    <dt><kbd>+</kbd></dt>
+                    <dd>Expand all sections</dd>
+                    <dt><kbd>-</kbd></dt>
+                    <dd>Collapse all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "data_encoding";
+    </script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

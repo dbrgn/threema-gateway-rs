@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `E2eApi` struct in crate `threema_gateway`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, E2eApi">
+
+    <title>threema_gateway::E2eApi - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle">
+    
+    <link rel="stylesheet" type="text/css" href="../dark.css">
+    <link rel="stylesheet" type="text/css" href="../main.css" id="themeStyle">
+    <script src="../storage.js"></script>
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct E2eApi</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.new">new</a><a href="#method.encrypt_raw">encrypt_raw</a><a href="#method.encrypt_text_msg">encrypt_text_msg</a><a href="#method.encrypt_image_msg">encrypt_image_msg</a><a href="#method.encrypt_file_msg">encrypt_file_msg</a><a href="#method.send">send</a><a href="#method.lookup_pubkey">lookup_pubkey</a><a href="#method.lookup_id">lookup_id</a><a href="#method.lookup_capabilities">lookup_capabilities</a><a href="#method.lookup_credits">lookup_credits</a><a href="#method.blob_upload">blob_upload</a><a href="#method.blob_upload_raw">blob_upload_raw</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Debug">Debug</a><a href="#impl-Clone">Clone</a><a href="#impl-PartialEq">PartialEq</a><a href="#impl-Eq">Eq</a></div></div><p class='location'><a href='index.html'>threema_gateway</a></p><script>window.sidebarCurrent = {name: 'E2eApi', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <div class="theme-picker">
+        <button id="theme-picker" aria-label="Pick another theme!">
+            <img src="../brush.svg" width="18" alt="Pick another theme!">
+        </button>
+        <div id="theme-choices"></div>
+    </div>
+    <script src="../theme.js"></script>
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>threema_gateway</a>::<wbr><a class="struct" href=''>E2eApi</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/threema_gateway/api.rs.html#91-95' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct E2eApi { /* fields omitted */ }</pre><div class='docblock'><p>Struct to talk to the E2E API (with end-to-end encryption).</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../threema_gateway/struct.E2eApi.html" title="struct threema_gateway::E2eApi">E2eApi</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#97-196' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>&lt;I:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;, S:&nbsp;<a class="trait" href="https://doc.rust-lang.org/nightly/core/convert/trait.Into.html" title="trait core::convert::Into">Into</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>&gt;&gt;(<br>&nbsp;&nbsp;&nbsp;&nbsp;id: I, <br>&nbsp;&nbsp;&nbsp;&nbsp;secret: S, <br>&nbsp;&nbsp;&nbsp;&nbsp;private_key: <a class="struct" href="../sodiumoxide/crypto/box_/curve25519xsalsa20poly1305/struct.SecretKey.html" title="struct sodiumoxide::crypto::box_::curve25519xsalsa20poly1305::SecretKey">SecretKey</a><br>) -&gt; Self</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#100-106' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Initialize the simple API with the Gateway ID, the Gateway Secret and
+the Private Key.</p>
+</div><h4 id='method.encrypt_raw' class="method"><span id='encrypt_raw.v' class='invisible'><code>pub fn <a href='#method.encrypt_raw' class='fnname'>encrypt_raw</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self, <br>&nbsp;&nbsp;&nbsp;&nbsp;data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;recipient_key: &amp;<a class="struct" href="../threema_gateway/struct.RecipientKey.html" title="struct threema_gateway::RecipientKey">RecipientKey</a><br>) -&gt; <a class="struct" href="../threema_gateway/struct.EncryptedMessage.html" title="struct threema_gateway::EncryptedMessage">EncryptedMessage</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#109-111' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Encrypt raw bytes for the specified recipient public key.</p>
+</div><h4 id='method.encrypt_text_msg' class="method"><span id='encrypt_text_msg.v' class='invisible'><code>pub fn <a href='#method.encrypt_text_msg' class='fnname'>encrypt_text_msg</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self, <br>&nbsp;&nbsp;&nbsp;&nbsp;text: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;recipient_key: &amp;<a class="struct" href="../threema_gateway/struct.RecipientKey.html" title="struct threema_gateway::RecipientKey">RecipientKey</a><br>) -&gt; <a class="struct" href="../threema_gateway/struct.EncryptedMessage.html" title="struct threema_gateway::EncryptedMessage">EncryptedMessage</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#114-118' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Encrypt a text message for the specified recipient public key.</p>
+</div><h4 id='method.encrypt_image_msg' class="method"><span id='encrypt_image_msg.v' class='invisible'><code>pub fn <a href='#method.encrypt_image_msg' class='fnname'>encrypt_image_msg</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self, <br>&nbsp;&nbsp;&nbsp;&nbsp;blob_id: &amp;<a class="struct" href="../threema_gateway/struct.BlobId.html" title="struct threema_gateway::BlobId">BlobId</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;img_size_bytes: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;image_data_nonce: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">; 24]</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;recipient_key: &amp;<a class="struct" href="../threema_gateway/struct.RecipientKey.html" title="struct threema_gateway::RecipientKey">RecipientKey</a><br>) -&gt; <a class="struct" href="../threema_gateway/struct.EncryptedMessage.html" title="struct threema_gateway::EncryptedMessage">EncryptedMessage</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#129-136' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Encrypt an image message for the specified recipient public key.</p>
+<p>Before calling this function, you need to encrypt the image data (JPEG
+format) with <a href="struct.E2eApi.html#method.encrypt_raw"><code>encrypt_raw</code></a> and
+upload the ciphertext to the blob server.</p>
+<p>The image size needs to be specified in bytes. Note that the size is
+only used for download size displaying purposes and has no security
+implications.</p>
+</div><h4 id='method.encrypt_file_msg' class="method"><span id='encrypt_file_msg.v' class='invisible'><code>pub fn <a href='#method.encrypt_file_msg' class='fnname'>encrypt_file_msg</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self, <br>&nbsp;&nbsp;&nbsp;&nbsp;file_blob_id: &amp;<a class="struct" href="../threema_gateway/struct.BlobId.html" title="struct threema_gateway::BlobId">BlobId</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;thumbnail_blob_id: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="struct" href="../threema_gateway/struct.BlobId.html" title="struct threema_gateway::BlobId">BlobId</a>&gt;, <br>&nbsp;&nbsp;&nbsp;&nbsp;blob_encryption_key: &amp;<a class="struct" href="../sodiumoxide/crypto/secretbox/xsalsa20poly1305/struct.Key.html" title="struct sodiumoxide::crypto::secretbox::xsalsa20poly1305::Key">Key</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;mime_type: &amp;<a class="struct" href="../mime/struct.Mime.html" title="struct mime::Mime">Mime</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;file_name: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>&gt;, <br>&nbsp;&nbsp;&nbsp;&nbsp;file_size_bytes: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;description: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;&amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>&gt;, <br>&nbsp;&nbsp;&nbsp;&nbsp;recipient_key: &amp;<a class="struct" href="../threema_gateway/struct.RecipientKey.html" title="struct threema_gateway::RecipientKey">RecipientKey</a><br>) -&gt; <a class="struct" href="../threema_gateway/struct.EncryptedMessage.html" title="struct threema_gateway::EncryptedMessage">EncryptedMessage</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#149-162' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Encrypt a file message for the specified recipient public key.</p>
+<p>Before calling this function, you need to symetrically encrypt the file
+data (libsodium secretbox, random key) and upload the ciphertext to the
+blob server. If you also want to set a thumbnail, do the same with the
+update data (in JPEG format) and use the same key. Use the nonce
+<code>000...1</code> for the file and <code>000...2</code> for the thumbnail.</p>
+<p>The file size needs to be specified in bytes. Note that the size is
+only used for download size displaying purposes and has no security
+implications.</p>
+</div><h4 id='method.send' class="method"><span id='send.v' class='invisible'><code>pub fn <a href='#method.send' class='fnname'>send</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;&amp;self, <br>&nbsp;&nbsp;&nbsp;&nbsp;to: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;message: &amp;<a class="struct" href="../threema_gateway/struct.EncryptedMessage.html" title="struct threema_gateway::EncryptedMessage">EncryptedMessage</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, <a class="enum" href="../threema_gateway/errors/enum.ApiError.html" title="enum threema_gateway::errors::ApiError">ApiError</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#167-169' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Send an encrypted E2E message to the specified Threema ID.</p>
+<p>Cost: 1 credit.</p>
+</div><h4 id='method.lookup_pubkey' class="method"><span id='lookup_pubkey.v' class='invisible'><code>pub fn <a href='#method.lookup_pubkey' class='fnname'>lookup_pubkey</a>(&amp;self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, <a class="enum" href="../threema_gateway/errors/enum.ApiError.html" title="enum threema_gateway::errors::ApiError">ApiError</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#30-32' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Fetch the public key for the specified Threema ID.</p>
+<p>For the end-to-end encrypted mode, you need the public key of the recipient
+in order to encrypt a message. While it's best to obtain this directly from
+the recipient (extract it from the QR code), this may not be convenient,
+and therefore you can also look up the key associated with a given ID from
+the server.</p>
+<p>It is strongly recommended that you cache the public keys to avoid querying
+the API for each message.</p>
+</div><h4 id='method.lookup_id' class="method"><span id='lookup_id.v' class='invisible'><code>pub fn <a href='#method.lookup_id' class='fnname'>lookup_id</a>(&amp;self, criterion: &amp;<a class="enum" href="../threema_gateway/enum.LookupCriterion.html" title="enum threema_gateway::LookupCriterion">LookupCriterion</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>, <a class="enum" href="../threema_gateway/errors/enum.ApiError.html" title="enum threema_gateway::errors::ApiError">ApiError</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#40-42' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Look up a Threema ID in the directory.</p>
+<p>An ID can be looked up either by a phone number or an e-mail
+address, in plaintext or hashed form. You can specify one of those
+criteria using the <a href="enum.LookupCriterion.html"><code>LookupCriterion</code></a>
+enum.</p>
+</div><h4 id='method.lookup_capabilities' class="method"><span id='lookup_capabilities.v' class='invisible'><code>pub fn <a href='#method.lookup_capabilities' class='fnname'>lookup_capabilities</a>(&amp;self, id: &amp;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.str.html">str</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../threema_gateway/struct.Capabilities.html" title="struct threema_gateway::Capabilities">Capabilities</a>, <a class="enum" href="../threema_gateway/errors/enum.ApiError.html" title="enum threema_gateway::errors::ApiError">ApiError</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#51-53' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Look up the capabilities of a certain Threema ID.</p>
+<p>Before you send a file to a Threema ID using the blob upload (+file
+message), you may want to check whether the recipient uses a
+Threema version that supports receiving files. The receiver may be
+using an old version, or a platform where file reception is not
+supported.</p>
+</div><h4 id='method.lookup_credits' class="method"><span id='lookup_credits.v' class='invisible'><code>pub fn <a href='#method.lookup_credits' class='fnname'>lookup_credits</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i64.html">i64</a>, <a class="enum" href="../threema_gateway/errors/enum.ApiError.html" title="enum threema_gateway::errors::ApiError">ApiError</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#56-58' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Look up a remaining gateway credits.</p>
+</div><h4 id='method.blob_upload' class="method"><span id='blob_upload.v' class='invisible'><code>pub fn <a href='#method.blob_upload' class='fnname'>blob_upload</a>(&amp;self, data: &amp;<a class="struct" href="../threema_gateway/struct.EncryptedMessage.html" title="struct threema_gateway::EncryptedMessage">EncryptedMessage</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../threema_gateway/struct.BlobId.html" title="struct threema_gateway::BlobId">BlobId</a>, <a class="enum" href="../threema_gateway/errors/enum.ApiError.html" title="enum threema_gateway::errors::ApiError">ApiError</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#186-188' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Upload encrypted data to the blob server.</p>
+<p>Cost: 1 credit.</p>
+</div><h4 id='method.blob_upload_raw' class="method"><span id='blob_upload_raw.v' class='invisible'><code>pub fn <a href='#method.blob_upload_raw' class='fnname'>blob_upload_raw</a>(&amp;self, data: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">&amp;[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.slice.html">]</a>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../threema_gateway/struct.BlobId.html" title="struct threema_gateway::BlobId">BlobId</a>, <a class="enum" href="../threema_gateway/errors/enum.ApiError.html" title="enum threema_gateway::errors::ApiError">ApiError</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#193-195' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Upload raw data to the blob server.</p>
+<p>Cost: 1 credit.</p>
+</div></div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Debug' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="../threema_gateway/struct.E2eApi.html" title="struct threema_gateway::E2eApi">E2eApi</a></code><a href='#impl-Debug' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#90' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class="method"><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#90' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
+</div></div><h3 id='impl-Clone' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="../threema_gateway/struct.E2eApi.html" title="struct threema_gateway::E2eApi">E2eApi</a></code><a href='#impl-Clone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#90' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class="method"><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class="struct" href="../threema_gateway/struct.E2eApi.html" title="struct threema_gateway::E2eApi">E2eApi</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#90' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class="method"><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/clone.rs.html#112-114' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div><h3 id='impl-PartialEq' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html" title="trait core::cmp::PartialEq">PartialEq</a> for <a class="struct" href="../threema_gateway/struct.E2eApi.html" title="struct threema_gateway::E2eApi">E2eApi</a></code><a href='#impl-PartialEq' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#90' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.eq' class="method"><span id='eq.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq' class='fnname'>eq</a>(&amp;self, __arg_0: &amp;<a class="struct" href="../threema_gateway/struct.E2eApi.html" title="struct threema_gateway::E2eApi">E2eApi</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#90' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>This method tests for <code>self</code> and <code>other</code> values to be equal, and is used by <code>==</code>. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#tymethod.eq">Read more</a></p>
+</div><h4 id='method.ne' class="method"><span id='ne.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialEq.html#method.ne' class='fnname'>ne</a>(&amp;self, __arg_0: &amp;<a class="struct" href="../threema_gateway/struct.E2eApi.html" title="struct threema_gateway::E2eApi">E2eApi</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#90' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>This method tests for <code>!=</code>.</p>
+</div></div><h3 id='impl-Eq' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html" title="trait core::cmp::Eq">Eq</a> for <a class="struct" href="../threema_gateway/struct.E2eApi.html" title="struct threema_gateway::E2eApi">E2eApi</a></code><a href='#impl-Eq' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/threema_gateway/api.rs.html#90' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt><kbd>?</kbd></dt>
+                    <dd>Show this help dialog</dd>
+                    <dt><kbd>S</kbd></dt>
+                    <dd>Focus the search field</dd>
+                    <dt><kbd>↑</kbd></dt>
+                    <dd>Move up in search results</dd>
+                    <dt><kbd>↓</kbd></dt>
+                    <dd>Move down in search results</dd>
+                    <dt><kbd>↹</kbd></dt>
+                    <dd>Switch tab</dd>
+                    <dt><kbd>&#9166;</kbd></dt>
+                    <dd>Go to active search result</dd>
+                    <dt><kbd>+</kbd></dt>
+                    <dd>Expand all sections</dd>
+                    <dt><kbd>-</kbd></dt>
+                    <dd>Collapse all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "threema_gateway";
+    </script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

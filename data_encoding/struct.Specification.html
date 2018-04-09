@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `Specification` struct in crate `data_encoding`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Specification">
+
+    <title>data_encoding::Specification - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle">
+    
+    <link rel="stylesheet" type="text/css" href="../dark.css">
+    <link rel="stylesheet" type="text/css" href="../main.css" id="themeStyle">
+    <script src="../storage.js"></script>
+    
+
+    
+    
+</head>
+<body class="rustdoc struct">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        <div class="sidebar-menu">&#9776;</div>
+        
+        <p class='location'>Struct Specification</p><div class="sidebar-elems"><div class="block items"><a class="sidebar-title" href="#fields">Fields</a><div class="sidebar-links"><a href="#structfield.symbols">symbols</a><a href="#structfield.bit_order">bit_order</a><a href="#structfield.check_trailing_bits">check_trailing_bits</a><a href="#structfield.padding">padding</a><a href="#structfield.ignore">ignore</a><a href="#structfield.wrap">wrap</a><a href="#structfield.translate">translate</a></div><a class="sidebar-title" href="#methods">Methods</a><div class="sidebar-links"><a href="#method.new">new</a><a href="#method.encoding">encoding</a></div><a class="sidebar-title" href="#implementations">Trait Implementations</a><div class="sidebar-links"><a href="#impl-Debug">Debug</a><a href="#impl-Clone">Clone</a></div></div><p class='location'><a href='index.html'>data_encoding</a></p><script>window.sidebarCurrent = {name: 'Specification', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script></div>
+    </nav>
+
+    <div class="theme-picker">
+        <button id="theme-picker" aria-label="Pick another theme!">
+            <img src="../brush.svg" width="18" alt="Pick another theme!">
+        </button>
+        <div id="theme-choices"></div>
+    </div>
+    <script src="../theme.js"></script>
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Struct <a href='index.html'>data_encoding</a>::<wbr><a class="struct" href=''>Specification</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/data_encoding/lib.rs.html#1082-1128' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct Specification {
+    pub symbols: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
+    pub bit_order: <a class="enum" href="../data_encoding/enum.BitOrder.html" title="enum data_encoding::BitOrder">BitOrder</a>,
+    pub check_trailing_bits: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a>,
+    pub padding: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.char.html">char</a>&gt;,
+    pub ignore: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
+    pub wrap: <a class="struct" href="../data_encoding/struct.Wrap.html" title="struct data_encoding::Wrap">Wrap</a>,
+    pub translate: <a class="struct" href="../data_encoding/struct.Translate.html" title="struct data_encoding::Translate">Translate</a>,
+}</pre><div class='docblock'><p>Base-conversion specification</p>
+<p>It is possible to define custom encodings given a specification. To do so,
+it is important to understand the theory first.</p>
+<h1 id="theory" class="section-header"><a href="#theory">Theory</a></h1>
+<p>Each subsection has an equivalent subsection in the <a href="#practice">Practice</a>
+section.</p>
+<h2 id="basics" class="section-header"><a href="#basics">Basics</a></h2>
+<p>The main idea of a <a href="https://en.wikipedia.org/wiki/Positional_notation#Base_conversion">base-conversion</a> encoding is to see <code>[u8]</code> as numbers
+written in little-endian base256 and convert them in another little-endian
+base. For performance reasons, this crate restricts this other base to be of
+size 2 (binary), 4 (base4), 8 (octal), 16 (hexadecimal), 32 (base32), or 64
+(base64). The converted number is written as <code>[u8]</code> although it doesn't use
+all the 256 possible values of <code>u8</code>. This crate encodes to ASCII, so only
+values smaller than 128 are allowed.</p>
+<p>More precisely, we need the following elements:</p>
+<ul>
+<li>The bit-width N: 1 for binary, 2 for base4, 3 for octal, 4 for
+hexadecimal, 5 for base32, and 6 for base64</li>
+<li>The <a href="enum.BitOrder.html">bit-order</a>: most or least significant bit first</li>
+<li>The symbols function S from [0, 2<sup>N</sup>) (called values and written
+<code>uN</code>) to symbols (represented as <code>u8</code> although only ASCII symbols are
+allowed, i.e. smaller than 128)</li>
+<li>The values partial function V from ASCII to [0, 2<sup>N</sup>), i.e. from
+<code>u8</code> to <code>uN</code></li>
+<li>Whether trailing bits are checked: trailing bits are leading zeros in
+theory, but since numbers are little-endian they come last</li>
+</ul>
+<p>For the encoding to be correct (i.e. encoding then decoding gives back the
+initial input), V(S(i)) must be defined and equal to i for all i in [0,
+2<sup>N</sup>). For the encoding to be <a href="https://tools.ietf.org/html/rfc4648#section-3.5">canonical</a> (i.e.
+different inputs decode to different outputs, or equivalently, decoding then
+encoding gives back the initial input), trailing bits must be checked and if
+V(i) is defined then S(V(i)) is equal to i for all i.</p>
+<p>Encoding and decoding are given by the following pipeline:</p>
+<pre><code class="language-text">[u8] &lt;--1--&gt; [[bit; 8]] &lt;--2--&gt; [[bit; N]] &lt;--3--&gt; [uN] &lt;--4--&gt; [u8]
+1: Map bit-order between each u8 and [bit; 8]
+2: Base conversion between base 2^8 and base 2^N (check trailing bits)
+3: Map bit-order between each [bit; N] and uN
+4: Map symbols/values between each uN and u8 (values must be defined)
+</code></pre>
+<h2 id="extensions" class="section-header"><a href="#extensions">Extensions</a></h2>
+<p>All these extensions make the encoding not canonical.</p>
+<h3 id="padding" class="section-header"><a href="#padding">Padding</a></h3>
+<p>Padding is useful if the following conditions are met:</p>
+<ul>
+<li>the bit-width is 3 (octal), 5 (base32), or 6 (base64)</li>
+<li>the length of the data to encode is not known in advance</li>
+</ul>
+<p>Bases for which the bit-width N does not divide 8 may not concatenate
+encoded data. This comes from the fact that it is not possible to make the
+difference between trailing bits and encoding bits. Padding solves this
+issue by adding a new character (which is not a symbol) to discriminate
+between trailing bits and encoding bits. The idea is to work by blocks of
+lcm(8, N) bits, where lcm(8, N) is the least common multiple of 8 and N.
+When such block is not complete, it is padded.</p>
+<p>To preserve correctness, the padding character must not be a symbol.</p>
+<h3 id="ignore-characters-when-decoding" class="section-header"><a href="#ignore-characters-when-decoding">Ignore characters when decoding</a></h3>
+<p>Ignoring characters when decoding is useful if after encoding some
+characters are added for convenience or any other reason (like wrapping). In
+that case we want to first ignore thoses characters before decoding.</p>
+<p>To preserve correctness, ignored characters must not contain symbols or the
+padding character.</p>
+<h3 id="wrap-output-when-encoding" class="section-header"><a href="#wrap-output-when-encoding">Wrap output when encoding</a></h3>
+<p>Wrapping output when encoding is useful if the output is meant to be printed
+in a document where width is limited (typically 80-columns documents). In
+that case, the wrapping width and the wrapping separator have to be defined.</p>
+<p>To preserve correctness, the wrapping separator characters must be ignored
+(see previous subsection). As such, wrapping separator characters must also
+not contain symbols or the padding character.</p>
+<h3 id="translate-characters-when-decoding" class="section-header"><a href="#translate-characters-when-decoding">Translate characters when decoding</a></h3>
+<p>Translating characters when decoding is useful when encoded data may be
+copied by a humain instead of a machine. Humans tend to confuse some
+characters for others. In that case we want to translate those characters
+before decoding.</p>
+<p>To preserve correctness, the characters we translate from must not contain
+symbols or the padding character, and the characters we translate to must
+only contain symbols or the padding character.</p>
+<h1 id="practice" class="section-header"><a href="#practice">Practice</a></h1><h2 id="basics-1" class="section-header"><a href="#basics-1">Basics</a></h2>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">data_encoding</span>::{<span class="ident">Encoding</span>, <span class="ident">Specification</span>};
+<span class="kw">fn</span> <span class="ident">make_encoding</span>(<span class="ident">symbols</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) <span class="op">-&gt;</span> <span class="ident">Encoding</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">spec</span> <span class="op">=</span> <span class="ident">Specification</span>::<span class="ident">new</span>();
+    <span class="ident">spec</span>.<span class="ident">symbols</span>.<span class="ident">push_str</span>(<span class="ident">symbols</span>);
+    <span class="ident">spec</span>.<span class="ident">encoding</span>().<span class="ident">unwrap</span>()
+}
+<span class="kw">let</span> <span class="ident">binary</span> <span class="op">=</span> <span class="ident">make_encoding</span>(<span class="string">&quot;01&quot;</span>);
+<span class="kw">let</span> <span class="ident">octal</span> <span class="op">=</span> <span class="ident">make_encoding</span>(<span class="string">&quot;01234567&quot;</span>);
+<span class="kw">let</span> <span class="ident">hexadecimal</span> <span class="op">=</span> <span class="ident">make_encoding</span>(<span class="string">&quot;0123456789abcdef&quot;</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">binary</span>.<span class="ident">encode</span>(<span class="string">b&quot;Bit&quot;</span>), <span class="string">&quot;010000100110100101110100&quot;</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">octal</span>.<span class="ident">encode</span>(<span class="string">b&quot;Bit&quot;</span>), <span class="string">&quot;20464564&quot;</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">hexadecimal</span>.<span class="ident">encode</span>(<span class="string">b&quot;Bit&quot;</span>), <span class="string">&quot;426974&quot;</span>);</pre>
+<p>The <code>binary</code> base has 2 symbols <code>0</code> and <code>1</code> with value 0 and 1 respectively.
+The <code>octal</code> base has 8 symbols <code>0</code> to <code>7</code> with value 0 to 7. The
+<code>hexadecimal</code> base has 16 symbols <code>0</code> to <code>9</code> and <code>a</code> to <code>f</code> with value 0 to</p>
+<ol start="15">
+<li>The following diagram gives the idea of how encoding works in the
+previous example (note that we can actually write such diagram only because
+the bit-order is most significant first):</li>
+</ol>
+<pre><code class="language-text">[      octal] |  2  :  0  :  4  :  6  :  4  :  5  :  6  :  4  |
+[     binary] |0 1 0 0 0 0 1 0|0 1 1 0 1 0 0 1|0 1 1 1 0 1 0 0|
+[hexadecimal] |   4   :   2   |   6   :   9   |   7   :   4   |
+               ^-- LSB                                       ^-- MSB
+</code></pre>
+<p>Note that in theory, these little-endian numbers are read from right to left
+(the most significant bit is at the right). Since leading zeros are
+meaningless (in our usual decimal notation 0123 is the same as 123), it
+explains why trailing bits must be zero. Trailing bits may occur when the
+bit-width of a base does not divide 8. Only binary, base4, and hexadecimal
+don't have trailing bits issues. So let's consider octal and base64, which
+have trailing bits in similar circumstances:</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">data_encoding</span>::{<span class="ident">BASE64_NOPAD</span>, <span class="ident">Specification</span>};
+<span class="kw">let</span> <span class="ident">octal</span> <span class="op">=</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">spec</span> <span class="op">=</span> <span class="ident">Specification</span>::<span class="ident">new</span>();
+    <span class="ident">spec</span>.<span class="ident">symbols</span>.<span class="ident">push_str</span>(<span class="string">&quot;01234567&quot;</span>);
+    <span class="ident">spec</span>.<span class="ident">encoding</span>().<span class="ident">unwrap</span>()
+};
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">BASE64_NOPAD</span>.<span class="ident">encode</span>(<span class="string">b&quot;B&quot;</span>), <span class="string">&quot;Qg&quot;</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">octal</span>.<span class="ident">encode</span>(<span class="string">b&quot;B&quot;</span>), <span class="string">&quot;204&quot;</span>);</pre>
+<p>We have the following diagram, where the base64 values are written between
+parentheses:</p>
+<pre><code class="language-text">[base64] |   Q(16)   :   g(32)   : [has 4 zero trailing bits]
+[ octal] |  2  :  0  :  4  :       [has 1 zero trailing bit ]
+         |0 1 0 0 0 0 1 0|0 0 0 0
+[ ascii] |       B       |
+                          ^-^-^-^-- leading zeros / trailing bits
+</code></pre>
+<h2 id="extensions-1" class="section-header"><a href="#extensions-1">Extensions</a></h2><h3 id="padding-1" class="section-header"><a href="#padding-1">Padding</a></h3>
+<p>For octal and base64, lcm(8, 3) == lcm(8, 6) == 24 bits or 3 bytes. For
+base32, lcm(8, 5) is 40 bits or 5 bytes. Let's consider octal and base64:</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">data_encoding</span>::{<span class="ident">BASE64</span>, <span class="ident">Specification</span>};
+<span class="kw">let</span> <span class="ident">octal</span> <span class="op">=</span> {
+    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">spec</span> <span class="op">=</span> <span class="ident">Specification</span>::<span class="ident">new</span>();
+    <span class="ident">spec</span>.<span class="ident">symbols</span>.<span class="ident">push_str</span>(<span class="string">&quot;01234567&quot;</span>);
+    <span class="ident">spec</span>.<span class="ident">padding</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="string">&#39;=&#39;</span>);
+    <span class="ident">spec</span>.<span class="ident">encoding</span>().<span class="ident">unwrap</span>()
+};
+<span class="comment">// We start encoding but we only have &quot;B&quot; for now.</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">BASE64</span>.<span class="ident">encode</span>(<span class="string">b&quot;B&quot;</span>), <span class="string">&quot;Qg==&quot;</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">octal</span>.<span class="ident">encode</span>(<span class="string">b&quot;B&quot;</span>), <span class="string">&quot;204=====&quot;</span>);
+<span class="comment">// Now we have &quot;it&quot;.</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">BASE64</span>.<span class="ident">encode</span>(<span class="string">b&quot;it&quot;</span>), <span class="string">&quot;aXQ=&quot;</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">octal</span>.<span class="ident">encode</span>(<span class="string">b&quot;it&quot;</span>), <span class="string">&quot;322720==&quot;</span>);
+<span class="comment">// By concatenating everything, we may decode the original data.</span>
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">BASE64</span>.<span class="ident">decode</span>(<span class="string">b&quot;Qg==aXQ=&quot;</span>).<span class="ident">unwrap</span>(), <span class="string">b&quot;Bit&quot;</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">octal</span>.<span class="ident">decode</span>(<span class="string">b&quot;204=====322720==&quot;</span>).<span class="ident">unwrap</span>(), <span class="string">b&quot;Bit&quot;</span>);</pre>
+<p>We have the following diagrams:</p>
+<pre><code class="language-text">[base64] |   Q(16)   :   g(32)   :     =     :     =     |
+[ octal] |  2  :  0  :  4  :  =  :  =  :  =  :  =  :  =  |
+         |0 1 0 0 0 0 1 0|. . . . . . . .|. . . . . . . .|
+[ ascii] |       B       |        end of block aligned --^
+         ^-- beginning of block aligned
+
+[base64] |   a(26)   :   X(23)   :   Q(16)   :     =     |
+[ octal] |  3  :  2  :  2  :  7  :  2  :  0  :  =  :  =  |
+         |0 1 1 0 1 0 0 1|0 1 1 1 0 1 0 0|. . . . . . . .|
+[ ascii] |       i       |       t       |
+</code></pre>
+<h3 id="ignore-characters-when-decoding-1" class="section-header"><a href="#ignore-characters-when-decoding-1">Ignore characters when decoding</a></h3>
+<p>The typical use-case is to ignore newlines (<code>\r</code> and <code>\n</code>). But to keep the
+example small, we will ignore spaces.</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">spec</span> <span class="op">=</span> <span class="ident">data_encoding</span>::<span class="ident">HEXLOWER</span>.<span class="ident">specification</span>();
+<span class="ident">spec</span>.<span class="ident">ignore</span>.<span class="ident">push_str</span>(<span class="string">&quot; \t&quot;</span>);
+<span class="kw">let</span> <span class="ident">base</span> <span class="op">=</span> <span class="ident">spec</span>.<span class="ident">encoding</span>().<span class="ident">unwrap</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">base</span>.<span class="ident">decode</span>(<span class="string">b&quot;42 69 74&quot;</span>), <span class="ident">base</span>.<span class="ident">decode</span>(<span class="string">b&quot;426974&quot;</span>));</pre>
+<h3 id="wrap-output-when-encoding-1" class="section-header"><a href="#wrap-output-when-encoding-1">Wrap output when encoding</a></h3>
+<p>The typical use-case is to wrap after 64 or 76 characters with a newline
+(<code>\r\n</code> or <code>\n</code>). But to keep the example small, we will wrap after 8
+characters with a space.</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">spec</span> <span class="op">=</span> <span class="ident">data_encoding</span>::<span class="ident">BASE64</span>.<span class="ident">specification</span>();
+<span class="ident">spec</span>.<span class="ident">wrap</span>.<span class="ident">width</span> <span class="op">=</span> <span class="number">8</span>;
+<span class="ident">spec</span>.<span class="ident">wrap</span>.<span class="ident">separator</span>.<span class="ident">push_str</span>(<span class="string">&quot; &quot;</span>);
+<span class="kw">let</span> <span class="ident">base64</span> <span class="op">=</span> <span class="ident">spec</span>.<span class="ident">encoding</span>().<span class="ident">unwrap</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">base64</span>.<span class="ident">encode</span>(<span class="string">b&quot;Hey you&quot;</span>), <span class="string">&quot;SGV5IHlv dQ== &quot;</span>);</pre>
+<p>Note that the output always ends with the separator.</p>
+<h3 id="translate-characters-when-decoding-1" class="section-header"><a href="#translate-characters-when-decoding-1">Translate characters when decoding</a></h3>
+<p>The typical use-case is to translate lowercase to uppercase or reciprocally,
+but it is also used for letters that look alike, like <code>O0</code> or <code>Il1</code>. Let's
+illustrate both examples.</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">spec</span> <span class="op">=</span> <span class="ident">data_encoding</span>::<span class="ident">HEXLOWER</span>.<span class="ident">specification</span>();
+<span class="ident">spec</span>.<span class="ident">translate</span>.<span class="ident">from</span>.<span class="ident">push_str</span>(<span class="string">&quot;ABCDEFOIl&quot;</span>);
+<span class="ident">spec</span>.<span class="ident">translate</span>.<span class="ident">to</span>  .<span class="ident">push_str</span>(<span class="string">&quot;abcdef011&quot;</span>);
+<span class="kw">let</span> <span class="ident">base</span> <span class="op">=</span> <span class="ident">spec</span>.<span class="ident">encoding</span>().<span class="ident">unwrap</span>();
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">base</span>.<span class="ident">decode</span>(<span class="string">b&quot;BOIl&quot;</span>), <span class="ident">base</span>.<span class="ident">decode</span>(<span class="string">b&quot;b011&quot;</span>));</pre>
+</div><h2 id='fields' class='fields small-section-header'>
+                       Fields<a href='#fields' class='anchor'></a></h2><span id="structfield.symbols" class="structfield small-section-header">
+                           <a href="#structfield.symbols" class="anchor field"></a>
+                           <span id="symbols.v" class='invisible'>
+                           <code>symbols: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a></code>
+                           </span></span><div class='docblock'><p>Symbols</p>
+<p>The number of symbols must be 2, 4, 8, 16, 32, or 64. Symbols must be
+ASCII characters (smaller than 128) and they must be unique.</p>
+</div><span id="structfield.bit_order" class="structfield small-section-header">
+                           <a href="#structfield.bit_order" class="anchor field"></a>
+                           <span id="bit_order.v" class='invisible'>
+                           <code>bit_order: <a class="enum" href="../data_encoding/enum.BitOrder.html" title="enum data_encoding::BitOrder">BitOrder</a></code>
+                           </span></span><div class='docblock'><p>Bit-order</p>
+<p>The default is to use most significant bit first since it is the most
+common.</p>
+</div><span id="structfield.check_trailing_bits" class="structfield small-section-header">
+                           <a href="#structfield.check_trailing_bits" class="anchor field"></a>
+                           <span id="check_trailing_bits.v" class='invisible'>
+                           <code>check_trailing_bits: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code>
+                           </span></span><div class='docblock'><p>Check trailing bits</p>
+<p>The default is to check trailing bits. This field is ignored when
+unnecessary (i.e. for base2, base4, and base16).</p>
+</div><span id="structfield.padding" class="structfield small-section-header">
+                           <a href="#structfield.padding" class="anchor field"></a>
+                           <span id="padding.v" class='invisible'>
+                           <code>padding: <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.char.html">char</a>&gt;</code>
+                           </span></span><div class='docblock'><p>Padding</p>
+<p>The default is to not use padding. The padding character must be ASCII
+and must not be a symbol.</p>
+</div><span id="structfield.ignore" class="structfield small-section-header">
+                           <a href="#structfield.ignore" class="anchor field"></a>
+                           <span id="ignore.v" class='invisible'>
+                           <code>ignore: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/string/struct.String.html" title="struct alloc::string::String">String</a></code>
+                           </span></span><div class='docblock'><p>Characters to ignore when decoding</p>
+<p>The default is to not ignore characters when decoding. The characters to
+ignore must be ASCII and must not be symbols or the padding character.</p>
+</div><span id="structfield.wrap" class="structfield small-section-header">
+                           <a href="#structfield.wrap" class="anchor field"></a>
+                           <span id="wrap.v" class='invisible'>
+                           <code>wrap: <a class="struct" href="../data_encoding/struct.Wrap.html" title="struct data_encoding::Wrap">Wrap</a></code>
+                           </span></span><div class='docblock'><p>How to wrap the output when encoding</p>
+<p>The default is to not wrap the output when encoding. The wrapping
+characters must be ASCII and must not be symbols or the padding
+character.</p>
+</div><span id="structfield.translate" class="structfield small-section-header">
+                           <a href="#structfield.translate" class="anchor field"></a>
+                           <span id="translate.v" class='invisible'>
+                           <code>translate: <a class="struct" href="../data_encoding/struct.Translate.html" title="struct data_encoding::Translate">Translate</a></code>
+                           </span></span><div class='docblock'><p>How to translate characters when decoding</p>
+<p>The default is to not translate characters when decoding. The characters
+to translate from must be ASCII and must not have already been assigned
+a semantics. The characters to translate to must be ASCII and must have
+been assigned a semantics (symbol, padding character, or ignored
+character).</p>
+</div>
+                    <h2 id='methods' class='small-section-header'>
+                      Methods<a href='#methods' class='anchor'></a>
+                    </h2>
+                <h3 id='impl' class='impl'><span class='in-band'><code>impl <a class="struct" href="../data_encoding/struct.Specification.html" title="struct data_encoding::Specification">Specification</a></code><a href='#impl' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1130-1143' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>pub fn <a href='#method.new' class='fnname'>new</a>() -&gt; <a class="struct" href="../data_encoding/struct.Specification.html" title="struct data_encoding::Specification">Specification</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1132-1142' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a default specification</p>
+</div></div><h3 id='impl-1' class='impl'><span class='in-band'><code>impl <a class="struct" href="../data_encoding/struct.Specification.html" title="struct data_encoding::Specification">Specification</a></code><a href='#impl-1' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1453-1536' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.encoding' class="method"><span id='encoding.v' class='invisible'><code>pub fn <a href='#method.encoding' class='fnname'>encoding</a>(&amp;self) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../data_encoding/struct.Encoding.html" title="struct data_encoding::Encoding">Encoding</a>, <a class="struct" href="../data_encoding/struct.SpecificationError.html" title="struct data_encoding::SpecificationError">SpecificationError</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1459-1535' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns the specified encoding</p>
+<h1 id="errors" class="section-header"><a href="#errors">Errors</a></h1>
+<p>Returns an error if the specification is invalid.</p>
+</div></div>
+            <h2 id='implementations' class='small-section-header'>
+              Trait Implementations<a href='#implementations' class='anchor'></a>
+            </h2>
+        <h3 id='impl-Debug' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html" title="trait core::fmt::Debug">Debug</a> for <a class="struct" href="../data_encoding/struct.Specification.html" title="struct data_encoding::Specification">Specification</a></code><a href='#impl-Debug' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1081' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt' class="method"><span id='fmt.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1081' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt">Read more</a></p>
+</div></div><h3 id='impl-Clone' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html" title="trait core::clone::Clone">Clone</a> for <a class="struct" href="../data_encoding/struct.Specification.html" title="struct data_encoding::Specification">Specification</a></code><a href='#impl-Clone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1081' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.clone' class="method"><span id='clone.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class="struct" href="../data_encoding/struct.Specification.html" title="struct data_encoding::Specification">Specification</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../src/data_encoding/lib.rs.html#1081' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Returns a copy of the value. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#tymethod.clone">Read more</a></p>
+</div><h4 id='method.clone_from' class="method"><span id='clone_from.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.reference.html">&amp;</a>Self)</code></span><span class='out-of-band'><div class='ghost'></div><div class='since' title='Stable since Rust version 1.0.0'>1.0.0</div><a class='srclink' href='https://doc.rust-lang.org/nightly/src/core/clone.rs.html#112-114' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p>Performs copy-assignment from <code>source</code>. <a href="https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from">Read more</a></p>
+</div></div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt><kbd>?</kbd></dt>
+                    <dd>Show this help dialog</dd>
+                    <dt><kbd>S</kbd></dt>
+                    <dd>Focus the search field</dd>
+                    <dt><kbd>↑</kbd></dt>
+                    <dd>Move up in search results</dd>
+                    <dt><kbd>↓</kbd></dt>
+                    <dd>Move down in search results</dd>
+                    <dt><kbd>↹</kbd></dt>
+                    <dd>Switch tab</dd>
+                    <dt><kbd>&#9166;</kbd></dt>
+                    <dd>Go to active search result</dd>
+                    <dt><kbd>+</kbd></dt>
+                    <dd>Expand all sections</dd>
+                    <dt><kbd>-</kbd></dt>
+                    <dd>Collapse all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "data_encoding";
+    </script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

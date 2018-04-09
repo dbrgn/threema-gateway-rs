@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["run","Start the Tokio runtime using the supplied future to bootstrap execution."]],"struct":[["Builder","Builds Tokio Runtime with custom configuration values."],["Runtime","Handle to the Tokio runtime."],["Shutdown","A future that resolves when the Tokio `Runtime` is shut down."],["TaskExecutor","Executes futures on the runtime"]]});
