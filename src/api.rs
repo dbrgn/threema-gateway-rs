@@ -71,11 +71,15 @@ pub struct SimpleApi {
 
 impl SimpleApi {
     /// Initialize the simple API with the Gateway ID and the Gateway Secret.
-    pub fn new<I: Into<String>, S: Into<String>>(id: I, secret: S) -> Self {
+    pub(crate) fn new<I: Into<String>, S: Into<String>>(
+        endpoint: Cow<'static, str>,
+        id: I,
+        secret: S,
+    ) -> Self {
         return SimpleApi {
             id: id.into(),
             secret: secret.into(),
-            endpoint: MSGAPI_URL.into(),
+            endpoint: endpoint,
         }
     }
 
@@ -105,12 +109,17 @@ pub struct E2eApi {
 impl E2eApi {
     /// Initialize the simple API with the Gateway ID, the Gateway Secret and
     /// the Private Key.
-    pub fn new<I: Into<String>, S: Into<String>>(id: I, secret: S, private_key: SecretKey) -> Self {
+    pub(crate) fn new<I: Into<String>, S: Into<String>>(
+        endpoint: Cow<'static, str>,
+        id: I,
+        secret: S,
+        private_key: SecretKey,
+    ) -> Self {
         return E2eApi {
             id: id.into(),
             secret: secret.into(),
             private_key: private_key,
-            endpoint: MSGAPI_URL.into(),
+            endpoint: endpoint,
         }
     }
 
@@ -238,6 +247,7 @@ pub struct ApiBuilder {
     pub id: String,
     pub secret: String,
     pub private_key: Option<SecretKey>,
+    pub endpoint: Cow<'static, str>,
 }
 
 impl ApiBuilder {
@@ -247,12 +257,13 @@ impl ApiBuilder {
             id: id.into(),
             secret: secret.into(),
             private_key: None,
+            endpoint: Cow::Borrowed(MSGAPI_URL),
         }
     }
 
     /// Return a [`SimpleAPI`](struct.SimpleApi.html) instance.
     pub fn into_simple(self) -> SimpleApi {
-        SimpleApi::new(self.id, self.secret)
+        SimpleApi::new(self.endpoint, self.id, self.secret)
     }
 
     /// Set the private key. Only needed for E2e mode.
@@ -283,7 +294,7 @@ impl ApiBuilder {
     /// Return a [`E2eAPI`](struct.SimpleApi.html) instance.
     pub fn into_e2e(self) -> Result<E2eApi, ApiBuilderError> {
         match self.private_key {
-            Some(key) => Ok(E2eApi::new(self.id, self.secret, key)),
+            Some(key) => Ok(E2eApi::new(self.endpoint, self.id, self.secret, key)),
             None => Err(ApiBuilderError::MissingKey),
         }
     }
