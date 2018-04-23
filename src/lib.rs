@@ -1,14 +1,14 @@
 //! # Threema Gateway SDK for Rust
 //!
-//! [![Travis CI][travis-ci-badge]][travis-ci]
-//! [![Crates.io][crates-io-badge]][crates-io]
-//! [![Rust][rust-badge]][github]
+//! [![Travis CI](https://img.shields.io/travis/dbrgn/threema-gateway-rs.svg?maxAge=3600)](https://travis-ci.org/dbrgn/threema-gateway-rs)
+//! [![Crates.io](https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600)](https://crates.io/crates/threema-gateway)
+//! [![Rust](https://img.shields.io/badge/rust-1.18%2B-blue.svg?maxAge=3600)](https://github.com/dbrgn/threema-gateway-rs)
 //!
 //! This library makes it easy to use the [Threema
 //! Gateway](https://gateway.threema.ch/) from Rust programs.
 //!
-//! Documentation of the HTTP API can be found here:
-//! https://gateway.threema.ch/de/developer/api
+//! Documentation of the HTTP API can be found at
+//! [gateway.threema.ch](https://gateway.threema.ch/de/developer/api).
 //!
 //! ## Example: Send simple (transport encrypted) message
 //!
@@ -62,15 +62,6 @@
 //!
 //! For more examples, see the
 //! [`examples/`](https://github.com/dbrgn/threema-gateway-rs/tree/master/examples) directory.
-//!
-//!
-//! <!-- Badges -->
-//! [travis-ci]: https://travis-ci.org/dbrgn/threema-gateway-rs
-//! [travis-ci-badge]: https://img.shields.io/travis/dbrgn/threema-gateway-rs.svg?maxAge=3600
-//! [crates-io]: https://crates.io/crates/threema-gateway
-//! [crates-io-badge]: https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600
-//! [github]: https://github.com/dbrgn/threema-gateway-rs
-//! [rust-badge]: https://img.shields.io/badge/rust-1.9%2B-blue.svg?maxAge=3600
 
 extern crate byteorder;
 extern crate data_encoding;
