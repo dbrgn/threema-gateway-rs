@@ -11,14 +11,15 @@ use data_encoding::HEXLOWER;
 
 use ::errors::ApiError;
 use ::types::BlobId;
-use ::MSGAPI_URL;
 
 
 /// Map HTTP response status code to an ApiError if it isn't "200".
 ///
 /// Optionally, you can pass in the meaning of a 400 response code.
-pub fn map_response_code(status: &StatusCode, bad_request_meaning: Option<ApiError>)
-                         -> Result<(), ApiError> {
+pub(crate) fn map_response_code(
+    status: &StatusCode,
+    bad_request_meaning: Option<ApiError>,
+) -> Result<(), ApiError> {
     match *status {
         // 200
         StatusCode::Ok => Ok(()),
@@ -67,7 +68,13 @@ impl<'a> Recipient<'a> {
 }
 
 /// Send a message to the specified recipient in basic mode.
-pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Result<String, ApiError> {
+pub(crate) fn send_simple(
+    endpoint: &str,
+    from: &str,
+    to: &Recipient,
+    secret: &str,
+    text: &str,
+) -> Result<String, ApiError> {
 
     let client = Client::new().expect("Could not initialize HTTP client");
 
@@ -89,7 +96,7 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
     };
 
     // Send request
-    let mut res = client.post(&format!("{}/send_simple", MSGAPI_URL))
+    let mut res = client.post(&format!("{}/send_simple", endpoint))
         .expect("Could not parse URL")
         .form(&params)?
         .header(Accept::json())
@@ -104,13 +111,15 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
 }
 
 /// Send an encrypted E2E message to the specified recipient.
-pub fn send_e2e(from: &str,
-                to: &str,
-                secret: &str,
-                nonce: &[u8],
-                ciphertext: &[u8],
-                additional_params: Option<HashMap<String, String>>)
-                -> Result<String, ApiError> {
+pub(crate) fn send_e2e(
+    endpoint: &str,
+    from: &str,
+    to: &str,
+    secret: &str,
+    nonce: &[u8],
+    ciphertext: &[u8],
+    additional_params: Option<HashMap<String, String>>,
+) -> Result<String, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Prepare POST data
@@ -125,7 +134,7 @@ pub fn send_e2e(from: &str,
     params.insert("box".into(), HEXLOWER.encode(ciphertext));
 
     // Send request
-    let mut res = client.post(&format!("{}/send_e2e", MSGAPI_URL))
+    let mut res = client.post(&format!("{}/send_e2e", endpoint))
         .expect("Could not parse URL")
         .form(&params)?
         .header(Accept::json())
@@ -140,11 +149,16 @@ pub fn send_e2e(from: &str,
 }
 
 /// Upload a blob to the blob server.
-pub fn blob_upload(from: &str, secret: &str, data: &[u8]) -> Result<BlobId, ApiError> {
+pub(crate) fn blob_upload(
+    endpoint: &str,
+    from: &str,
+    secret: &str,
+    data: &[u8],
+) -> Result<BlobId, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
-    let url = format!("{}/upload_blob?from={}&secret={}", MSGAPI_URL, from, secret);
+    let url = format!("{}/upload_blob?from={}&secret={}", endpoint, from, secret);
 
     // Build multipart/form-data request body
     let boundary = "3ma-d84f64f5-a138-4b0a-9e25-339257990c81-3ma".to_string();
@@ -180,13 +194,14 @@ pub fn blob_upload(from: &str, secret: &str, data: &[u8]) -> Result<BlobId, ApiE
 #[cfg(test)]
 mod tests {
     use std::iter::repeat;
+    use ::MSGAPI_URL;
     use ::errors::ApiError;
     use super::*;
 
     #[test]
     fn test_max_length_ok() {
         let text: String = repeat("à").take(3500 / 2).collect();
-        let result = send_simple("TESTTEST", &Recipient::new_id("ECHOECHO"), "secret", &text);
+        let result = send_simple(MSGAPI_URL, "TESTTEST", &Recipient::new_id("ECHOECHO"), "secret", &text);
         match result {
             Err(ApiError::MessageTooLong) => panic!(),
             _ => (),
@@ -197,7 +212,7 @@ mod tests {
     fn test_max_length_too_long() {
         let mut text: String = repeat("à").take(3500 / 2).collect();
         text.push('x');
-        let result = send_simple("TESTTEST", &Recipient::new_id("ECHOECHO"), "secret", &text);
+        let result = send_simple(MSGAPI_URL, "TESTTEST", &Recipient::new_id("ECHOECHO"), "secret", &text);
         match result {
             Err(ApiError::MessageTooLong) => (),
             _ => panic!(),

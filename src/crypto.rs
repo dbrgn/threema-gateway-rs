@@ -154,7 +154,7 @@ mod test {
 
     use sodiumoxide::crypto::box_::{self, PublicKey, SecretKey, Nonce};
     use super::{random_padding_amount, RecipientKey};
-    use ::api::E2eApi;
+    use ::api::ApiBuilder;
     use ::types::{BlobId, MessageType};
 
     #[test]
@@ -180,7 +180,10 @@ mod test {
         let other_pub = PublicKey([153,153,204,118,225,119,78,112,88,6,167,2,67,73,254,255,96,134,225,8,36,229,124,219,43,50,241,185,244,236,55,77]);
 
         // Set up API
-        let api = E2eApi::new("*3MAGWID", "1234", own_sec.clone());
+        let api = ApiBuilder::new("*3MAGWID", "1234")
+            .with_private_key(own_sec.clone())
+            .into_e2e()
+            .unwrap();
 
         // Fake a blob upload
         let blob_id = BlobId::from_str("00112233445566778899aabbccddeeff").unwrap();

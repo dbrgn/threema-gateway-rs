@@ -1,3 +1,4 @@
+use std::borrow::{Borrow, Cow};
 use std::collections::HashMap;
 
 use data_encoding::HEXLOWER_PERMISSIVE;
@@ -5,6 +6,7 @@ use mime::Mime;
 use sodiumoxide::crypto::box_::SecretKey;
 use sodiumoxide::crypto::secretbox::Key;
 
+use ::MSGAPI_URL;
 use ::connection::{Recipient, send_e2e, send_simple, blob_upload};
 use ::crypto::{encrypt, encrypt_raw, encrypt_image_msg, encrypt_file_msg};
 use ::crypto::{EncryptedMessage, RecipientKey};
@@ -28,7 +30,7 @@ macro_rules! impl_common_functionality {
         /// It is strongly recommended that you cache the public keys to avoid querying
         /// the API for each message.
         pub fn lookup_pubkey(&self, id: &str) -> Result<String, ApiError> {
-            lookup_pubkey(&self.id, id, &self.secret)
+            lookup_pubkey(self.endpoint.borrow(), &self.id, id, &self.secret)
         }
 
         /// Look up a Threema ID in the directory.
@@ -38,7 +40,7 @@ macro_rules! impl_common_functionality {
         /// criteria using the [`LookupCriterion`](enum.LookupCriterion.html)
         /// enum.
         pub fn lookup_id(&self, criterion: &LookupCriterion) -> Result<String, ApiError> {
-            lookup_id(criterion, &self.id, &self.secret)
+            lookup_id(self.endpoint.borrow(), criterion, &self.id, &self.secret)
         }
 
         /// Look up the capabilities of a certain Threema ID.
@@ -49,12 +51,12 @@ macro_rules! impl_common_functionality {
         /// using an old version, or a platform where file reception is not
         /// supported.
         pub fn lookup_capabilities(&self, id: &str) -> Result<Capabilities, ApiError> {
-            lookup_capabilities(&self.id, id, &self.secret)
+            lookup_capabilities(self.endpoint.borrow(), &self.id, id, &self.secret)
         }
 
         /// Look up a remaining gateway credits.
         pub fn lookup_credits(&self) -> Result<i64, ApiError> {
-            lookup_credits(&self.id, &self.secret)
+            lookup_credits(self.endpoint.borrow(), &self.id, &self.secret)
         }
     }
 }
@@ -64,12 +66,21 @@ macro_rules! impl_common_functionality {
 pub struct SimpleApi {
     id: String,
     secret: String,
+    endpoint: Cow<'static, str>,
 }
 
 impl SimpleApi {
     /// Initialize the simple API with the Gateway ID and the Gateway Secret.
-    pub fn new<I: Into<String>, S: Into<String>>(id: I, secret: S) -> Self {
-        return SimpleApi { id: id.into(), secret: secret.into() }
+    pub(crate) fn new<I: Into<String>, S: Into<String>>(
+        endpoint: Cow<'static, str>,
+        id: I,
+        secret: S,
+    ) -> Self {
+        return SimpleApi {
+            id: id.into(),
+            secret: secret.into(),
+            endpoint: endpoint,
+        }
     }
 
     /// Send a message to the specified recipient in basic mode.
@@ -80,7 +91,7 @@ impl SimpleApi {
     ///
     /// Cost: 1 credit.
     pub fn send(&self, to: &Recipient, text: &str) -> Result<String, ApiError> {
-        send_simple(&self.id, to, &self.secret, text)
+        send_simple(self.endpoint.borrow(), &self.id, to, &self.secret, text)
     }
 
     impl_common_functionality!();
@@ -92,16 +103,23 @@ pub struct E2eApi {
     id: String,
     secret: String,
     private_key: SecretKey,
+    endpoint: Cow<'static, str>,
 }
 
 impl E2eApi {
     /// Initialize the simple API with the Gateway ID, the Gateway Secret and
     /// the Private Key.
-    pub fn new<I: Into<String>, S: Into<String>>(id: I, secret: S, private_key: SecretKey) -> Self {
+    pub(crate) fn new<I: Into<String>, S: Into<String>>(
+        endpoint: Cow<'static, str>,
+        id: I,
+        secret: S,
+        private_key: SecretKey,
+    ) -> Self {
         return E2eApi {
             id: id.into(),
             secret: secret.into(),
             private_key: private_key,
+            endpoint: endpoint,
         }
     }
 
@@ -165,7 +183,7 @@ impl E2eApi {
     ///
     /// Cost: 1 credit.
     pub fn send(&self, to: &str, message: &EncryptedMessage) -> Result<String, ApiError> {
-        send_e2e(&self.id, to, &self.secret, &message.nonce, &message.ciphertext, None)
+        send_e2e(self.endpoint.borrow(), &self.id, to, &self.secret, &message.nonce, &message.ciphertext, None)
     }
 
     /// Used for testing purposes. Not intended to be called by end users.
@@ -175,7 +193,7 @@ impl E2eApi {
                             message: &EncryptedMessage,
                             additional_params: HashMap<String, String>)
                             -> Result<String, ApiError> {
-        send_e2e(&self.id, to, &self.secret, &message.nonce, &message.ciphertext, Some(additional_params))
+        send_e2e(self.endpoint.borrow(), &self.id, to, &self.secret, &message.nonce, &message.ciphertext, Some(additional_params))
     }
 
     impl_common_functionality!();
@@ -184,14 +202,14 @@ impl E2eApi {
     ///
     /// Cost: 1 credit.
     pub fn blob_upload(&self, data: &EncryptedMessage) -> Result<BlobId, ApiError> {
-        blob_upload(&self.id, &self.secret, &data.ciphertext)
+        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, &data.ciphertext)
     }
 
     /// Upload raw data to the blob server.
     ///
     /// Cost: 1 credit.
     pub fn blob_upload_raw(&self, data: &[u8]) -> Result<BlobId, ApiError> {
-        blob_upload(&self.id, &self.secret, data)
+        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, data)
     }
 }
 
@@ -229,6 +247,7 @@ pub struct ApiBuilder {
     pub id: String,
     pub secret: String,
     pub private_key: Option<SecretKey>,
+    pub endpoint: Cow<'static, str>,
 }
 
 impl ApiBuilder {
@@ -238,12 +257,27 @@ impl ApiBuilder {
             id: id.into(),
             secret: secret.into(),
             private_key: None,
+            endpoint: Cow::Borrowed(MSGAPI_URL),
         }
+    }
+
+    /// Set a custom API endpoint.
+    ///
+    /// The API endpoint should be a HTTPS URL without trailing slash.
+    pub fn with_custom_endpoint<E: Into<Cow<'static, str>>>(mut self, endpoint: E) -> Self {
+        let endpoint = endpoint.into();
+        if endpoint.starts_with("http:") {
+            warn!("Custom endpoint does not use https!");
+        } else if !endpoint.starts_with("https:") {
+            warn!("Custom endpoint seems invalid!");
+        }
+        self.endpoint = endpoint.into();
+        self
     }
 
     /// Return a [`SimpleAPI`](struct.SimpleApi.html) instance.
     pub fn into_simple(self) -> SimpleApi {
-        SimpleApi::new(self.id, self.secret)
+        SimpleApi::new(self.endpoint, self.id, self.secret)
     }
 
     /// Set the private key. Only needed for E2e mode.
@@ -274,7 +308,7 @@ impl ApiBuilder {
     /// Return a [`E2eAPI`](struct.SimpleApi.html) instance.
     pub fn into_e2e(self) -> Result<E2eApi, ApiBuilderError> {
         match self.private_key {
-            Some(key) => Ok(E2eApi::new(self.id, self.secret, key)),
+            Some(key) => Ok(E2eApi::new(self.endpoint, self.id, self.secret, key)),
             None => Err(ApiBuilderError::MissingKey),
         }
     }

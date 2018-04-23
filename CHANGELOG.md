@@ -15,6 +15,9 @@ Possible log types:
 ### unreleased
 
 - [changed] Require Rust 1.21+
+- [changed] Constructors of `SimpleApi` and `E2eApi` are now private, use the
+  `ApiBuilder` instead
+- [added] Add `ApiBuilder::with_custom_endpoint` method
 
 ### v0.7.1 (2017-08-28)
 
