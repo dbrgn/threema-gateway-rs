@@ -1,0 +1,85 @@
+version: 2
+
+references:
+  build-steps: &build-steps
+    - checkout
+    # Load cargo target from cache if possible.
+    # Multiple caches are used to increase the chance of a cache hit.
+    - restore_cache:
+        keys:
+          - v1-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ checksum "Cargo.toml" }}
+          - v1-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ .Branch }}
+          - v1-{{ .Environment.CIRCLE_JOB }}-cargo-cache
+    - run:
+        name: Build libsodium
+        command: |
+          if [ ! -e /opt/libsodium/version-${LIBSODIUM_VERSION} ]; then
+            mkdir /opt/libsodium
+            wget https://github.com/jedisct1/libsodium/releases/download/${LIBSODIUM_VERSION}/libsodium-${LIBSODIUM_VERSION}.tar.gz
+            tar xfz libsodium-${LIBSODIUM_VERSION}.tar.gz
+            cd libsodium-${LIBSODIUM_VERSION} && ./configure --prefix=/opt/libsodium && make && make install
+            touch /opt/libsodium/version-${LIBSODIUM_VERSION}
+          else
+            echo "Cached"
+          fi
+        environment:
+          LIBSODIUM_VERSION: 1.0.8
+    - run:
+        name: Build and test
+        command: |
+          export PKG_CONFIG_PATH=/opt/libsodium/lib/pkgconfig:$PKG_CONFIG_PATH
+          export LD_LIBRARY_PATH=/opt/libsodium/lib:$LD_LIBRARY_PATH
+          cargo update && cargo build && cargo test
+    - run:
+        name: Run cargo-audit
+        command: cargo install --force cargo-audit && cargo audit
+    - save_cache:
+        key: v1-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ checksum "Cargo.toml" }}
+        paths:
+          - target
+          - /usr/local/cargo
+          - /opt/libsodium
+    - save_cache:
+        key: v1-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ .Branch }}
+        paths:
+          - target
+          - /usr/local/cargo
+          - /opt/libsodium
+    - save_cache:
+        key: v1-{{ .Environment.CIRCLE_JOB }}-cargo-cache
+        paths:
+          - target
+          - /usr/local/cargo
+          - /opt/libsodium
+
+jobs:
+  test-1.21:
+    docker:
+      - image: rust:1.21
+    steps: *build-steps
+  test-stable:
+    docker:
+      - image: rust:latest
+    steps: *build-steps
+
+workflows:
+  version: 2
+
+  # Build on push
+  on_push:
+    jobs:
+      - test-1.21
+      - test-stable
+
+  # Build master every week on Monday at 04:00 am
+  weekly:
+    triggers:
+      - schedule:
+          cron: "0 4 * * 1"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - test-1.21
+      - test-stable
