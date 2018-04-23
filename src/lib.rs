@@ -2,7 +2,7 @@
 //!
 //! [![Travis CI](https://img.shields.io/travis/dbrgn/threema-gateway-rs.svg?maxAge=3600)](https://travis-ci.org/dbrgn/threema-gateway-rs)
 //! [![Crates.io](https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600)](https://crates.io/crates/threema-gateway)
-//! [![Rust](https://img.shields.io/badge/rust-1.18%2B-blue.svg?maxAge=3600)](https://github.com/dbrgn/threema-gateway-rs)
+//! [![Rust](https://img.shields.io/badge/rust-1.21%2B-blue.svg?maxAge=3600)](https://github.com/dbrgn/threema-gateway-rs)
 //!
 //! This library makes it easy to use the [Threema
 //! Gateway](https://gateway.threema.ch/) from Rust programs.

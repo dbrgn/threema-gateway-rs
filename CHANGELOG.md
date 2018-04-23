@@ -12,6 +12,10 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### unreleased
+
+- [changed] Require Rust 1.21+
+
 ### v0.7.1 (2017-08-28)
 
 - [changed] Upgrade data-encoding dependency to 2.0.0-rc.2
