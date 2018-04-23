@@ -17,7 +17,7 @@ use ::MSGAPI_URL;
 /// Map HTTP response status code to an ApiError if it isn't "200".
 ///
 /// Optionally, you can pass in the meaning of a 400 response code.
-pub fn map_response_code(status: &StatusCode, bad_request_meaning: Option<ApiError>)
+pub(crate) fn map_response_code(status: &StatusCode, bad_request_meaning: Option<ApiError>)
                          -> Result<(), ApiError> {
     match *status {
         // 200
@@ -67,7 +67,7 @@ impl<'a> Recipient<'a> {
 }
 
 /// Send a message to the specified recipient in basic mode.
-pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Result<String, ApiError> {
+pub(crate) fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Result<String, ApiError> {
 
     let client = Client::new().expect("Could not initialize HTTP client");
 
@@ -104,7 +104,7 @@ pub fn send_simple(from: &str, to: &Recipient, secret: &str, text: &str) -> Resu
 }
 
 /// Send an encrypted E2E message to the specified recipient.
-pub fn send_e2e(from: &str,
+pub(crate) fn send_e2e(from: &str,
                 to: &str,
                 secret: &str,
                 nonce: &[u8],
@@ -140,7 +140,7 @@ pub fn send_e2e(from: &str,
 }
 
 /// Upload a blob to the blob server.
-pub fn blob_upload(from: &str, secret: &str, data: &[u8]) -> Result<BlobId, ApiError> {
+pub(crate) fn blob_upload(from: &str, secret: &str, data: &[u8]) -> Result<BlobId, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL

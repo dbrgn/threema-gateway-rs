@@ -118,7 +118,7 @@ impl Capabilities {
 }
 
 /// Fetch the public key for the specified Threema ID.
-pub fn lookup_pubkey(our_id: &str, their_id: &str, secret: &str) -> Result<String, ApiError> {
+pub(crate) fn lookup_pubkey(our_id: &str, their_id: &str, secret: &str) -> Result<String, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
@@ -137,7 +137,7 @@ pub fn lookup_pubkey(our_id: &str, their_id: &str, secret: &str) -> Result<Strin
 }
 
 /// Look up an ID in the Threema directory.
-pub fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str) -> Result<String, ApiError> {
+pub(crate) fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str) -> Result<String, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
@@ -162,7 +162,7 @@ pub fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str) -> Res
 }
 
 /// Look up remaining gateway credits.
-pub fn lookup_credits(our_id: &str, secret: &str) -> Result<i64, ApiError> {
+pub(crate) fn lookup_credits(our_id: &str, secret: &str) -> Result<i64, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     let url = format!("{}/credits?from={}&secret={}", MSGAPI_URL, our_id, secret);
@@ -181,7 +181,7 @@ pub fn lookup_credits(our_id: &str, secret: &str) -> Result<i64, ApiError> {
 }
 
 /// Look up ID capabilities.
-pub fn lookup_capabilities(our_id: &str, their_id: &str, secret: &str) -> Result<Capabilities, ApiError> {
+pub(crate) fn lookup_capabilities(our_id: &str, their_id: &str, secret: &str) -> Result<Capabilities, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
