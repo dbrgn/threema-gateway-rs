@@ -12,7 +12,7 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
-### unreleased
+### v0.8.0 (2018-04-23)
 
 - [added] Add `ApiBuilder::with_custom_endpoint` method
 - [changed] Require Rust 1.21+
