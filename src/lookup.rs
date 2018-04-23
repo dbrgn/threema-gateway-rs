@@ -8,7 +8,6 @@ use reqwest::Client;
 
 use ::connection::map_response_code;
 use ::errors::ApiError;
-use ::MSGAPI_URL;
 
 
 /// Different ways to look up a Threema ID in the directory.
@@ -118,11 +117,16 @@ impl Capabilities {
 }
 
 /// Fetch the public key for the specified Threema ID.
-pub(crate) fn lookup_pubkey(our_id: &str, their_id: &str, secret: &str) -> Result<String, ApiError> {
+pub(crate) fn lookup_pubkey(
+    endpoint: &str,
+    our_id: &str,
+    their_id: &str,
+    secret: &str,
+) -> Result<String, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
-    let url = format!("{}/pubkeys/{}?from={}&secret={}", MSGAPI_URL, their_id, our_id, secret);
+    let url = format!("{}/pubkeys/{}?from={}&secret={}", endpoint, their_id, our_id, secret);
 
     debug!("Looking up public key for {}", their_id);
 
@@ -137,15 +141,20 @@ pub(crate) fn lookup_pubkey(our_id: &str, their_id: &str, secret: &str) -> Resul
 }
 
 /// Look up an ID in the Threema directory.
-pub(crate) fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str) -> Result<String, ApiError> {
+pub(crate) fn lookup_id(
+    endpoint: &str,
+    criterion: &LookupCriterion,
+    our_id: &str,
+    secret: &str,
+) -> Result<String, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
     let url_base = match criterion {
-        &LookupCriterion::Phone(ref val) => format!("{}/lookup/phone/{}", MSGAPI_URL, val),
-        &LookupCriterion::PhoneHash(ref val) => format!("{}/lookup/phone_hash/{}", MSGAPI_URL, val),
-        &LookupCriterion::Email(ref val) => format!("{}/lookup/email/{}", MSGAPI_URL, val),
-        &LookupCriterion::EmailHash(ref val) => format!("{}/lookup/email_hash/{}", MSGAPI_URL, val),
+        &LookupCriterion::Phone(ref val) => format!("{}/lookup/phone/{}", endpoint, val),
+        &LookupCriterion::PhoneHash(ref val) => format!("{}/lookup/phone_hash/{}", endpoint, val),
+        &LookupCriterion::Email(ref val) => format!("{}/lookup/email/{}", endpoint, val),
+        &LookupCriterion::EmailHash(ref val) => format!("{}/lookup/email_hash/{}", endpoint, val),
     };
     let url = format!("{}?from={}&secret={}", url_base, our_id, secret);
 
@@ -162,10 +171,14 @@ pub(crate) fn lookup_id(criterion: &LookupCriterion, our_id: &str, secret: &str)
 }
 
 /// Look up remaining gateway credits.
-pub(crate) fn lookup_credits(our_id: &str, secret: &str) -> Result<i64, ApiError> {
+pub(crate) fn lookup_credits(
+    endpoint: &str,
+    our_id: &str,
+    secret: &str,
+) -> Result<i64, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
-    let url = format!("{}/credits?from={}&secret={}", MSGAPI_URL, our_id, secret);
+    let url = format!("{}/credits?from={}&secret={}", endpoint, our_id, secret);
 
     debug!("Looking up remaining credits");
 
@@ -181,11 +194,16 @@ pub(crate) fn lookup_credits(our_id: &str, secret: &str) -> Result<i64, ApiError
 }
 
 /// Look up ID capabilities.
-pub(crate) fn lookup_capabilities(our_id: &str, their_id: &str, secret: &str) -> Result<Capabilities, ApiError> {
+pub(crate) fn lookup_capabilities(
+    endpoint: &str,
+    our_id: &str,
+    their_id: &str,
+    secret: &str,
+) -> Result<Capabilities, ApiError> {
     let client = Client::new().expect("Could not initialize HTTP client");
 
     // Build URL
-    let url = format!("{}/capabilities/{}?from={}&secret={}", MSGAPI_URL, their_id, our_id, secret);
+    let url = format!("{}/capabilities/{}?from={}&secret={}", endpoint, their_id, our_id, secret);
 
     debug!("Looking up capabilities for {}", their_id);
 
