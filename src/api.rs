@@ -261,6 +261,20 @@ impl ApiBuilder {
         }
     }
 
+    /// Set a custom API endpoint.
+    ///
+    /// The API endpoint should be a HTTPS URL without trailing slash.
+    pub fn with_custom_endpoint<E: Into<Cow<'static, str>>>(mut self, endpoint: E) -> Self {
+        let endpoint = endpoint.into();
+        if endpoint.starts_with("http:") {
+            warn!("Custom endpoint does not use https!");
+        } else if !endpoint.starts_with("https:") {
+            warn!("Custom endpoint seems invalid!");
+        }
+        self.endpoint = endpoint.into();
+        self
+    }
+
     /// Return a [`SimpleAPI`](struct.SimpleApi.html) instance.
     pub fn into_simple(self) -> SimpleApi {
         SimpleApi::new(self.endpoint, self.id, self.secret)
