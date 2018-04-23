@@ -75,9 +75,6 @@ pub(crate) fn send_simple(
     secret: &str,
     text: &str,
 ) -> Result<String, ApiError> {
-
-    let client = Client::new().expect("Could not initialize HTTP client");
-
     // Check text length (max 3500 bytes)
     // Note: Strings in Rust are UTF8, so len() returns the byte count.
     if text.len() > 3500 {
@@ -96,9 +93,8 @@ pub(crate) fn send_simple(
     };
 
     // Send request
-    let mut res = client.post(&format!("{}/send_simple", endpoint))
-        .expect("Could not parse URL")
-        .form(&params)?
+    let mut res = Client::new().post(&format!("{}/send_simple", endpoint))
+        .form(&params)
         .header(Accept::json())
         .send()?;
     try!(map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient)));
@@ -120,8 +116,6 @@ pub(crate) fn send_e2e(
     ciphertext: &[u8],
     additional_params: Option<HashMap<String, String>>,
 ) -> Result<String, ApiError> {
-    let client = Client::new().expect("Could not initialize HTTP client");
-
     // Prepare POST data
     let mut params = match additional_params {
         Some(p) => p,
@@ -134,9 +128,8 @@ pub(crate) fn send_e2e(
     params.insert("box".into(), HEXLOWER.encode(ciphertext));
 
     // Send request
-    let mut res = client.post(&format!("{}/send_e2e", endpoint))
-        .expect("Could not parse URL")
-        .form(&params)?
+    let mut res = Client::new().post(&format!("{}/send_e2e", endpoint))
+        .form(&params)
         .header(Accept::json())
         .send()?;
     try!(map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient)));
@@ -155,8 +148,6 @@ pub(crate) fn blob_upload(
     secret: &str,
     data: &[u8],
 ) -> Result<BlobId, ApiError> {
-    let client = Client::new().expect("Could not initialize HTTP client");
-
     // Build URL
     let url = format!("{}/upload_blob?from={}&secret={}", endpoint, from, secret);
 
@@ -176,8 +167,7 @@ pub(crate) fn blob_upload(
     // Send request
     let mimetype: Mime = format!("multipart/form-data; boundary={}", boundary)
         .parse().expect("Could not parse multipart/form-data mime type");
-    let mut res = client.post(&url)
-        .expect("Could not parse URL")
+    let mut res = Client::new().post(&url)
         .body(req_body)
         .header(Accept::text())
         .header(ContentType(mimetype))

@@ -14,10 +14,14 @@ Possible log types:
 
 ### unreleased
 
+- [added] Add `ApiBuilder::with_custom_endpoint` method
 - [changed] Require Rust 1.21+
 - [changed] Constructors of `SimpleApi` and `E2eApi` are now private, use the
   `ApiBuilder` instead
-- [added] Add `ApiBuilder::with_custom_endpoint` method
+- [changed] Upgrade sodiumoxide dependency to 0.0.16
+- [changed] Upgrade reqwest dependency to 0.8
+- [changed] Upgrade log dependency to 0.4
+- [changed] Upgrade data-encoding dependency to 2.1
 
 ### v0.7.1 (2017-08-28)
 

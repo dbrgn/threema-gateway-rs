@@ -123,15 +123,13 @@ pub(crate) fn lookup_pubkey(
     their_id: &str,
     secret: &str,
 ) -> Result<String, ApiError> {
-    let client = Client::new().expect("Could not initialize HTTP client");
-
     // Build URL
     let url = format!("{}/pubkeys/{}?from={}&secret={}", endpoint, their_id, our_id, secret);
 
     debug!("Looking up public key for {}", their_id);
 
     // Send request
-    let mut res = client.get(&url).expect("Could not parse URL").send()?;
+    let mut res = Client::new().get(&url).send()?;
     try!(map_response_code(&res.status(), None));
 
     // Read and return response body
@@ -147,8 +145,6 @@ pub(crate) fn lookup_id(
     our_id: &str,
     secret: &str,
 ) -> Result<String, ApiError> {
-    let client = Client::new().expect("Could not initialize HTTP client");
-
     // Build URL
     let url_base = match criterion {
         &LookupCriterion::Phone(ref val) => format!("{}/lookup/phone/{}", endpoint, val),
@@ -161,7 +157,7 @@ pub(crate) fn lookup_id(
     debug!("Looking up id key for {}", criterion);
 
     // Send request
-    let mut res = client.get(&url).expect("Could not parse URL").send()?;
+    let mut res = Client::new().get(&url).send()?;
     try!(map_response_code(&res.status(), Some(ApiError::BadHashLength)));
 
     // Read and return response body
@@ -176,14 +172,12 @@ pub(crate) fn lookup_credits(
     our_id: &str,
     secret: &str,
 ) -> Result<i64, ApiError> {
-    let client = Client::new().expect("Could not initialize HTTP client");
-
     let url = format!("{}/credits?from={}&secret={}", endpoint, our_id, secret);
 
     debug!("Looking up remaining credits");
 
     // Send request
-    let mut res = client.get(&url).expect("Could not parse URL").send()?;
+    let mut res = Client::new().get(&url).send()?;
     try!(map_response_code(&res.status(), None));
 
     // Read, parse and return response body
@@ -200,15 +194,13 @@ pub(crate) fn lookup_capabilities(
     their_id: &str,
     secret: &str,
 ) -> Result<Capabilities, ApiError> {
-    let client = Client::new().expect("Could not initialize HTTP client");
-
     // Build URL
     let url = format!("{}/capabilities/{}?from={}&secret={}", endpoint, their_id, our_id, secret);
 
     debug!("Looking up capabilities for {}", their_id);
 
     // Send request
-    let mut res = client.get(&url).expect("Could not parse URL").send()?;
+    let mut res = Client::new().get(&url).send()?;
     try!(map_response_code(&res.status(), Some(ApiError::BadHashLength)));
 
     // Read response body
