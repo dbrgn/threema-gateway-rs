@@ -1,6 +1,6 @@
 # Rust SDK for Threema Gateway
 
-[![Travis CI][travis-ci-badge]][travis-ci]
+[![CircleCI][circle-ci-badge]][circle-ci]
 [![Crates.io Version][crates-io-badge]][crates-io]
 [![Crates.io Downloads][crates-io-download-badge]][crates-io-download]
 [![Rust][rust-badge]][github]
@@ -11,7 +11,7 @@ in Rust.
 Not everything is implemented yet, but sending simple and end-to-end encrypted
 messages works.
 
-This library requires Rust 1.18+.
+This library requires Rust 1.21+.
 
 [Docs](https://docs.rs/threema-gateway)
 
@@ -97,11 +97,11 @@ for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 be dual licensed as above, without any additional terms or conditions.
 
 <!-- Badges -->
-[travis-ci]: https://travis-ci.org/dbrgn/threema-gateway-rs
-[travis-ci-badge]: https://img.shields.io/travis/dbrgn/threema-gateway-rs.svg?maxAge=300
+[circle-ci]: https://circleci.com/gh/dbrgn/threema-gateway-rs/tree/master
+[circle-ci-badge]: https://circleci.com/gh/dbrgn/threema-gateway-rs/tree/master.svg?style=shield
 [crates-io]: https://crates.io/crates/threema-gateway
 [crates-io-badge]: https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600
 [crates-io-download]: https://crates.io/crates/threema-gateway
 [crates-io-download-badge]: https://img.shields.io/crates/d/threema-gateway.svg?maxAge=3600
 [github]: https://github.com/dbrgn/threema-gateway-rs
-[rust-badge]: https://img.shields.io/badge/rust-1.18%2B-blue.svg?maxAge=3600
+[rust-badge]: https://img.shields.io/badge/rust-1.21%2B-blue.svg?maxAge=3600
