@@ -30,9 +30,6 @@ references:
           export PKG_CONFIG_PATH=/opt/libsodium/lib/pkgconfig:$PKG_CONFIG_PATH
           export LD_LIBRARY_PATH=/opt/libsodium/lib:$LD_LIBRARY_PATH
           cargo update && cargo build && cargo test
-    - run:
-        name: Run cargo-audit
-        command: cargo install --force cargo-audit && cargo audit
     - save_cache:
         key: v1-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ checksum "Cargo.toml" }}
         paths:
@@ -61,6 +58,16 @@ jobs:
     docker:
       - image: rust:latest
     steps: *build-steps
+  audit:
+    docker:
+      - image: rust:latest
+    steps:
+      - run:
+          name: Install cargo-audit
+          command: cargo install --force cargo-audit
+      - run:
+          name: Run cargo-audit
+          command: cargo audit
 
 workflows:
   version: 2
