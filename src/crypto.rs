@@ -84,9 +84,7 @@ impl RecipientKey {
 
 /// Encrypt data for the recipient.
 pub fn encrypt_raw(data: &[u8], public_key: &PublicKey, private_key: &SecretKey) -> EncryptedMessage {
-    if !sodiumoxide::init() {
-        panic!("Could not initialize sodiumoxide library.");
-    }
+    sodiumoxide::init().expect("Could not initialize sodiumoxide library.");
     let nonce = box_::gen_nonce();
     let ciphertext = box_::seal(&data, &nonce, public_key, private_key);
     EncryptedMessage {

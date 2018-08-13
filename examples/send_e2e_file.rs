@@ -82,7 +82,7 @@ fn main() {
     };
 
     // Make sure to init sodiumoxide library
-    sodiumoxide::init();
+    sodiumoxide::init().unwrap();
 
     // Generate a random encryption key
     let key = secretbox::gen_key();
