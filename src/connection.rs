@@ -186,7 +186,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_max_length_ok() {
+    fn test_simple_max_length_ok() {
         let text: String = repeat("à").take(3500 / 2).collect();
         let result = send_simple(MSGAPI_URL, "TESTTEST", &Recipient::new_id("ECHOECHO"), "secret", &text);
         match result {
@@ -196,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn test_max_length_too_long() {
+    fn test_simple_max_length_too_long() {
         let mut text: String = repeat("à").take(3500 / 2).collect();
         text.push('x');
         let result = send_simple(MSGAPI_URL, "TESTTEST", &Recipient::new_id("ECHOECHO"), "secret", &text);
