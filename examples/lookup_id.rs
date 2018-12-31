@@ -1,10 +1,7 @@
-extern crate docopt;
-extern crate threema_gateway;
-
 use std::process;
+
 use docopt::Docopt;
 use threema_gateway::{ApiBuilder, LookupCriterion};
-
 
 const USAGE: &'static str = "
 Usage: lookup_id [options] by_phone <from> <secret> <phone>
@@ -15,7 +12,6 @@ Usage: lookup_id [options] by_phone <from> <secret> <phone>
 Options:
     -h, --help    Show this help
 ";
-
 
 fn main() {
     let args = Docopt::new(USAGE)

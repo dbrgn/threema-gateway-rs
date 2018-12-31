@@ -6,8 +6,8 @@ use std::io::Read;
 
 use reqwest::Client;
 
-use ::connection::map_response_code;
-use ::errors::ApiError;
+use crate::connection::map_response_code;
+use crate::errors::ApiError;
 
 
 /// Different ways to look up a Threema ID in the directory.
@@ -130,11 +130,11 @@ pub(crate) fn lookup_pubkey(
 
     // Send request
     let mut res = Client::new().get(&url).send()?;
-    try!(map_response_code(&res.status(), None));
+    map_response_code(&res.status(), None)?;
 
     // Read and return response body
     let mut body = String::new();
-    try!(res.read_to_string(&mut body));
+    res.read_to_string(&mut body)?;
     Ok(body)
 }
 
@@ -158,11 +158,11 @@ pub(crate) fn lookup_id(
 
     // Send request
     let mut res = Client::new().get(&url).send()?;
-    try!(map_response_code(&res.status(), Some(ApiError::BadHashLength)));
+    map_response_code(&res.status(), Some(ApiError::BadHashLength))?;
 
     // Read and return response body
     let mut body = String::new();
-    try!(res.read_to_string(&mut body));
+    res.read_to_string(&mut body)?;
     Ok(body)
 }
 
@@ -178,11 +178,11 @@ pub(crate) fn lookup_credits(
 
     // Send request
     let mut res = Client::new().get(&url).send()?;
-    try!(map_response_code(&res.status(), None));
+    map_response_code(&res.status(), None)?;
 
     // Read, parse and return response body
     let mut body = String::new();
-    try!(res.read_to_string(&mut body));
+    res.read_to_string(&mut body)?;
     body.trim().parse::<i64>()
         .map_err(|_| ApiError::ParseError(format!("Could not parse response body as i64: \"{}\"", body)))
 }
@@ -201,11 +201,11 @@ pub(crate) fn lookup_capabilities(
 
     // Send request
     let mut res = Client::new().get(&url).send()?;
-    try!(map_response_code(&res.status(), Some(ApiError::BadHashLength)));
+    map_response_code(&res.status(), Some(ApiError::BadHashLength))?;
 
     // Read response body
     let mut body = String::new();
-    try!(res.read_to_string(&mut body));
+    res.read_to_string(&mut body)?;
 
     // Parse response body
     body.parse()

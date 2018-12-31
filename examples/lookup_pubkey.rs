@@ -1,9 +1,5 @@
-extern crate docopt;
-extern crate threema_gateway;
-
 use docopt::Docopt;
 use threema_gateway::{ApiBuilder};
-
 
 const USAGE: &'static str = "
 Usage: send_e2e [options] <our_id> <secret> <their_id>
@@ -11,7 +7,6 @@ Usage: send_e2e [options] <our_id> <secret> <their_id>
 Options:
     -h, --help    Show this help
 ";
-
 
 fn main() {
     let args = Docopt::new(USAGE)

@@ -2,7 +2,7 @@
 //!
 //! [![CircleCI](https://circleci.com/gh/dbrgn/threema-gateway-rs/tree/master.svg?style=shield)](https://circleci.com/gh/dbrgn/threema-gateway-rs/tree/master)
 //! [![Crates.io](https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600)](https://crates.io/crates/threema-gateway)
-//! [![Rust](https://img.shields.io/badge/rust-1.22%2B-blue.svg?maxAge=3600)](https://github.com/dbrgn/threema-gateway-rs)
+//! [![Rust](https://img.shields.io/badge/rust-1.31%2B-blue.svg?maxAge=3600)](https://github.com/dbrgn/threema-gateway-rs)
 //!
 //! This library makes it easy to use the [Threema
 //! Gateway](https://gateway.threema.ch/) from Rust programs.
@@ -63,16 +63,7 @@
 //! For more examples, see the
 //! [`examples/`](https://github.com/dbrgn/threema-gateway-rs/tree/master/examples) directory.
 
-extern crate byteorder;
-extern crate data_encoding;
 #[macro_use] extern crate log;
-extern crate mime;
-#[macro_use] extern crate quick_error;
-extern crate reqwest;
-extern crate serde;
-#[macro_use] extern crate serde_derive;
-extern crate serde_json;
-extern crate sodiumoxide;
 
 mod api;
 mod connection;
@@ -81,11 +72,11 @@ mod lookup;
 mod types;
 pub mod errors;
 
-pub use api::{ApiBuilder, E2eApi, SimpleApi};
-pub use connection::{Recipient};
-pub use crypto::{EncryptedMessage, RecipientKey};
-pub use lookup::{LookupCriterion, Capabilities};
-pub use types::{MessageType, BlobId};
+pub use crate::api::{ApiBuilder, E2eApi, SimpleApi};
+pub use crate::connection::{Recipient};
+pub use crate::crypto::{EncryptedMessage, RecipientKey};
+pub use crate::lookup::{LookupCriterion, Capabilities};
+pub use crate::types::{MessageType, BlobId};
 
 const MSGAPI_URL: &'static str = "https://msgapi.threema.ch";
 

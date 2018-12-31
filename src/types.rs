@@ -3,10 +3,10 @@ use std::string::ToString;
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use mime::Mime;
-use serde::ser::{Serialize, Serializer};
+use serde::{Serialize, Serializer};
 use sodiumoxide::crypto::secretbox::Key;
 
-use ::errors::ApiError;
+use crate::errors::ApiError;
 
 
 /// A message type.

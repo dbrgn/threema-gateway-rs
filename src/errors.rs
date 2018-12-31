@@ -1,6 +1,8 @@
 //! Error types used in this library.
 
 use std::io::Error as IoError;
+
+use quick_error::quick_error;
 use reqwest::Error as ReqwestError;
 
 quick_error! {

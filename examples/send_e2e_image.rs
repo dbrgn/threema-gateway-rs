@@ -1,14 +1,11 @@
-extern crate docopt;
-extern crate threema_gateway;
-
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::process;
+
 use docopt::Docopt;
 use threema_gateway::{ApiBuilder, RecipientKey};
-
 
 const USAGE: &'static str = "
 Usage: send_e2e_image [options] <from> <to> <secret> <private-key> <path-to-jpegfile>
@@ -16,7 +13,6 @@ Usage: send_e2e_image [options] <from> <to> <secret> <private-key> <path-to-jpeg
 Options:
     -h, --help    Show this help
 ";
-
 
 fn main() {
     let args = Docopt::new(USAGE)

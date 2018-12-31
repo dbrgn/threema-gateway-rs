@@ -1,11 +1,7 @@
-extern crate docopt;
-extern crate threema_gateway;
-
 use std::borrow::Cow;
 
 use docopt::Docopt;
 use threema_gateway::{ApiBuilder, Recipient};
-
 
 const USAGE: &'static str = "
 Usage: send_simple [options] <from> id <to-id> <secret> <text>...
@@ -15,7 +11,6 @@ Usage: send_simple [options] <from> id <to-id> <secret> <text>...
 Options:
     -h, --help    Show this help
 ";
-
 
 fn main() {
     let args = Docopt::new(USAGE)

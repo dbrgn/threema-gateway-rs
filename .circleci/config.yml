@@ -50,9 +50,9 @@ references:
           - /opt/libsodium
 
 jobs:
-  test-1.21:
+  test-1.31:
     docker:
-      - image: rust:1.21
+      - image: rust:1.31
     steps: *build-steps
   test-stable:
     docker:
@@ -75,7 +75,7 @@ workflows:
   # Build on push
   on_push:
     jobs:
-      - test-1.21
+      - test-1.31
       - test-stable
 
   # Build master every week on Monday at 04:00 am
@@ -88,5 +88,5 @@ workflows:
               only:
                 - master
     jobs:
-      - test-1.21
+      - test-1.31
       - test-stable
