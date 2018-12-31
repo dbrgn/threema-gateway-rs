@@ -12,6 +12,11 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### Unreleased
+
+- [changed] Upgrade sodiumoxide to 0.2
+- [changed] Upgrade reqwest to 0.9
+
 ### v0.8.0 (2018-04-23)
 
 - [added] Add `ApiBuilder::with_custom_endpoint` method

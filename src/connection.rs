@@ -5,8 +5,6 @@ use std::collections::HashMap;
 use std::io::Read;
 
 use reqwest::{Client, StatusCode};
-use reqwest::header::{Accept, ContentType};
-use reqwest::mime::Mime;
 use data_encoding::HEXLOWER;
 
 use ::errors::ApiError;
@@ -22,22 +20,22 @@ pub(crate) fn map_response_code(
 ) -> Result<(), ApiError> {
     match *status {
         // 200
-        StatusCode::Ok => Ok(()),
+        StatusCode::OK => Ok(()),
         // 400
-        StatusCode::BadRequest => match bad_request_meaning {
+        StatusCode::BAD_REQUEST => match bad_request_meaning {
             Some(error) => Err(error),
-            None => Err(ApiError::Other(format!("Bad response status code: {}", StatusCode::BadRequest))),
+            None => Err(ApiError::Other(format!("Bad response status code: {}", StatusCode::BAD_REQUEST))),
         },
         // 401
-        StatusCode::Unauthorized => Err(ApiError::BadCredentials),
+        StatusCode::UNAUTHORIZED => Err(ApiError::BadCredentials),
         // 402
-        StatusCode::PaymentRequired => Err(ApiError::NoCredits),
+        StatusCode::PAYMENT_REQUIRED => Err(ApiError::NoCredits),
         // 404
-        StatusCode::NotFound => Err(ApiError::IdNotFound),
+        StatusCode::NOT_FOUND => Err(ApiError::IdNotFound),
         // 413
-        StatusCode::PayloadTooLarge => Err(ApiError::MessageTooLong),
+        StatusCode::PAYLOAD_TOO_LARGE => Err(ApiError::MessageTooLong),
         // 500
-        StatusCode::InternalServerError => Err(ApiError::ServerError),
+        StatusCode::INTERNAL_SERVER_ERROR => Err(ApiError::ServerError),
         e @ _ => Err(ApiError::Other(format!("Bad response status code: {}", e))),
     }
 }
@@ -95,7 +93,7 @@ pub(crate) fn send_simple(
     // Send request
     let mut res = Client::new().post(&format!("{}/send_simple", endpoint))
         .form(&params)
-        .header(Accept::json())
+        .header("accept", "application/json")
         .send()?;
     try!(map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient)));
 
@@ -130,7 +128,7 @@ pub(crate) fn send_e2e(
     // Send request
     let mut res = Client::new().post(&format!("{}/send_e2e", endpoint))
         .form(&params)
-        .header(Accept::json())
+        .header("accept", "application/json")
         .send()?;
     try!(map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient)));
 
@@ -165,12 +163,11 @@ pub(crate) fn blob_upload(
     req_body.extend_from_slice("--\r\n".as_bytes());
 
     // Send request
-    let mimetype: Mime = format!("multipart/form-data; boundary={}", boundary)
-        .parse().expect("Could not parse multipart/form-data mime type");
+    let mimetype = format!("multipart/form-data; boundary={}", boundary);
     let mut res = Client::new().post(&url)
         .body(req_body)
-        .header(Accept::text())
-        .header(ContentType(mimetype))
+        .header("accept", "text/plain")
+        .header("content-type", mimetype)
         .send()?;
     try!(map_response_code(&res.status(), Some(ApiError::BadBlob)));
 
@@ -189,7 +186,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_max_length_ok() {
+    fn test_simple_max_length_ok() {
         let text: String = repeat("à").take(3500 / 2).collect();
         let result = send_simple(MSGAPI_URL, "TESTTEST", &Recipient::new_id("ECHOECHO"), "secret", &text);
         match result {
@@ -199,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn test_max_length_too_long() {
+    fn test_simple_max_length_too_long() {
         let mut text: String = repeat("à").take(3500 / 2).collect();
         text.push('x');
         let result = send_simple(MSGAPI_URL, "TESTTEST", &Recipient::new_id("ECHOECHO"), "secret", &text);
