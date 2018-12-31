@@ -63,16 +63,7 @@
 //! For more examples, see the
 //! [`examples/`](https://github.com/dbrgn/threema-gateway-rs/tree/master/examples) directory.
 
-extern crate byteorder;
-extern crate data_encoding;
 #[macro_use] extern crate log;
-extern crate mime;
-#[macro_use] extern crate quick_error;
-extern crate reqwest;
-extern crate serde;
-#[macro_use] extern crate serde_derive;
-extern crate serde_json;
-extern crate sodiumoxide;
 
 mod api;
 mod connection;

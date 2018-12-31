@@ -1,18 +1,13 @@
-extern crate docopt;
-extern crate sodiumoxide;
-extern crate threema_gateway;
-extern crate mime_guess;
-
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::process;
+
 use docopt::Docopt;
 use mime_guess::guess_mime_type;
-use sodiumoxide::crypto::secretbox;
+use sodiumoxide::{self, crypto::secretbox};
 use threema_gateway::{ApiBuilder, RecipientKey};
-
 
 const USAGE: &'static str = "
 Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file> [<path-to-thumbnail>]
@@ -20,7 +15,6 @@ Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file>
 Options:
     -h, --help    Show this help
 ";
-
 
 /// Try or exit.
 macro_rules! etry {
