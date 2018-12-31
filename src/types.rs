@@ -6,7 +6,7 @@ use mime::Mime;
 use serde::ser::{Serialize, Serializer};
 use sodiumoxide::crypto::secretbox::Key;
 
-use ::errors::ApiError;
+use crate::errors::ApiError;
 
 
 /// A message type.

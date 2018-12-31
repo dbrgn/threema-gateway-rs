@@ -14,8 +14,8 @@ use sodiumoxide::crypto::box_::{self, PublicKey, SecretKey};
 use sodiumoxide::crypto::secretbox::Key;
 use sodiumoxide::randombytes::randombytes_into;
 
-use ::errors::CryptoError;
-use ::types::{MessageType, BlobId, FileMessage};
+use crate::errors::CryptoError;
+use crate::types::{MessageType, BlobId, FileMessage};
 
 
 /// Return a random number in the range `[1, 255]`.
@@ -152,8 +152,8 @@ mod test {
 
     use sodiumoxide::crypto::box_::{self, PublicKey, SecretKey, Nonce};
     use super::{random_padding_amount, RecipientKey};
-    use ::api::ApiBuilder;
-    use ::types::{BlobId, MessageType};
+    use crate::api::ApiBuilder;
+    use crate::types::{BlobId, MessageType};
 
     #[test]
     fn test_randombytes_uniform() {

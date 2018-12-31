@@ -7,8 +7,8 @@ use std::io::Read;
 use reqwest::{Client, StatusCode};
 use data_encoding::HEXLOWER;
 
-use ::errors::ApiError;
-use ::types::BlobId;
+use crate::errors::ApiError;
+use crate::types::BlobId;
 
 
 /// Map HTTP response status code to an ApiError if it isn't "200".
@@ -95,11 +95,11 @@ pub(crate) fn send_simple(
         .form(&params)
         .header("accept", "application/json")
         .send()?;
-    try!(map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient)));
+    map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
     let mut body = String::new();
-    try!(res.read_to_string(&mut body));
+    res.read_to_string(&mut body)?;
 
     Ok(body)
 }
@@ -130,11 +130,11 @@ pub(crate) fn send_e2e(
         .form(&params)
         .header("accept", "application/json")
         .send()?;
-    try!(map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient)));
+    map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
     let mut body = String::new();
-    try!(res.read_to_string(&mut body));
+    res.read_to_string(&mut body)?;
 
     Ok(body)
 }
@@ -169,7 +169,7 @@ pub(crate) fn blob_upload(
         .header("accept", "text/plain")
         .header("content-type", mimetype)
         .send()?;
-    try!(map_response_code(&res.status(), Some(ApiError::BadBlob)));
+    map_response_code(&res.status(), Some(ApiError::BadBlob))?;
 
     // Read response body containing blob ID
     let mut body = String::new();
@@ -181,8 +181,8 @@ pub(crate) fn blob_upload(
 #[cfg(test)]
 mod tests {
     use std::iter::repeat;
-    use ::MSGAPI_URL;
-    use ::errors::ApiError;
+    use crate::MSGAPI_URL;
+    use crate::errors::ApiError;
     use super::*;
 
     #[test]

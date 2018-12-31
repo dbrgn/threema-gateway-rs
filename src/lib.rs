@@ -81,11 +81,11 @@ mod lookup;
 mod types;
 pub mod errors;
 
-pub use api::{ApiBuilder, E2eApi, SimpleApi};
-pub use connection::{Recipient};
-pub use crypto::{EncryptedMessage, RecipientKey};
-pub use lookup::{LookupCriterion, Capabilities};
-pub use types::{MessageType, BlobId};
+pub use crate::api::{ApiBuilder, E2eApi, SimpleApi};
+pub use crate::connection::{Recipient};
+pub use crate::crypto::{EncryptedMessage, RecipientKey};
+pub use crate::lookup::{LookupCriterion, Capabilities};
+pub use crate::types::{MessageType, BlobId};
 
 const MSGAPI_URL: &'static str = "https://msgapi.threema.ch";
 

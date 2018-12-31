@@ -6,14 +6,14 @@ use mime::Mime;
 use sodiumoxide::crypto::box_::SecretKey;
 use sodiumoxide::crypto::secretbox::Key;
 
-use ::MSGAPI_URL;
-use ::connection::{Recipient, send_e2e, send_simple, blob_upload};
-use ::crypto::{encrypt, encrypt_raw, encrypt_image_msg, encrypt_file_msg};
-use ::crypto::{EncryptedMessage, RecipientKey};
-use ::errors::{ApiBuilderError, ApiError};
-use ::lookup::{LookupCriterion, Capabilities};
-use ::lookup::{lookup_id, lookup_pubkey, lookup_capabilities, lookup_credits};
-use ::types::{MessageType, BlobId};
+use crate::MSGAPI_URL;
+use crate::connection::{Recipient, send_e2e, send_simple, blob_upload};
+use crate::crypto::{encrypt, encrypt_raw, encrypt_image_msg, encrypt_file_msg};
+use crate::crypto::{EncryptedMessage, RecipientKey};
+use crate::errors::{ApiBuilderError, ApiError};
+use crate::lookup::{LookupCriterion, Capabilities};
+use crate::lookup::{lookup_id, lookup_pubkey, lookup_capabilities, lookup_credits};
+use crate::types::{MessageType, BlobId};
 
 /// Implement methods available on both the simple and the e2e API objects.
 macro_rules! impl_common_functionality {
