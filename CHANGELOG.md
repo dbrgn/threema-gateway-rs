@@ -14,6 +14,8 @@ Possible log types:
 
 ### Unreleased
 
+### v0.9.0 (2019-01-01)
+
 - [changed] Upgrade sodiumoxide to 0.2
 - [changed] Upgrade reqwest to 0.9
 - [changed] Require Rust 1.31+ (Rust 2018)
