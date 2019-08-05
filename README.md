@@ -10,12 +10,6 @@ in Rust.
 Not everything is implemented yet, but sending simple and end-to-end encrypted
 messages works.
 
-This library generally tracks the latest stable Rust version but tries to
-guarantee backwards compatibility with older stable versions as much as
-possible. However, in many cases [transitive dependencies make guaranteeing a
-minimal supported Rust version
-impossible](https://users.rust-lang.org/t/rust-version-requirement-change-as-semver-breaking-or-not/20980/25).
-
 [Docs](https://docs.rs/threema-gateway)
 
 
@@ -81,6 +75,15 @@ Look up Threema ID by phone:
 Look up Threema ID by email hash:
 
     cargo run --example lookup_id -- by_email_hash <from> <secret> 1ea093239cc5f0e1b6ec81b866265b921f26dc4033025410063309f4d1a8ee2c
+
+
+## Rust Version Requirements (MSRV)
+
+This library generally tracks the latest stable Rust version but tries to
+guarantee backwards compatibility with older stable versions as much as
+possible. However, in many cases transitive dependencies make guaranteeing a
+minimal supported Rust version impossible (see [this
+discussion](https://users.rust-lang.org/t/rust-version-requirement-change-as-semver-breaking-or-not/20980/25)).
 
 
 ## License
