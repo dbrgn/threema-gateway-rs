@@ -3,7 +3,6 @@
 [![CircleCI][circle-ci-badge]][circle-ci]
 [![Crates.io Version][crates-io-badge]][crates-io]
 [![Crates.io Downloads][crates-io-download-badge]][crates-io-download]
-[![Rust][rust-badge]][github]
 
 This is a work-in-progress implementation of a Threema Gateway client library
 in Rust.
@@ -11,7 +10,11 @@ in Rust.
 Not everything is implemented yet, but sending simple and end-to-end encrypted
 messages works.
 
-This library requires Rust 2018 (1.31+).
+This library generally tracks the latest stable Rust version but tries to
+guarantee backwards compatibility with older stable versions as much as
+possible. However, in many cases [transitive dependencies make guaranteeing a
+minimal supported Rust version
+impossible](https://users.rust-lang.org/t/rust-version-requirement-change-as-semver-breaking-or-not/20980/25).
 
 [Docs](https://docs.rs/threema-gateway)
 
@@ -103,5 +106,3 @@ be dual licensed as above, without any additional terms or conditions.
 [crates-io-badge]: https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600
 [crates-io-download]: https://crates.io/crates/threema-gateway
 [crates-io-download-badge]: https://img.shields.io/crates/d/threema-gateway.svg?maxAge=3600
-[github]: https://github.com/dbrgn/threema-gateway-rs
-[rust-badge]: https://img.shields.io/badge/rust-1.31%2B-blue.svg?maxAge=3600
