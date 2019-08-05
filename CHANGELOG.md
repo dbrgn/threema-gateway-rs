@@ -12,6 +12,11 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v0.10.0 (2019-08-05)
+
+- [changed] Upgrade docopt to 1.1
+- [changed] Stop tracking a certain minimal supported Rust version
+
 ### v0.9.1 (2019-04-08)
 
 - [fixed] Pinned docopt to 1.0.x
