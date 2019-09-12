@@ -78,7 +78,7 @@ impl FileMessage {
     }
 }
 
-/// A blob ID. Must contain exactly 16 lowercase hexadecimal characters.
+/// A 16-byte blob ID.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BlobId(pub [u8; 16]);
 
