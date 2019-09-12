@@ -12,7 +12,7 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
-### Unreleased
+### v0.11.0 (2019-09-12)
 
 - [added] Re-export `mime::Mime`
 - [added] Re-export `sodiumoxide::crypto::secretbox::Key`
