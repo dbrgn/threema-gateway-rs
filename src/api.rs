@@ -2,11 +2,9 @@ use std::borrow::{Borrow, Cow};
 use std::collections::HashMap;
 
 use data_encoding::HEXLOWER_PERMISSIVE;
-use mime::Mime;
-use sodiumoxide::crypto::box_::SecretKey;
-use sodiumoxide::crypto::secretbox::Key;
 
 use crate::MSGAPI_URL;
+use crate::{Key, SecretKey, Mime};
 use crate::connection::{Recipient, send_e2e, send_simple, blob_upload};
 use crate::crypto::{encrypt, encrypt_raw, encrypt_image_msg, encrypt_file_msg};
 use crate::crypto::{EncryptedMessage, RecipientKey};

@@ -2,10 +2,9 @@ use std::fmt;
 use std::string::ToString;
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
-use mime::Mime;
 use serde::{Serialize, Serializer};
-use sodiumoxide::crypto::secretbox::Key;
 
+use crate::{Key, Mime};
 use crate::errors::ApiError;
 
 
@@ -129,9 +128,10 @@ fn key_to_hex<S: Serializer>(val: &Key, serializer: S) -> Result<S::Ok, S::Error
 #[cfg(test)]
 mod test {
     use std::collections::HashMap;
+
     use serde_json as json;
-    use sodiumoxide::crypto::secretbox::Key;
-    use super::{BlobId, FileMessage};
+
+    use super::*;
 
     #[test]
     fn test_blob_id_from_str() {

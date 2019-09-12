@@ -12,6 +12,12 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### Unreleased
+
+- [added] Re-export `mime::Mime`
+- [added] Re-export `sodiumoxide::crypto::secretbox::Key`
+- [added] Re-export `sodiumoxide::crypto::box_::{PublicKey, SecretKey}`
+
 ### v0.10.0 (2019-08-05)
 
 - [changed] Upgrade docopt to 1.1
