@@ -71,6 +71,10 @@ mod lookup;
 mod types;
 pub mod errors;
 
+pub use mime::Mime;
+pub use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
+pub use sodiumoxide::crypto::secretbox::Key;
+
 pub use crate::api::{ApiBuilder, E2eApi, SimpleApi};
 pub use crate::connection::{Recipient};
 pub use crate::crypto::{EncryptedMessage, RecipientKey};

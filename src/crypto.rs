@@ -7,13 +7,12 @@ use std::string::ToString;
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
-use mime::Mime;
 use serde_json as json;
 use sodiumoxide;
-use sodiumoxide::crypto::box_::{self, PublicKey, SecretKey};
-use sodiumoxide::crypto::secretbox::Key;
+use sodiumoxide::crypto::box_;
 use sodiumoxide::randombytes::randombytes_into;
 
+use crate::{Key, PublicKey, SecretKey, Mime};
 use crate::errors::CryptoError;
 use crate::types::{MessageType, BlobId, FileMessage};
 
