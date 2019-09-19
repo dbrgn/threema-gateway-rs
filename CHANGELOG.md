@@ -12,6 +12,11 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v0.12.0 (2019-09-19)
+
+- [added] Blob upload: Add support for `persist` flag (#25) 
+- [fixed] Fix documentation for BlobId
+
 ### v0.11.0 (2019-09-12)
 
 - [added] Re-export `mime::Mime`
