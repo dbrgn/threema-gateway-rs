@@ -4,11 +4,8 @@
 [![Crates.io Version][crates-io-badge]][crates-io]
 [![Crates.io Downloads][crates-io-download-badge]][crates-io-download]
 
-This is a work-in-progress implementation of a Threema Gateway client library
-in Rust.
-
-Not everything is implemented yet, but sending simple and end-to-end encrypted
-messages works.
+This is a mostly-complete implementation of a Threema Gateway client library
+in Rust. For implementation status, see feature list below.
 
 [Docs](https://docs.rs/threema-gateway)
 
