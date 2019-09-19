@@ -145,9 +145,13 @@ pub(crate) fn blob_upload(
     from: &str,
     secret: &str,
     data: &[u8],
+    persist: bool,
 ) -> Result<BlobId, ApiError> {
     // Build URL
-    let url = format!("{}/upload_blob?from={}&secret={}", endpoint, from, secret);
+    let mut url = format!("{}/upload_blob?from={}&secret={}", endpoint, from, secret);
+    if persist {
+        url.push_str("&persist=1");
+    }
 
     // Build multipart/form-data request body
     let boundary = "3ma-d84f64f5-a138-4b0a-9e25-339257990c81-3ma".to_string();
