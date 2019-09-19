@@ -198,16 +198,24 @@ impl E2eApi {
 
     /// Upload encrypted data to the blob server.
     ///
+    /// If `persist` is set to `true`, then the blob will not be deleted
+    /// after a client has downloaded it and marked it as done. Use when
+    /// distributing the same blob to multiple clients.
+    ///
     /// Cost: 1 credit.
-    pub fn blob_upload(&self, data: &EncryptedMessage) -> Result<BlobId, ApiError> {
-        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, &data.ciphertext)
+    pub fn blob_upload(&self, data: &EncryptedMessage, persist: bool) -> Result<BlobId, ApiError> {
+        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, &data.ciphertext, persist)
     }
 
     /// Upload raw data to the blob server.
     ///
+    /// If `persist` is set to `true`, then the blob will not be deleted
+    /// after a client has downloaded it and marked it as done. Use when
+    /// distributing the same blob to multiple clients.
+    ///
     /// Cost: 1 credit.
-    pub fn blob_upload_raw(&self, data: &[u8]) -> Result<BlobId, ApiError> {
-        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, data)
+    pub fn blob_upload_raw(&self, data: &[u8], persist: bool) -> Result<BlobId, ApiError> {
+        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, data, persist)
     }
 }
 

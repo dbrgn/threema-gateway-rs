@@ -66,7 +66,7 @@ fn main() {
     let encrypted_image = api.encrypt_raw(&img_data, &recipient_key);
     
     // Upload image to blob server
-    let blob_id = api.blob_upload(&encrypted_image).unwrap_or_else(|e| {
+    let blob_id = api.blob_upload(&encrypted_image, false).unwrap_or_else(|e| {
         println!("Could not upload image to blob server: {}", e);
         process::exit(1);
     });
