@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::io::Read;
 
 use reqwest::{Client, StatusCode};
+use reqwest::multipart;
 use data_encoding::HEXLOWER;
 
 use crate::errors::ApiError;
@@ -154,24 +155,19 @@ pub(crate) fn blob_upload(
     }
 
     // Build multipart/form-data request body
-    let boundary = "3ma-d84f64f5-a138-4b0a-9e25-339257990c81-3ma".to_string();
-    let mut req_body = Vec::new();
-    req_body.extend_from_slice("--".as_bytes());
-    req_body.extend_from_slice(&boundary.as_bytes());
-    req_body.extend_from_slice("\r\n".as_bytes());
-    req_body.extend_from_slice("Content-Disposition: form-data; name=\"blob\"\r\n".as_bytes());
-    req_body.extend_from_slice("Content-Type: application/octet-stream\r\n\r\n".as_bytes());
-    req_body.extend_from_slice(data);
-    req_body.extend_from_slice("\r\n--".as_bytes());
-    req_body.extend_from_slice(&boundary.as_bytes());
-    req_body.extend_from_slice("--\r\n".as_bytes());
+    let form = multipart::Form::new()
+        .part(
+            "blob",
+            multipart::Part::bytes(data.to_vec())
+                .mime_str("application/octet-stream")
+                .expect("Could not parse MIME string"),
+        );
 
     // Send request
-    let mimetype = format!("multipart/form-data; boundary={}", boundary);
-    let mut res = Client::new().post(&url)
-        .body(req_body)
+    let mut res = Client::new()
+        .post(&url)
+        .multipart(form)
         .header("accept", "text/plain")
-        .header("content-type", mimetype)
         .send()?;
     map_response_code(&res.status(), Some(ApiError::BadBlob))?;
 
