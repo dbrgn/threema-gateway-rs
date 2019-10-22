@@ -5,7 +5,7 @@ use std::path::Path;
 use std::process;
 
 use docopt::Docopt;
-use mime_guess::guess_mime_type;
+use mime_guess;
 use sodiumoxide::{self, crypto::secretbox};
 use threema_gateway::{ApiBuilder, RecipientKey};
 
@@ -92,7 +92,7 @@ fn main() {
     let thumb_blob_id = encrypted_thumb.map(|t| etry!(api.blob_upload_raw(&t, false), "Could not upload thumbnail to blob server"));
 
     // Create file message
-    let mime_type = guess_mime_type(&filepath);
+    let mime_type = mime_guess::from_path(&filepath).first_or_octet_stream();
     let file_name = filepath.file_name().and_then(OsStr::to_str);
     let msg = api.encrypt_file_msg(&file_blob_id,
                                    thumb_blob_id.as_ref(),
