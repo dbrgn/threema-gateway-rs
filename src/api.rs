@@ -204,7 +204,25 @@ impl E2eApi {
     ///
     /// Cost: 1 credit.
     pub fn blob_upload(&self, data: &EncryptedMessage, persist: bool) -> Result<BlobId, ApiError> {
-        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, &data.ciphertext, persist)
+        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, &data.ciphertext, persist, None)
+    }
+
+    /// Used for testing purposes. Not intended to be called by end users.
+    #[doc(hidden)]
+    pub fn blob_upload_with_params(
+        &self,
+        data: &EncryptedMessage,
+        persist: bool,
+        additional_params: HashMap<String, String>,
+    ) -> Result<BlobId, ApiError> {
+        blob_upload(
+            self.endpoint.borrow(),
+            &self.id,
+            &self.secret,
+            &data.ciphertext,
+            persist,
+            Some(additional_params),
+        )
     }
 
     /// Upload raw data to the blob server.
@@ -215,7 +233,25 @@ impl E2eApi {
     ///
     /// Cost: 1 credit.
     pub fn blob_upload_raw(&self, data: &[u8], persist: bool) -> Result<BlobId, ApiError> {
-        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, data, persist)
+        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, data, persist, None)
+    }
+
+    /// Used for testing purposes. Not intended to be called by end users.
+    #[doc(hidden)]
+    pub fn blob_upload_raw_with_params(
+        &self,
+        data: &[u8],
+        persist: bool,
+        additional_params: HashMap<String, String>,
+    ) -> Result<BlobId, ApiError> {
+        blob_upload(
+            self.endpoint.borrow(),
+            &self.id,
+            &self.secret,
+            data,
+            persist,
+            Some(additional_params),
+        )
     }
 }
 
