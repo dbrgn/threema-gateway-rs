@@ -12,6 +12,10 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### v0.12.1 (2019-10-22)
+
+- Maintenance release
+
 ### v0.12.0 (2019-09-19)
 
 - [added] Blob upload: Add support for `persist` flag (#25) 
