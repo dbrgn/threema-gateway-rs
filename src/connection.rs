@@ -147,6 +147,7 @@ pub(crate) fn blob_upload(
     secret: &str,
     data: &[u8],
     persist: bool,
+    additional_params: Option<HashMap<String, String>>,
 ) -> Result<BlobId, ApiError> {
     // Build URL
     let mut url = format!("{}/upload_blob?from={}&secret={}", endpoint, from, secret);
@@ -155,13 +156,18 @@ pub(crate) fn blob_upload(
     }
 
     // Build multipart/form-data request body
-    let form = multipart::Form::new()
-        .part(
-            "blob",
-            multipart::Part::bytes(data.to_vec())
-                .mime_str("application/octet-stream")
-                .expect("Could not parse MIME string"),
-        );
+    let mut form = multipart::Form::new();
+    form = form.part(
+        "blob",
+        multipart::Part::bytes(data.to_vec())
+            .mime_str("application/octet-stream")
+            .expect("Could not parse MIME string"),
+    );
+    if let Some(params) = additional_params {
+        for (k, v) in params {
+            form = form.text(k, v);
+        }
+    }
 
     // Send request
     let mut res = Client::new()
