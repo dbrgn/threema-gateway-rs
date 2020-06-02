@@ -12,8 +12,8 @@ Options:
 
 fn main() {
     let args = Docopt::new(USAGE)
-                      .and_then(|docopt| docopt.parse())
-                      .unwrap_or_else(|e| e.exit());
+        .and_then(|docopt| docopt.parse())
+        .unwrap_or_else(|e| e.exit());
 
     // Command line arguments
     let from = args.get_str("<from>");
@@ -24,9 +24,9 @@ fn main() {
 
     // Create E2eApi instance
     let api = ApiBuilder::new(from, secret)
-                         .with_private_key_str(private_key)
-                         .and_then(|builder| builder.into_e2e())
-                         .unwrap();
+        .with_private_key_str(private_key)
+        .and_then(|builder| builder.into_e2e())
+        .unwrap();
 
     // Fetch public key
     // Note: In a real application, you should cache the public key

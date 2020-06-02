@@ -4,13 +4,12 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::Read;
 
-use reqwest::{Client, StatusCode};
-use reqwest::multipart;
 use data_encoding::HEXLOWER;
+use reqwest::multipart;
+use reqwest::{Client, StatusCode};
 
 use crate::errors::ApiError;
 use crate::types::BlobId;
-
 
 /// Map HTTP response status code to an ApiError if it isn't "200".
 ///
@@ -25,7 +24,10 @@ pub(crate) fn map_response_code(
         // 400
         StatusCode::BAD_REQUEST => match bad_request_meaning {
             Some(error) => Err(error),
-            None => Err(ApiError::Other(format!("Bad response status code: {}", StatusCode::BAD_REQUEST))),
+            None => Err(ApiError::Other(format!(
+                "Bad response status code: {}",
+                StatusCode::BAD_REQUEST
+            ))),
         },
         // 401
         StatusCode::UNAUTHORIZED => Err(ApiError::BadCredentials),
@@ -92,7 +94,8 @@ pub(crate) fn send_simple(
     };
 
     // Send request
-    let mut res = Client::new().post(&format!("{}/send_simple", endpoint))
+    let mut res = Client::new()
+        .post(&format!("{}/send_simple", endpoint))
         .form(&params)
         .header("accept", "application/json")
         .send()?;
@@ -127,7 +130,8 @@ pub(crate) fn send_e2e(
     params.insert("box".into(), HEXLOWER.encode(ciphertext));
 
     // Send request
-    let mut res = Client::new().post(&format!("{}/send_e2e", endpoint))
+    let mut res = Client::new()
+        .post(&format!("{}/send_e2e", endpoint))
         .form(&params)
         .header("accept", "application/json")
         .send()?;
@@ -186,15 +190,21 @@ pub(crate) fn blob_upload(
 
 #[cfg(test)]
 mod tests {
-    use std::iter::repeat;
-    use crate::MSGAPI_URL;
-    use crate::errors::ApiError;
     use super::*;
+    use crate::errors::ApiError;
+    use crate::MSGAPI_URL;
+    use std::iter::repeat;
 
     #[test]
     fn test_simple_max_length_ok() {
         let text: String = repeat("à").take(3500 / 2).collect();
-        let result = send_simple(MSGAPI_URL, "TESTTEST", &Recipient::new_id("ECHOECHO"), "secret", &text);
+        let result = send_simple(
+            MSGAPI_URL,
+            "TESTTEST",
+            &Recipient::new_id("ECHOECHO"),
+            "secret",
+            &text,
+        );
         match result {
             Err(ApiError::MessageTooLong) => panic!(),
             _ => (),
@@ -205,11 +215,16 @@ mod tests {
     fn test_simple_max_length_too_long() {
         let mut text: String = repeat("à").take(3500 / 2).collect();
         text.push('x');
-        let result = send_simple(MSGAPI_URL, "TESTTEST", &Recipient::new_id("ECHOECHO"), "secret", &text);
+        let result = send_simple(
+            MSGAPI_URL,
+            "TESTTEST",
+            &Recipient::new_id("ECHOECHO"),
+            "secret",
+            &text,
+        );
         match result {
             Err(ApiError::MessageTooLong) => (),
             _ => panic!(),
         }
     }
-
 }

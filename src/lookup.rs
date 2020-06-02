@@ -1,14 +1,13 @@
 //! ID and public key lookups.
 
 use std::fmt;
-use std::str;
 use std::io::Read;
+use std::str;
 
 use reqwest::Client;
 
 use crate::connection::map_response_code;
 use crate::errors::ApiError;
-
 
 /// Different ways to look up a Threema ID in the directory.
 #[derive(Debug, PartialEq)]
@@ -82,17 +81,20 @@ impl str::FromStr for Capabilities {
                 "audio" => capabilities.audio = true,
                 "file" => capabilities.file = true,
                 _ if capability.len() > 0 => capabilities.other.push(capability),
-                _ => { /* skip empty entries */ },
+                _ => { /* skip empty entries */ }
             };
-        };
+        }
         Ok(capabilities)
     }
 }
 
 impl fmt::Display for Capabilities {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{ text: {}, image: {}, video: {}, audio: {}, file: {}",
-            self.text, self.image, self.video, self.audio, self.file)?;
+        write!(
+            f,
+            "{{ text: {}, image: {}, video: {}, audio: {}, file: {}",
+            self.text, self.image, self.video, self.audio, self.file
+        )?;
         if self.other.len() > 0 {
             write!(f, ", other: {} }}", self.other.join(","))?;
         } else {
@@ -124,7 +126,10 @@ pub(crate) fn lookup_pubkey(
     secret: &str,
 ) -> Result<String, ApiError> {
     // Build URL
-    let url = format!("{}/pubkeys/{}?from={}&secret={}", endpoint, their_id, our_id, secret);
+    let url = format!(
+        "{}/pubkeys/{}?from={}&secret={}",
+        endpoint, their_id, our_id, secret
+    );
 
     debug!("Looking up public key for {}", their_id);
 
@@ -167,11 +172,7 @@ pub(crate) fn lookup_id(
 }
 
 /// Look up remaining gateway credits.
-pub(crate) fn lookup_credits(
-    endpoint: &str,
-    our_id: &str,
-    secret: &str,
-) -> Result<i64, ApiError> {
+pub(crate) fn lookup_credits(endpoint: &str, our_id: &str, secret: &str) -> Result<i64, ApiError> {
     let url = format!("{}/credits?from={}&secret={}", endpoint, our_id, secret);
 
     debug!("Looking up remaining credits");
@@ -183,8 +184,12 @@ pub(crate) fn lookup_credits(
     // Read, parse and return response body
     let mut body = String::new();
     res.read_to_string(&mut body)?;
-    body.trim().parse::<i64>()
-        .map_err(|_| ApiError::ParseError(format!("Could not parse response body as i64: \"{}\"", body)))
+    body.trim().parse::<i64>().map_err(|_| {
+        ApiError::ParseError(format!(
+            "Could not parse response body as i64: \"{}\"",
+            body
+        ))
+    })
 }
 
 /// Look up ID capabilities.
@@ -195,7 +200,10 @@ pub(crate) fn lookup_capabilities(
     secret: &str,
 ) -> Result<Capabilities, ApiError> {
     // Build URL
-    let url = format!("{}/capabilities/{}?from={}&secret={}", endpoint, their_id, our_id, secret);
+    let url = format!(
+        "{}/capabilities/{}?from={}&secret={}",
+        endpoint, their_id, our_id, secret
+    );
 
     debug!("Looking up capabilities for {}", their_id);
 
@@ -213,7 +221,7 @@ pub(crate) fn lookup_capabilities(
 
 #[cfg(test)]
 mod tests {
-    use super::{LookupCriterion, Capabilities};
+    use super::{Capabilities, LookupCriterion};
 
     #[test]
     fn test_lookup_criterion_display() {
@@ -229,80 +237,101 @@ mod tests {
 
     #[test]
     fn test_parse_capabilities_empty() {
-        assert_eq!("".parse::<Capabilities>().unwrap(), Capabilities {
-            text: false,
-            image: false,
-            video: false,
-            audio: false,
-            file: false,
-            other: vec![],
-        });
+        assert_eq!(
+            "".parse::<Capabilities>().unwrap(),
+            Capabilities {
+                text: false,
+                image: false,
+                video: false,
+                audio: false,
+                file: false,
+                other: vec![],
+            }
+        );
     }
 
     #[test]
     fn test_parse_capabilities_simple() {
-        assert_eq!("image".parse::<Capabilities>().unwrap(), Capabilities {
-            text: false,
-            image: true,
-            video: false,
-            audio: false,
-            file: false,
-            other: vec![],
-        });
+        assert_eq!(
+            "image".parse::<Capabilities>().unwrap(),
+            Capabilities {
+                text: false,
+                image: true,
+                video: false,
+                audio: false,
+                file: false,
+                other: vec![],
+            }
+        );
     }
 
     #[test]
     fn test_parse_capabilities_combined() {
-        assert_eq!("image,video,file".parse::<Capabilities>().unwrap(), Capabilities {
-            text: false,
-            image: true,
-            video: true,
-            audio: false,
-            file: true,
-            other: vec![],
-        });
+        assert_eq!(
+            "image,video,file".parse::<Capabilities>().unwrap(),
+            Capabilities {
+                text: false,
+                image: true,
+                video: true,
+                audio: false,
+                file: true,
+                other: vec![],
+            }
+        );
     }
 
     #[test]
     fn test_parse_capabilities_unknown() {
-        assert_eq!("jetpack,text,lasersword".parse::<Capabilities>().unwrap(), Capabilities {
-            text: true,
-            image: false,
-            video: false,
-            audio: false,
-            file: false,
-            other: vec!["jetpack".into(), "lasersword".into()],
-        });
+        assert_eq!(
+            "jetpack,text,lasersword".parse::<Capabilities>().unwrap(),
+            Capabilities {
+                text: true,
+                image: false,
+                video: false,
+                audio: false,
+                file: false,
+                other: vec!["jetpack".into(), "lasersword".into()],
+            }
+        );
     }
 
     #[test]
     fn test_parse_capabilities_cleanup() {
-        assert_eq!("jetpack,Text ,LASERSWORD,,.,".parse::<Capabilities>().unwrap(), Capabilities {
-            text: true,
-            image: false,
-            video: false,
-            audio: false,
-            file: false,
-            other: vec!["jetpack".into(), "lasersword".into(), ".".into()],
-        });
+        assert_eq!(
+            "jetpack,Text ,LASERSWORD,,.,"
+                .parse::<Capabilities>()
+                .unwrap(),
+            Capabilities {
+                text: true,
+                image: false,
+                video: false,
+                audio: false,
+                file: false,
+                other: vec!["jetpack".into(), "lasersword".into(), ".".into()],
+            }
+        );
     }
 
     #[test]
     fn test_parse_capabilities_can() {
-        let cap = "jetpack,Text ,LASERSWORD,,.,".parse::<Capabilities>().unwrap();
-        assert_eq!(cap, Capabilities {
-            text: true,
-            image: false,
-            video: false,
-            audio: false,
-            file: false,
-            other: vec!["jetpack".into(), "lasersword".into(), ".".into()],
-        });
+        let cap = "jetpack,Text ,LASERSWORD,,.,"
+            .parse::<Capabilities>()
+            .unwrap();
+        assert_eq!(
+            cap,
+            Capabilities {
+                text: true,
+                image: false,
+                video: false,
+                audio: false,
+                file: false,
+                other: vec!["jetpack".into(), "lasersword".into(), ".".into()],
+            }
+        );
         assert!(cap.can("jetpack"));
         assert!(cap.can("text"));
         assert!(cap.can("lasersword"));
         assert!(cap.can("."));
         assert!(!cap.can("image"));
     }
-
 }

@@ -4,9 +4,8 @@ use std::string::ToString;
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use serde::{Serialize, Serializer};
 
-use crate::{Key, Mime};
 use crate::errors::ApiError;
-
+use crate::{Key, Mime};
 
 /// A message type.
 pub enum MessageType {
@@ -32,39 +31,40 @@ impl Into<u8> for MessageType {
 /// A file message.
 #[derive(Debug, Serialize)]
 pub struct FileMessage {
-    #[serde(rename="b")]
+    #[serde(rename = "b")]
     pub file_blob_id: BlobId,
-    #[serde(rename="t")]
+    #[serde(rename = "t")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thumbnail_blob_id: Option<BlobId>,
-    #[serde(rename="k")]
+    #[serde(rename = "k")]
     #[serde(serialize_with = "key_to_hex")]
     pub blob_encryption_key: Key,
-    #[serde(rename="m")]
+    #[serde(rename = "m")]
     #[serde(serialize_with = "serialize_to_string")]
     pub mime_type: Mime,
-    #[serde(rename="n")]
+    #[serde(rename = "n")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file_name: Option<String>,
-    #[serde(rename="s")]
+    #[serde(rename = "s")]
     pub file_size_bytes: u32,
-    #[serde(rename="d")]
+    #[serde(rename = "d")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    #[serde(rename="i")]
+    #[serde(rename = "i")]
     pub reserved: u8,
 }
 
 impl FileMessage {
     /// Create a new file message.
-    pub fn new(file_blob_id: BlobId,
-               thumbnail_blob_id: Option<BlobId>,
-               blob_encryption_key: Key,
-               mime_type: Mime,
-               file_name: Option<String>,
-               file_size_bytes: u32,
-               description: Option<String>)
-               -> Self {
+    pub fn new(
+        file_blob_id: BlobId,
+        thumbnail_blob_id: Option<BlobId>,
+        blob_encryption_key: Key,
+        mime_type: Mime,
+        file_name: Option<String>,
+        file_size_bytes: u32,
+        description: Option<String>,
+    ) -> Self {
         FileMessage {
             file_blob_id: file_blob_id,
             thumbnail_blob_id: thumbnail_blob_id,
@@ -90,7 +90,9 @@ impl BlobId {
 
     /// Create a new BlobId from a 32 character hexadecimal String.
     pub fn from_str(id: &str) -> Result<Self, ApiError> {
-        let bytes = HEXLOWER_PERMISSIVE.decode(id.as_bytes()).map_err(|_| ApiError::BadBlobId)?;
+        let bytes = HEXLOWER_PERMISSIVE
+            .decode(id.as_bytes())
+            .map_err(|_| ApiError::BadBlobId)?;
         if bytes.len() != 16 {
             return Err(ApiError::BadBlobId);
         }
@@ -114,16 +116,17 @@ impl Serialize for BlobId {
     }
 }
 
-fn serialize_to_string<S, T>(val: &T, serializer: S)
-        -> Result<S::Ok, S::Error>
-        where S: Serializer, T: ToString {
+fn serialize_to_string<S, T>(val: &T, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+    T: ToString,
+{
     serializer.serialize_str(&val.to_string())
 }
 
 fn key_to_hex<S: Serializer>(val: &Key, serializer: S) -> Result<S::Ok, S::Error> {
     serializer.serialize_str(&HEXLOWER.encode(&val.0))
 }
-
 
 #[cfg(test)]
 mod test {
@@ -149,7 +152,10 @@ mod test {
 
     #[test]
     fn test_serialize_to_string_minimal() {
-        let pk = Key([1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]);
+        let pk = Key([
+            1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
+            2, 3, 4,
+        ]);
         let msg = FileMessage {
             file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
             thumbnail_blob_id: None,
@@ -164,9 +170,15 @@ mod test {
         let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
 
         assert_eq!(deserialized.keys().len(), 5);
-        assert_eq!(deserialized.get("b").unwrap(), "0123456789abcdef0123456789abcdef");
+        assert_eq!(
+            deserialized.get("b").unwrap(),
+            "0123456789abcdef0123456789abcdef"
+        );
         assert_eq!(deserialized.get("t"), None);
-        assert_eq!(deserialized.get("k").unwrap(), "0102030401020304010203040102030401020304010203040102030401020304");
+        assert_eq!(
+            deserialized.get("k").unwrap(),
+            "0102030401020304010203040102030401020304010203040102030401020304"
+        );
         assert_eq!(deserialized.get("m").unwrap(), "application/pdf");
         assert_eq!(deserialized.get("n"), None);
         assert_eq!(deserialized.get("s").unwrap(), 2048);
@@ -176,7 +188,10 @@ mod test {
 
     #[test]
     fn test_serialize_to_string_full() {
-        let pk = Key([1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4]);
+        let pk = Key([
+            1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
+            2, 3, 4,
+        ]);
         let msg = FileMessage {
             file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
             thumbnail_blob_id: Some(BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap()),
@@ -191,14 +206,22 @@ mod test {
         let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
 
         assert_eq!(deserialized.keys().len(), 8);
-        assert_eq!(deserialized.get("b").unwrap(), "0123456789abcdef0123456789abcdef");
-        assert_eq!(deserialized.get("t").unwrap(), "abcdef0123456789abcdef0123456789");
-        assert_eq!(deserialized.get("k").unwrap(), "0102030401020304010203040102030401020304010203040102030401020304");
+        assert_eq!(
+            deserialized.get("b").unwrap(),
+            "0123456789abcdef0123456789abcdef"
+        );
+        assert_eq!(
+            deserialized.get("t").unwrap(),
+            "abcdef0123456789abcdef0123456789"
+        );
+        assert_eq!(
+            deserialized.get("k").unwrap(),
+            "0102030401020304010203040102030401020304010203040102030401020304"
+        );
         assert_eq!(deserialized.get("m").unwrap(), "application/pdf");
         assert_eq!(deserialized.get("n").unwrap(), "secret.pdf");
         assert_eq!(deserialized.get("s").unwrap(), 2048);
         assert_eq!(deserialized.get("i").unwrap(), 0);
         assert_eq!(deserialized.get("d").unwrap(), "This is a fancy file");
     }
-
 }

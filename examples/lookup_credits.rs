@@ -12,8 +12,8 @@ Options:
 
 fn main() {
     let args = Docopt::new(USAGE)
-                      .and_then(|docopt| docopt.parse())
-                      .unwrap_or_else(|e| e.exit());
+        .and_then(|docopt| docopt.parse())
+        .unwrap_or_else(|e| e.exit());
 
     // Command line arguments
     let from = args.get_str("<from>");
@@ -27,7 +27,7 @@ fn main() {
         Err(e) => {
             println!("Could not look up credits: {}", e);
             process::exit(1);
-        },
+        }
         Ok(credits) => println!("You have {} credits remaining", credits),
     }
 }

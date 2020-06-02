@@ -16,8 +16,8 @@ Options:
 
 fn main() {
     let args = Docopt::new(USAGE)
-                      .and_then(|docopt| docopt.parse())
-                      .unwrap_or_else(|e| e.exit());
+        .and_then(|docopt| docopt.parse())
+        .unwrap_or_else(|e| e.exit());
 
     // Command line arguments
     let from = args.get_str("<from>");
@@ -38,9 +38,9 @@ fn main() {
 
     // Create E2eApi instance
     let api = ApiBuilder::new(from, secret)
-                         .with_private_key_str(private_key)
-                         .and_then(|builder| builder.into_e2e())
-                         .unwrap();
+        .with_private_key_str(private_key)
+        .and_then(|builder| builder.into_e2e())
+        .unwrap();
 
     // Fetch public key
     // Note: In a real application, you should cache the public key
@@ -64,18 +64,22 @@ fn main() {
         process::exit(1);
     });
     let encrypted_image = api.encrypt_raw(&img_data, &recipient_key);
-    
+
     // Upload image to blob server
-    let blob_id = api.blob_upload(&encrypted_image, false).unwrap_or_else(|e| {
-        println!("Could not upload image to blob server: {}", e);
-        process::exit(1);
-    });
+    let blob_id = api
+        .blob_upload(&encrypted_image, false)
+        .unwrap_or_else(|e| {
+            println!("Could not upload image to blob server: {}", e);
+            process::exit(1);
+        });
 
     // Create image message
-    let msg = api.encrypt_image_msg(&blob_id,
-                                    img_data.len() as u32,
-                                    &encrypted_image.nonce,
-                                    &recipient_key);
+    let msg = api.encrypt_image_msg(
+        &blob_id,
+        img_data.len() as u32,
+        &encrypted_image.nonce,
+        &recipient_key,
+    );
 
     // Send
     let msg_id = api.send(&to, &msg);
