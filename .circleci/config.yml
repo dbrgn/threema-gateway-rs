@@ -58,6 +58,17 @@ jobs:
     docker:
       - image: rust:latest
     steps: *build-steps
+  fmt:
+    docker:
+      - image: rust:1.43.1
+    steps:
+      - checkout
+      - run:
+          name: Install rustfmt
+          command: rustup component add rustfmt
+      - run:
+          name: Run cargo fmt
+          command: cargo fmt -- --check
   audit:
     docker:
       - image: rust:latest
@@ -89,6 +100,7 @@ workflows:
       - test-1.38
       - test-stable
       - audit
+      - fmt
 
   # Build master every week on Monday at 04:00 am
   weekly:
