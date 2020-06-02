@@ -1,5 +1,5 @@
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder};
+use threema_gateway::ApiBuilder;
 
 const USAGE: &'static str = "
 Usage: lookup_capabilities [options] <our_id> <secret> <their_id>
@@ -10,8 +10,8 @@ Options:
 
 fn main() {
     let args = Docopt::new(USAGE)
-                      .and_then(|docopt| docopt.parse())
-                      .unwrap_or_else(|e| e.exit());
+        .and_then(|docopt| docopt.parse())
+        .unwrap_or_else(|e| e.exit());
 
     // Command line arguments
     let our_id = args.get_str("<our_id>");

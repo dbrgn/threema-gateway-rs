@@ -62,30 +62,30 @@
 //! For more examples, see the
 //! [`examples/`](https://github.com/dbrgn/threema-gateway-rs/tree/master/examples) directory.
 
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 
 mod api;
 mod connection;
 mod crypto;
+pub mod errors;
 mod lookup;
 mod types;
-pub mod errors;
 
 pub use mime::Mime;
 pub use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
 pub use sodiumoxide::crypto::secretbox::Key;
 
 pub use crate::api::{ApiBuilder, E2eApi, SimpleApi};
-pub use crate::connection::{Recipient};
+pub use crate::connection::Recipient;
 pub use crate::crypto::{EncryptedMessage, RecipientKey};
-pub use crate::lookup::{LookupCriterion, Capabilities};
-pub use crate::types::{MessageType, BlobId};
+pub use crate::lookup::{Capabilities, LookupCriterion};
+pub use crate::types::{BlobId, MessageType};
 
 const MSGAPI_URL: &'static str = "https://msgapi.threema.ch";
 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn it_works() {
-    }
+    fn it_works() {}
 }

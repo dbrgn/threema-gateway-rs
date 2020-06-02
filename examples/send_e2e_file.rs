@@ -23,13 +23,13 @@ macro_rules! etry {
             println!("{}: {}", $msg, e);
             process::exit(1);
         })
-    }}
+    }};
 }
 
 fn main() {
     let args = Docopt::new(USAGE)
-                      .and_then(|docopt| docopt.parse())
-                      .unwrap_or_else(|e| e.exit());
+        .and_then(|docopt| docopt.parse())
+        .unwrap_or_else(|e| e.exit());
 
     // Command line arguments
     let from = args.get_str("<from>");
@@ -39,7 +39,7 @@ fn main() {
     let filepath = Path::new(args.get_str("<path-to-file>"));
     let thumbpath = match args.get_str("<path-to-thumbnail>") {
         "" => None,
-        p @ _ => Some(Path::new(p))
+        p @ _ => Some(Path::new(p)),
     };
 
     // Verify thumbnail file type
@@ -52,9 +52,9 @@ fn main() {
 
     // Create E2eApi instance
     let api = ApiBuilder::new(from, secret)
-                         .with_private_key_str(private_key)
-                         .and_then(|builder| builder.into_e2e())
-                         .unwrap();
+        .with_private_key_str(private_key)
+        .and_then(|builder| builder.into_e2e())
+        .unwrap();
 
     // Fetch public key
     // Note: In a real application, you should cache the public key
@@ -69,10 +69,13 @@ fn main() {
         Some(p) => {
             let mut thumb = etry!(File::open(p), format!("Could not open thumbnail {:?}", p));
             let mut thumb_data: Vec<u8> = vec![];
-            etry!(thumb.read_to_end(&mut thumb_data), format!("Could not read thumbnail {:?}", p));
+            etry!(
+                thumb.read_to_end(&mut thumb_data),
+                format!("Could not read thumbnail {:?}", p)
+            );
             Some(thumb_data)
-        },
-        None => None
+        }
+        None => None,
     };
 
     // Make sure to init sodiumoxide library
@@ -80,28 +83,42 @@ fn main() {
 
     // Generate a random encryption key
     let key = secretbox::gen_key();
-    let file_nonce = secretbox::Nonce([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]);
-    let thumb_nonce = secretbox::Nonce([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2]);
+    let file_nonce = secretbox::Nonce([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    ]);
+    let thumb_nonce = secretbox::Nonce([
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+    ]);
 
     // Encrypt files
     let encrypted_file = secretbox::seal(&file_data, &file_nonce, &key);
     let encrypted_thumb = thumb_data.map(|t| secretbox::seal(&t, &thumb_nonce, &key));
 
     // Upload files to blob server
-    let file_blob_id = etry!(api.blob_upload_raw(&encrypted_file, false), "Could not upload file to blob server");
-    let thumb_blob_id = encrypted_thumb.map(|t| etry!(api.blob_upload_raw(&t, false), "Could not upload thumbnail to blob server"));
+    let file_blob_id = etry!(
+        api.blob_upload_raw(&encrypted_file, false),
+        "Could not upload file to blob server"
+    );
+    let thumb_blob_id = encrypted_thumb.map(|t| {
+        etry!(
+            api.blob_upload_raw(&t, false),
+            "Could not upload thumbnail to blob server"
+        )
+    });
 
     // Create file message
     let mime_type = mime_guess::from_path(&filepath).first_or_octet_stream();
     let file_name = filepath.file_name().and_then(OsStr::to_str);
-    let msg = api.encrypt_file_msg(&file_blob_id,
-                                   thumb_blob_id.as_ref(),
-                                   &key,
-                                   &mime_type,
-                                   file_name,
-                                   file_data.len() as u32,
-                                   Some("File message description"),
-                                   &recipient_key);
+    let msg = api.encrypt_file_msg(
+        &file_blob_id,
+        thumb_blob_id.as_ref(),
+        &key,
+        &mime_type,
+        file_name,
+        file_data.len() as u32,
+        Some("File message description"),
+        &recipient_key,
+    );
 
     // Send
     let msg_id = api.send(&to, &msg);

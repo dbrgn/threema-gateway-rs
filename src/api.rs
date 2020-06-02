@@ -3,19 +3,18 @@ use std::collections::HashMap;
 
 use data_encoding::HEXLOWER_PERMISSIVE;
 
-use crate::MSGAPI_URL;
-use crate::{Key, SecretKey, Mime};
-use crate::connection::{Recipient, send_e2e, send_simple, blob_upload};
-use crate::crypto::{encrypt, encrypt_raw, encrypt_image_msg, encrypt_file_msg};
+use crate::connection::{blob_upload, send_e2e, send_simple, Recipient};
+use crate::crypto::{encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw};
 use crate::crypto::{EncryptedMessage, RecipientKey};
 use crate::errors::{ApiBuilderError, ApiError};
-use crate::lookup::{LookupCriterion, Capabilities};
-use crate::lookup::{lookup_id, lookup_pubkey, lookup_capabilities, lookup_credits};
-use crate::types::{MessageType, BlobId};
+use crate::lookup::{lookup_capabilities, lookup_credits, lookup_id, lookup_pubkey};
+use crate::lookup::{Capabilities, LookupCriterion};
+use crate::types::{BlobId, MessageType};
+use crate::MSGAPI_URL;
+use crate::{Key, Mime, SecretKey};
 
 /// Implement methods available on both the simple and the e2e API objects.
 macro_rules! impl_common_functionality {
-
     () => {
         /// Fetch the public key for the specified Threema ID.
         ///
@@ -56,7 +55,7 @@ macro_rules! impl_common_functionality {
         pub fn lookup_credits(&self) -> Result<i64, ApiError> {
             lookup_credits(self.endpoint.borrow(), &self.id, &self.secret)
         }
-    }
+    };
 }
 
 /// Struct to talk to the simple API (without end-to-end encryption).
@@ -78,7 +77,7 @@ impl SimpleApi {
             id: id.into(),
             secret: secret.into(),
             endpoint: endpoint,
-        }
+        };
     }
 
     /// Send a message to the specified recipient in basic mode.
@@ -118,7 +117,7 @@ impl E2eApi {
             secret: secret.into(),
             private_key: private_key,
             endpoint: endpoint,
-        }
+        };
     }
 
     /// Encrypt raw bytes for the specified recipient public key.
@@ -142,13 +141,20 @@ impl E2eApi {
     /// The image size needs to be specified in bytes. Note that the size is
     /// only used for download size displaying purposes and has no security
     /// implications.
-    pub fn encrypt_image_msg(&self,
-                             blob_id: &BlobId,
-                             img_size_bytes: u32,
-                             image_data_nonce: &[u8; 24],
-                             recipient_key: &RecipientKey)
-                             -> EncryptedMessage {
-        encrypt_image_msg(blob_id, img_size_bytes, image_data_nonce, &recipient_key.0, &self.private_key)
+    pub fn encrypt_image_msg(
+        &self,
+        blob_id: &BlobId,
+        img_size_bytes: u32,
+        image_data_nonce: &[u8; 24],
+        recipient_key: &RecipientKey,
+    ) -> EncryptedMessage {
+        encrypt_image_msg(
+            blob_id,
+            img_size_bytes,
+            image_data_nonce,
+            &recipient_key.0,
+            &self.private_key,
+        )
     }
 
     /// Encrypt a file message for the specified recipient public key.
@@ -162,36 +168,62 @@ impl E2eApi {
     /// The file size needs to be specified in bytes. Note that the size is
     /// only used for download size displaying purposes and has no security
     /// implications.
-    pub fn encrypt_file_msg(&self,
-                            file_blob_id: &BlobId,
-                            thumbnail_blob_id: Option<&BlobId>,
-                            blob_encryption_key: &Key,
-                            mime_type: &Mime,
-                            file_name: Option<&str>,
-                            file_size_bytes: u32,
-                            description: Option<&str>,
-                            recipient_key: &RecipientKey)
-                            -> EncryptedMessage {
-        encrypt_file_msg(file_blob_id, thumbnail_blob_id, blob_encryption_key, mime_type,
-                         file_name, file_size_bytes, description,
-                         &recipient_key.0, &self.private_key)
+    pub fn encrypt_file_msg(
+        &self,
+        file_blob_id: &BlobId,
+        thumbnail_blob_id: Option<&BlobId>,
+        blob_encryption_key: &Key,
+        mime_type: &Mime,
+        file_name: Option<&str>,
+        file_size_bytes: u32,
+        description: Option<&str>,
+        recipient_key: &RecipientKey,
+    ) -> EncryptedMessage {
+        encrypt_file_msg(
+            file_blob_id,
+            thumbnail_blob_id,
+            blob_encryption_key,
+            mime_type,
+            file_name,
+            file_size_bytes,
+            description,
+            &recipient_key.0,
+            &self.private_key,
+        )
     }
 
     /// Send an encrypted E2E message to the specified Threema ID.
     ///
     /// Cost: 1 credit.
     pub fn send(&self, to: &str, message: &EncryptedMessage) -> Result<String, ApiError> {
-        send_e2e(self.endpoint.borrow(), &self.id, to, &self.secret, &message.nonce, &message.ciphertext, None)
+        send_e2e(
+            self.endpoint.borrow(),
+            &self.id,
+            to,
+            &self.secret,
+            &message.nonce,
+            &message.ciphertext,
+            None,
+        )
     }
 
     /// Used for testing purposes. Not intended to be called by end users.
     #[doc(hidden)]
-    pub fn send_with_params(&self,
-                            to: &str,
-                            message: &EncryptedMessage,
-                            additional_params: HashMap<String, String>)
-                            -> Result<String, ApiError> {
-        send_e2e(self.endpoint.borrow(), &self.id, to, &self.secret, &message.nonce, &message.ciphertext, Some(additional_params))
+    pub fn send_with_params(
+        &self,
+        to: &str,
+        message: &EncryptedMessage,
+        additional_params: HashMap<String, String>,
+    ) -> Result<String, ApiError> {
+        send_e2e(
+            self.endpoint.borrow(),
+            &self.id,
+            to,
+            &self.secret,
+            &message.nonce,
+            &message.ciphertext,
+            Some(additional_params),
+        )
     }
 
     impl_common_functionality!();
@@ -204,7 +236,14 @@ impl E2eApi {
     ///
     /// Cost: 1 credit.
     pub fn blob_upload(&self, data: &EncryptedMessage, persist: bool) -> Result<BlobId, ApiError> {
-        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, &data.ciphertext, persist, None)
+        blob_upload(
+            self.endpoint.borrow(),
+            &self.id,
+            &self.secret,
+            &data.ciphertext,
+            persist,
+            None,
+        )
     }
 
     /// Used for testing purposes. Not intended to be called by end users.
@@ -233,7 +272,14 @@ impl E2eApi {
     ///
     /// Cost: 1 credit.
     pub fn blob_upload_raw(&self, data: &[u8], persist: bool) -> Result<BlobId, ApiError> {
-        blob_upload(self.endpoint.borrow(), &self.id, &self.secret, data, persist, None)
+        blob_upload(
+            self.endpoint.borrow(),
+            &self.id,
+            &self.secret,
+            data,
+            persist,
+            None,
+        )
     }
 
     /// Used for testing purposes. Not intended to be called by end users.
@@ -331,8 +377,9 @@ impl ApiBuilder {
 
     /// Set the private key from a byte slice. Only needed for E2e mode.
     pub fn with_private_key_bytes(mut self, private_key: &[u8]) -> Result<Self, ApiBuilderError> {
-        let private_key = SecretKey::from_slice(private_key)
-            .ok_or(ApiBuilderError::InvalidKey("Invalid libsodium private key".into()))?;
+        let private_key = SecretKey::from_slice(private_key).ok_or(ApiBuilderError::InvalidKey(
+            "Invalid libsodium private key".into(),
+        ))?;
         self.private_key = Some(private_key);
         Ok(self)
     }
@@ -340,11 +387,13 @@ impl ApiBuilder {
     /// Set the private key from a hex-encoded string reference. Only needed
     /// for E2e mode.
     pub fn with_private_key_str(self, private_key: &str) -> Result<Self, ApiBuilderError> {
-        let private_key_bytes = HEXLOWER_PERMISSIVE.decode(private_key.as_bytes())
-            .map_err(|e| {
-                let msg = format!("Could not decode private key hex string: {}", e);
-                ApiBuilderError::InvalidKey(msg)
-            })?;
+        let private_key_bytes =
+            HEXLOWER_PERMISSIVE
+                .decode(private_key.as_bytes())
+                .map_err(|e| {
+                    let msg = format!("Could not decode private key hex string: {}", e);
+                    ApiBuilderError::InvalidKey(msg)
+                })?;
         self.with_private_key_bytes(&private_key_bytes)
     }
 
