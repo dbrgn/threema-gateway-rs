@@ -6,7 +6,7 @@ use std::string::ToString;
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use serde::{Serialize, Serializer};
 
-use crate::errors::ApiError;
+use crate::errors::{ApiError, FileMessageBuilderError};
 use crate::{Key, Mime};
 
 /// A message type.
@@ -69,28 +69,50 @@ impl Default for RenderingType {
 #[derive(Debug, Serialize)]
 pub struct FileMessage {
     #[serde(rename = "b")]
-    pub(crate) file_blob_id: BlobId,
+    file_blob_id: BlobId,
     #[serde(rename = "t")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) thumbnail_blob_id: Option<BlobId>,
+    thumbnail_blob_id: Option<BlobId>,
     #[serde(rename = "k")]
     #[serde(serialize_with = "key_to_hex")]
-    pub(crate) blob_encryption_key: Key,
+    blob_encryption_key: Key,
     #[serde(rename = "m")]
     #[serde(serialize_with = "serialize_to_string")]
-    pub(crate) mime_type: Mime,
+    mime_type: Mime,
     #[serde(rename = "n")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) file_name: Option<String>,
+    file_name: Option<String>,
     #[serde(rename = "s")]
-    pub(crate) file_size_bytes: u32,
+    file_size_bytes: u32,
     #[serde(rename = "d")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) description: Option<String>,
+    description: Option<String>,
     #[serde(rename = "j")]
-    pub(crate) rendering_type: RenderingType,
+    rendering_type: RenderingType,
     #[serde(rename = "i")]
-    pub(crate) reserved: u8,
+    reserved: u8,
+    #[serde(rename = "x")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    metadata: Option<FileMetadata>,
+}
+
+/// Metadata for a file message (depending on media type).
+///
+/// This data is intended to enhance the layout logic.
+#[derive(Debug, Serialize, Default)]
+struct FileMetadata {
+    #[serde(rename = "a")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    animated: Option<bool>,
+    #[serde(rename = "h")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    height: Option<u32>,
+    #[serde(rename = "w")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    width: Option<u32>,
+    #[serde(rename = "d")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration_seconds: Option<f32>,
 }
 
 impl FileMessage {
@@ -121,6 +143,7 @@ pub struct FileMessageBuilder {
     description: Option<String>,
     rendering_type: RenderingType,
     reserved: u8,
+    metadata: Option<FileMetadata>,
 }
 
 impl FileMessageBuilder {
@@ -154,7 +177,17 @@ impl FileMessageBuilder {
             description: None,
             rendering_type: RenderingType::File,
             reserved: 0,
+            metadata: None,
         }
+    }
+
+    /// Ensure that an (empty) metadata field is set and return a mutable
+    /// reference ot it.
+    fn ensure_metadata(&mut self) -> &mut FileMetadata {
+        if self.metadata.is_none() {
+            self.metadata = Some(FileMetadata::default());
+        }
+        self.metadata.as_mut().unwrap() // Cannot fail, since we assign metadata above
     }
 
     /// Set a thumbnail.
@@ -217,11 +250,57 @@ impl FileMessageBuilder {
         self
     }
 
+    /// Mark this file message as animated.
+    ///
+    /// May only be used for files with rendering type `Media` or `Sticker`.
+    pub fn animated(mut self, animated: bool) -> Self {
+        self.ensure_metadata().animated = Some(animated);
+        self
+    }
+
+    /// Set the dimensions of this file message.
+    ///
+    /// May only be used for files with rendering type `Media` or `Sticker`.
+    pub fn dimensions(mut self, height: u32, width: u32) -> Self {
+        let metadata = self.ensure_metadata();
+        metadata.height = Some(height);
+        metadata.width = Some(width);
+        self
+    }
+
+    /// Set the duration (in seconds) of this file message.
+    ///
+    /// May only be used for audio/video files with rendering type `Media`.
+    pub fn duration(mut self, seconds: f32) -> Self {
+        self.ensure_metadata().duration_seconds = Some(seconds);
+        self
+    }
+
     /// Create a [`FileMessage`] from this builder.
     ///
     /// [`FileMessage`]: struct.FileMessage.html
-    pub fn build(self) -> FileMessage {
-        FileMessage {
+    pub fn build(self) -> Result<FileMessage, FileMessageBuilderError> {
+        // Validate illegal metadata combinations
+        if let Some(metadata) = &self.metadata {
+            if self.rendering_type == RenderingType::File
+                && (metadata.animated.is_some()
+                    || metadata.duration_seconds.is_some()
+                    || metadata.height.is_some()
+                    || metadata.width.is_some())
+            {
+                return Err(FileMessageBuilderError::IllegalCombination(
+                    "File message with rendering type file may not contain media metadata",
+                ));
+            }
+            if self.rendering_type == RenderingType::Sticker && metadata.duration_seconds.is_some()
+            {
+                return Err(FileMessageBuilderError::IllegalCombination(
+                    "File message with rendering type sticker may not contain duration",
+                ));
+            }
+        };
+
+        Ok(FileMessage {
             file_blob_id: self.file_blob_id,
             thumbnail_blob_id: self.thumbnail_blob_id,
             blob_encryption_key: self.blob_encryption_key,
@@ -231,7 +310,8 @@ impl FileMessageBuilder {
             description: self.description,
             rendering_type: self.rendering_type,
             reserved: self.reserved,
-        }
+            metadata: self.metadata,
+        })
     }
 }
 
@@ -325,6 +405,7 @@ mod test {
             description: None,
             rendering_type: RenderingType::File,
             reserved: 0,
+            metadata: None,
         };
         let data = json::to_string(&msg).unwrap();
         let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
@@ -363,11 +444,17 @@ mod test {
             description: Some("This is a fancy file".into()),
             rendering_type: RenderingType::Sticker,
             reserved: 1,
+            metadata: Some(FileMetadata {
+                animated: Some(true),
+                height: Some(320),
+                width: Some(240),
+                duration_seconds: Some(12.7),
+            }),
         };
         let data = json::to_string(&msg).unwrap();
         let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
 
-        assert_eq!(deserialized.keys().len(), 9);
+        assert_eq!(deserialized.keys().len(), 10);
         assert_eq!(
             deserialized.get("b").unwrap(),
             "0123456789abcdef0123456789abcdef"
@@ -386,6 +473,10 @@ mod test {
         assert_eq!(deserialized.get("j").unwrap(), 2);
         assert_eq!(deserialized.get("i").unwrap(), 1);
         assert_eq!(deserialized.get("d").unwrap(), "This is a fancy file");
+        assert_eq!(deserialized.get("x").unwrap().get("a").unwrap(), true);
+        assert_eq!(deserialized.get("x").unwrap().get("h").unwrap(), 320);
+        assert_eq!(deserialized.get("x").unwrap().get("w").unwrap(), 240);
+        assert_eq!(deserialized.get("x").unwrap().get("d").unwrap(), 12.7);
     }
 
     #[test]
@@ -402,7 +493,8 @@ mod test {
             .file_name("hello.jpg")
             .description(String::from("An image file"))
             .rendering_type(RenderingType::Media)
-            .build();
+            .build()
+            .unwrap();
 
         assert_eq!(msg.file_blob_id, file_blob_id);
         assert_eq!(msg.thumbnail_blob_id, Some(thumb_blob_id));

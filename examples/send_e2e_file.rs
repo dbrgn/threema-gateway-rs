@@ -113,7 +113,8 @@ fn main() {
         .file_name_opt(file_name)
         .description("File message description")
         .rendering_type(RenderingType::File)
-        .build();
+        .build()
+        .expect("Could not build FileMessage");
     let encrypted = api.encrypt_file_msg(&msg, &recipient_key);
 
     // Send
