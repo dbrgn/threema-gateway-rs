@@ -14,6 +14,7 @@ Possible log types:
 
 ### Unreleased
 
+- [added] Allow specifying `RenderingType` for file messages
 - [changed] You now need to import `std::str::FromStr` to access
   `BlobId::from_str` or `RecipientKey::from_str`
 

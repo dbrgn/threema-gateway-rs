@@ -1,3 +1,4 @@
+use std::default::Default;
 use std::fmt;
 use std::str::FromStr;
 use std::string::ToString;
@@ -9,6 +10,7 @@ use crate::errors::ApiError;
 use crate::{Key, Mime};
 
 /// A message type.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MessageType {
     Text,
     Image,
@@ -26,6 +28,40 @@ impl Into<u8> for MessageType {
             MessageType::File => 0x17,
             MessageType::DeliveryReceipt => 0x80,
         }
+    }
+}
+
+/// The rendering type influences how a file message is displayed on the device
+/// of the recipient.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum RenderingType {
+    /// Display as default file message
+    File,
+    /// Display as media file message (e.g. image or audio message)
+    Media,
+    /// Display as sticker (images with transparency, rendered without bubble)
+    Sticker,
+}
+
+impl Into<u8> for RenderingType {
+    fn into(self) -> u8 {
+        match self {
+            Self::File => 0,
+            Self::Media => 1,
+            Self::Sticker => 2,
+        }
+    }
+}
+
+impl Serialize for RenderingType {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_u8(self.clone().into())
+    }
+}
+
+impl Default for RenderingType {
+    fn default() -> Self {
+        RenderingType::File
     }
 }
 
@@ -51,6 +87,8 @@ pub struct FileMessage {
     #[serde(rename = "d")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(rename = "j")]
+    pub rendering_type: RenderingType,
     #[serde(rename = "i")]
     pub reserved: u8,
 }
@@ -65,6 +103,7 @@ impl FileMessage {
         file_name: Option<String>,
         file_size_bytes: u32,
         description: Option<String>,
+        rendering_type: RenderingType,
     ) -> Self {
         FileMessage {
             file_blob_id,
@@ -74,7 +113,12 @@ impl FileMessage {
             file_name,
             file_size_bytes,
             description,
-            reserved: 0,
+            rendering_type,
+            reserved: match rendering_type {
+                RenderingType::File => 0,
+                RenderingType::Media => 1,
+                RenderingType::Sticker => 1,
+            },
         }
     }
 }
@@ -159,20 +203,20 @@ mod test {
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
         ]);
-        let msg = FileMessage {
-            file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
-            thumbnail_blob_id: None,
-            blob_encryption_key: pk,
-            mime_type: "application/pdf".parse().unwrap(),
-            file_name: None,
-            file_size_bytes: 2048,
-            description: None,
-            reserved: 0,
-        };
+        let msg = FileMessage::new(
+            BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
+            None,
+            pk,
+            "application/pdf".parse().unwrap(),
+            None,
+            2048,
+            None,
+            RenderingType::File,
+        );
         let data = json::to_string(&msg).unwrap();
         let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
 
-        assert_eq!(deserialized.keys().len(), 5);
+        assert_eq!(deserialized.keys().len(), 6);
         assert_eq!(
             deserialized.get("b").unwrap(),
             "0123456789abcdef0123456789abcdef"
@@ -185,6 +229,7 @@ mod test {
         assert_eq!(deserialized.get("m").unwrap(), "application/pdf");
         assert_eq!(deserialized.get("n"), None);
         assert_eq!(deserialized.get("s").unwrap(), 2048);
+        assert_eq!(deserialized.get("j").unwrap(), 0);
         assert_eq!(deserialized.get("i").unwrap(), 0);
         assert_eq!(deserialized.get("d"), None);
     }
@@ -195,20 +240,20 @@ mod test {
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
         ]);
-        let msg = FileMessage {
-            file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
-            thumbnail_blob_id: Some(BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap()),
-            blob_encryption_key: pk,
-            mime_type: "application/pdf".parse().unwrap(),
-            file_name: Some("secret.pdf".into()),
-            file_size_bytes: 2048,
-            description: Some("This is a fancy file".into()),
-            reserved: 0,
-        };
+        let msg = FileMessage::new(
+            BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
+            Some(BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap()),
+            pk,
+            "application/pdf".parse().unwrap(),
+            Some("secret.pdf".into()),
+            2048,
+            Some("This is a fancy file".into()),
+            RenderingType::Sticker,
+        );
         let data = json::to_string(&msg).unwrap();
         let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
 
-        assert_eq!(deserialized.keys().len(), 8);
+        assert_eq!(deserialized.keys().len(), 9);
         assert_eq!(
             deserialized.get("b").unwrap(),
             "0123456789abcdef0123456789abcdef"
@@ -224,7 +269,8 @@ mod test {
         assert_eq!(deserialized.get("m").unwrap(), "application/pdf");
         assert_eq!(deserialized.get("n").unwrap(), "secret.pdf");
         assert_eq!(deserialized.get("s").unwrap(), 2048);
-        assert_eq!(deserialized.get("i").unwrap(), 0);
+        assert_eq!(deserialized.get("j").unwrap(), 2);
+        assert_eq!(deserialized.get("i").unwrap(), 1);
         assert_eq!(deserialized.get("d").unwrap(), "This is a fancy file");
     }
 }

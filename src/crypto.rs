@@ -13,7 +13,7 @@ use sodiumoxide::crypto::box_;
 use sodiumoxide::randombytes::randombytes_into;
 
 use crate::errors::CryptoError;
-use crate::types::{BlobId, FileMessage, MessageType};
+use crate::types::{BlobId, FileMessage, MessageType, RenderingType};
 use crate::{Key, Mime, PublicKey, SecretKey};
 
 /// Return a random number in the range `[1, 255]`.
@@ -152,6 +152,7 @@ pub fn encrypt_file_msg(
     file_name: Option<&str>,
     file_size_bytes: u32,
     description: Option<&str>,
+    rendering_type: RenderingType,
     public_key: &PublicKey,
     private_key: &SecretKey,
 ) -> EncryptedMessage {
@@ -163,6 +164,7 @@ pub fn encrypt_file_msg(
         file_name.map(ToString::to_string),
         file_size_bytes,
         description.map(ToString::to_string),
+        rendering_type,
     );
     let data = json::to_string(&msg).unwrap();
     let msgtype = MessageType::File;
