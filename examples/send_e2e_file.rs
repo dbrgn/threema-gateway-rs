@@ -5,11 +5,10 @@ use std::path::Path;
 use std::process;
 
 use docopt::Docopt;
-use mime_guess;
 use sodiumoxide::{self, crypto::secretbox};
 use threema_gateway::{ApiBuilder, RecipientKey};
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file> [<path-to-thumbnail>]
 
 Options:
@@ -39,7 +38,7 @@ fn main() {
     let filepath = Path::new(args.get_str("<path-to-file>"));
     let thumbpath = match args.get_str("<path-to-thumbnail>") {
         "" => None,
-        p @ _ => Some(Path::new(p)),
+        p => Some(Path::new(p)),
     };
 
     // Verify thumbnail file type

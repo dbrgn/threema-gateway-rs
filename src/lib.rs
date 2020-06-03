@@ -82,7 +82,7 @@ pub use crate::crypto::{EncryptedMessage, RecipientKey};
 pub use crate::lookup::{Capabilities, LookupCriterion};
 pub use crate::types::{BlobId, MessageType};
 
-const MSGAPI_URL: &'static str = "https://msgapi.threema.ch";
+const MSGAPI_URL: &str = "https://msgapi.threema.ch";
 
 #[cfg(test)]
 mod tests {

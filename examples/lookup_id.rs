@@ -3,7 +3,7 @@ use std::process;
 use docopt::Docopt;
 use threema_gateway::{ApiBuilder, LookupCriterion};
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 Usage: lookup_id [options] by_phone <from> <secret> <phone>
        lookup_id [options] by_phone_hash <from> <secret> <phone-hash>
        lookup_id [options] by_email <from> <secret> <email>

@@ -73,11 +73,11 @@ impl SimpleApi {
         id: I,
         secret: S,
     ) -> Self {
-        return SimpleApi {
+        SimpleApi {
             id: id.into(),
             secret: secret.into(),
-            endpoint: endpoint,
-        };
+            endpoint,
+        }
     }
 
     /// Send a message to the specified recipient in basic mode.
@@ -112,12 +112,12 @@ impl E2eApi {
         secret: S,
         private_key: SecretKey,
     ) -> Self {
-        return E2eApi {
+        E2eApi {
             id: id.into(),
             secret: secret.into(),
-            private_key: private_key,
-            endpoint: endpoint,
-        };
+            private_key,
+            endpoint,
+        }
     }
 
     /// Encrypt raw bytes for the specified recipient public key.
@@ -377,9 +377,8 @@ impl ApiBuilder {
 
     /// Set the private key from a byte slice. Only needed for E2e mode.
     pub fn with_private_key_bytes(mut self, private_key: &[u8]) -> Result<Self, ApiBuilderError> {
-        let private_key = SecretKey::from_slice(private_key).ok_or(ApiBuilderError::InvalidKey(
-            "Invalid libsodium private key".into(),
-        ))?;
+        let private_key = SecretKey::from_slice(private_key)
+            .ok_or_else(|| ApiBuilderError::InvalidKey("Invalid libsodium private key".into()))?;
         self.private_key = Some(private_key);
         Ok(self)
     }

@@ -66,13 +66,13 @@ impl FileMessage {
         description: Option<String>,
     ) -> Self {
         FileMessage {
-            file_blob_id: file_blob_id,
-            thumbnail_blob_id: thumbnail_blob_id,
-            blob_encryption_key: blob_encryption_key,
-            mime_type: mime_type,
-            file_name: file_name,
-            file_size_bytes: file_size_bytes,
-            description: description,
+            file_blob_id,
+            thumbnail_blob_id,
+            blob_encryption_key,
+            mime_type,
+            file_name,
+            file_size_bytes,
+            description,
             reserved: 0,
         }
     }
@@ -97,9 +97,7 @@ impl BlobId {
             return Err(ApiError::BadBlobId);
         }
         let mut arr = [0; 16];
-        for i in 0..bytes.len() {
-            arr[i] = bytes[i];
-        }
+        arr[..].clone_from_slice(&bytes[..bytes.len()]);
         Ok(BlobId(arr))
     }
 }

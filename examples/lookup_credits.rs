@@ -3,7 +3,7 @@ use std::process;
 use docopt::Docopt;
 use threema_gateway::ApiBuilder;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 Usage: lookup_credits [options] <from> <secret>
 
 Options:

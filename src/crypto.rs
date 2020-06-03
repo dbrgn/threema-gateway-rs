@@ -8,7 +8,6 @@ use std::string::ToString;
 use byteorder::{LittleEndian, WriteBytesExt};
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use serde_json as json;
-use sodiumoxide;
 use sodiumoxide::crypto::box_;
 use sodiumoxide::randombytes::randombytes_into;
 
@@ -90,7 +89,7 @@ pub fn encrypt_raw(
     let nonce = box_::gen_nonce();
     let ciphertext = box_::seal(&data, &nonce, public_key, private_key);
     EncryptedMessage {
-        ciphertext: ciphertext,
+        ciphertext,
         nonce: nonce.0,
     }
 }
@@ -214,7 +213,7 @@ mod test {
         let blob_nonce = box_::gen_nonce();
 
         // Encrypt
-        let recipient_key = RecipientKey(other_pub.clone());
+        let recipient_key = RecipientKey(other_pub);
         let encrypted = api.encrypt_image_msg(&blob_id, 258, &blob_nonce.0, &recipient_key);
 
         // Decrypt

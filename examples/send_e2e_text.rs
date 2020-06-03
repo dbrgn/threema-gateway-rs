@@ -3,7 +3,7 @@ use std::process;
 use docopt::Docopt;
 use threema_gateway::{ApiBuilder, RecipientKey};
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 Usage: send_e2e_text [options] <from> <to> <secret> <private-key> <text>...
 
 Options:
