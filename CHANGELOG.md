@@ -17,7 +17,7 @@ Possible log types:
 - [added] Allow specifying `RenderingType` for file messages
 - [added] Allow specifying media metadata for file messages
 - [changed] The API for `E2eApi::encrypt_file_msg` has changed
-- [changed] The thumbnail MIME type must now be specified
+- [changed] The thumbnail media type must now be specified
 - [changed] You now need to import `std::str::FromStr` to directly access
   `BlobId::from_str` or `RecipientKey::from_str`
 

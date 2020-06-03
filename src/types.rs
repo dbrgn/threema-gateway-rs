@@ -72,7 +72,7 @@ pub struct FileMessage {
     file_blob_id: BlobId,
     #[serde(rename = "m")]
     #[serde(serialize_with = "serialize_to_string")]
-    file_mime_type: Mime,
+    file_media_type: Mime,
 
     #[serde(rename = "t")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -80,7 +80,7 @@ pub struct FileMessage {
     #[serde(rename = "p")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_opt_to_string")]
-    thumbnail_mime_type: Option<Mime>,
+    thumbnail_media_type: Option<Mime>,
 
     #[serde(rename = "k")]
     #[serde(serialize_with = "key_to_hex")]
@@ -139,13 +139,13 @@ impl FileMessage {
     pub fn builder(
         file_blob_id: BlobId,
         blob_encryption_key: Key,
-        mime_type: Mime,
+        media_type: Mime,
         file_size_bytes: u32,
     ) -> FileMessageBuilder {
         FileMessageBuilder::new(
             file_blob_id,
             blob_encryption_key,
-            mime_type,
+            media_type,
             file_size_bytes,
         )
     }
@@ -154,9 +154,9 @@ impl FileMessage {
 /// Builder for [`FileMessage`](struct.FileMessage.html).
 pub struct FileMessageBuilder {
     file_blob_id: BlobId,
-    file_mime_type: Mime,
+    file_media_type: Mime,
     thumbnail_blob_id: Option<BlobId>,
-    thumbnail_mime_type: Option<Mime>,
+    thumbnail_media_type: Option<Mime>,
     blob_encryption_key: Key,
     file_name: Option<String>,
     file_size_bytes: u32,
@@ -184,14 +184,14 @@ impl FileMessageBuilder {
     pub fn new(
         file_blob_id: BlobId,
         blob_encryption_key: Key,
-        mime_type: Mime,
+        media_type: Mime,
         file_size_bytes: u32,
     ) -> Self {
         FileMessageBuilder {
             file_blob_id,
-            file_mime_type: mime_type,
+            file_media_type: media_type,
             thumbnail_blob_id: None,
-            thumbnail_mime_type: None,
+            thumbnail_media_type: None,
             blob_encryption_key,
             file_name: None,
             file_size_bytes,
@@ -216,8 +216,8 @@ impl FileMessageBuilder {
     /// Before calling this function, you need to symmetrically encrypt the
     /// thumbnail data (in JPEG format) with the same key used for the file
     /// data and with the nonce `000...2`.
-    pub fn thumbnail(self, blob_id: BlobId, mime_type: Mime) -> Self {
-        self.thumbnail_opt(Some((blob_id, mime_type)))
+    pub fn thumbnail(self, blob_id: BlobId, media_type: Mime) -> Self {
+        self.thumbnail_opt(Some((blob_id, media_type)))
     }
 
     /// Set a thumbnail from an Option.
@@ -227,13 +227,13 @@ impl FileMessageBuilder {
     /// data and with the nonce `000...2`.
     pub fn thumbnail_opt(mut self, blob: Option<(BlobId, Mime)>) -> Self {
         match blob {
-            Some((blob_id, mime_type)) => {
+            Some((blob_id, media_type)) => {
                 self.thumbnail_blob_id = Some(blob_id);
-                self.thumbnail_mime_type = Some(mime_type);
+                self.thumbnail_media_type = Some(media_type);
             }
             None => {
                 self.thumbnail_blob_id = None;
-                self.thumbnail_mime_type = None;
+                self.thumbnail_media_type = None;
             }
         }
         self
@@ -339,9 +339,9 @@ impl FileMessageBuilder {
 
         Ok(FileMessage {
             file_blob_id: self.file_blob_id,
-            file_mime_type: self.file_mime_type,
+            file_media_type: self.file_media_type,
             thumbnail_blob_id: self.thumbnail_blob_id,
-            thumbnail_mime_type: self.thumbnail_mime_type,
+            thumbnail_media_type: self.thumbnail_media_type,
             blob_encryption_key: self.blob_encryption_key,
             file_name: self.file_name,
             file_size_bytes: self.file_size_bytes,
@@ -446,9 +446,9 @@ mod test {
         ]);
         let msg = FileMessage {
             file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
-            file_mime_type: "application/pdf".parse().unwrap(),
+            file_media_type: "application/pdf".parse().unwrap(),
             thumbnail_blob_id: None,
-            thumbnail_mime_type: None,
+            thumbnail_media_type: None,
             blob_encryption_key: pk,
             file_name: None,
             file_size_bytes: 2048,
@@ -486,9 +486,9 @@ mod test {
         ]);
         let msg = FileMessage {
             file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
-            file_mime_type: "application/pdf".parse().unwrap(),
+            file_media_type: "application/pdf".parse().unwrap(),
             thumbnail_blob_id: Some(BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap()),
-            thumbnail_mime_type: Some("image/jpeg".parse().unwrap()),
+            thumbnail_media_type: Some("image/jpeg".parse().unwrap()),
             blob_encryption_key: pk,
             file_name: Some("secret.pdf".into()),
             file_size_bytes: 2048,
@@ -550,9 +550,9 @@ mod test {
             .unwrap();
 
         assert_eq!(msg.file_blob_id, file_blob_id);
-        assert_eq!(msg.file_mime_type, jpeg);
+        assert_eq!(msg.file_media_type, jpeg);
         assert_eq!(msg.thumbnail_blob_id, Some(thumb_blob_id));
-        assert_eq!(msg.thumbnail_mime_type, Some(png));
+        assert_eq!(msg.thumbnail_media_type, Some(png));
         assert_eq!(msg.blob_encryption_key, key);
         assert_eq!(msg.file_name, Some("hello.jpg".to_string()));
         assert_eq!(msg.file_size_bytes, 2048);

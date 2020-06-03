@@ -106,15 +106,15 @@ fn main() {
             )
         })
         .map(|blob_id| {
-            let thumbnail_mime_type =
+            let thumbnail_media_type =
                 mime_guess::from_path(&thumbpath.unwrap()).first_or_octet_stream();
-            (blob_id, thumbnail_mime_type)
+            (blob_id, thumbnail_media_type)
         });
 
     // Create file message
-    let file_mime_type = mime_guess::from_path(&filepath).first_or_octet_stream();
+    let file_media_type = mime_guess::from_path(&filepath).first_or_octet_stream();
     let file_name = filepath.file_name().and_then(OsStr::to_str);
-    let msg = FileMessage::builder(file_blob_id, key, file_mime_type, file_data.len() as u32)
+    let msg = FileMessage::builder(file_blob_id, key, file_media_type, file_data.len() as u32)
         .thumbnail_opt(thumb_blob_id)
         .file_name_opt(file_name)
         .description("File message description")
