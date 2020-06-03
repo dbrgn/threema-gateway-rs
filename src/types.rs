@@ -115,6 +115,16 @@ struct FileMetadata {
     duration_seconds: Option<f32>,
 }
 
+impl FileMetadata {
+    /// Return true if all optional fields are set to `None`.
+    fn none_set(&self) -> bool {
+        self.animated.is_none()
+            && self.height.is_none()
+            && self.width.is_none()
+            && self.duration_seconds.is_none()
+    }
+}
+
 impl FileMessage {
     /// Shortcut for [`FileMessageBuilder::new`](struct.FileMessageBuilder.html#method.new).
     pub fn builder(
@@ -280,7 +290,7 @@ impl FileMessageBuilder {
     ///
     /// [`FileMessage`]: struct.FileMessage.html
     pub fn build(self) -> Result<FileMessage, FileMessageBuilderError> {
-        // Validate illegal metadata combinations
+        // Validate some metadata combinations
         if let Some(metadata) = &self.metadata {
             if self.rendering_type == RenderingType::File
                 && (metadata.animated.is_some()
@@ -297,6 +307,13 @@ impl FileMessageBuilder {
                 return Err(FileMessageBuilderError::IllegalCombination(
                     "File message with rendering type sticker may not contain duration",
                 ));
+            }
+            if self.rendering_type == RenderingType::Media && metadata.none_set() {
+                log::warn!("Created FileMessage with rendering type Media but without metadata");
+            }
+        } else {
+            if self.rendering_type == RenderingType::Media {
+                log::warn!("Created FileMessage with rendering type Media but without metadata");
             }
         };
 
