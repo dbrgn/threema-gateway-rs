@@ -70,15 +70,22 @@ impl Default for RenderingType {
 pub struct FileMessage {
     #[serde(rename = "b")]
     file_blob_id: BlobId,
+    #[serde(rename = "m")]
+    #[serde(serialize_with = "serialize_to_string")]
+    file_mime_type: Mime,
+
     #[serde(rename = "t")]
     #[serde(skip_serializing_if = "Option::is_none")]
     thumbnail_blob_id: Option<BlobId>,
+    #[serde(rename = "p")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(serialize_with = "serialize_opt_to_string")]
+    thumbnail_mime_type: Option<Mime>,
+
     #[serde(rename = "k")]
     #[serde(serialize_with = "key_to_hex")]
     blob_encryption_key: Key,
-    #[serde(rename = "m")]
-    #[serde(serialize_with = "serialize_to_string")]
-    mime_type: Mime,
+
     #[serde(rename = "n")]
     #[serde(skip_serializing_if = "Option::is_none")]
     file_name: Option<String>,
@@ -87,10 +94,12 @@ pub struct FileMessage {
     #[serde(rename = "d")]
     #[serde(skip_serializing_if = "Option::is_none")]
     description: Option<String>,
+
     #[serde(rename = "j")]
     rendering_type: RenderingType,
     #[serde(rename = "i")]
     reserved: u8,
+
     #[serde(rename = "x")]
     #[serde(skip_serializing_if = "Option::is_none")]
     metadata: Option<FileMetadata>,
@@ -145,9 +154,10 @@ impl FileMessage {
 /// Builder for [`FileMessage`](struct.FileMessage.html).
 pub struct FileMessageBuilder {
     file_blob_id: BlobId,
+    file_mime_type: Mime,
     thumbnail_blob_id: Option<BlobId>,
+    thumbnail_mime_type: Option<Mime>,
     blob_encryption_key: Key,
-    mime_type: Mime,
     file_name: Option<String>,
     file_size_bytes: u32,
     description: Option<String>,
@@ -179,9 +189,10 @@ impl FileMessageBuilder {
     ) -> Self {
         FileMessageBuilder {
             file_blob_id,
+            file_mime_type: mime_type,
             thumbnail_blob_id: None,
+            thumbnail_mime_type: None,
             blob_encryption_key,
-            mime_type,
             file_name: None,
             file_size_bytes,
             description: None,
@@ -205,8 +216,8 @@ impl FileMessageBuilder {
     /// Before calling this function, you need to symmetrically encrypt the
     /// thumbnail data (in JPEG format) with the same key used for the file
     /// data and with the nonce `000...2`.
-    pub fn thumbnail(self, blob_id: BlobId) -> Self {
-        self.thumbnail_opt(Some(blob_id))
+    pub fn thumbnail(self, blob_id: BlobId, mime_type: Mime) -> Self {
+        self.thumbnail_opt(Some((blob_id, mime_type)))
     }
 
     /// Set a thumbnail from an Option.
@@ -214,8 +225,17 @@ impl FileMessageBuilder {
     /// Before calling this function, you need to symmetrically encrypt the
     /// thumbnail data (in JPEG format) with the same key used for the file
     /// data and with the nonce `000...2`.
-    pub fn thumbnail_opt(mut self, blob_id: Option<BlobId>) -> Self {
-        self.thumbnail_blob_id = blob_id;
+    pub fn thumbnail_opt(mut self, blob: Option<(BlobId, Mime)>) -> Self {
+        match blob {
+            Some((blob_id, mime_type)) => {
+                self.thumbnail_blob_id = Some(blob_id);
+                self.thumbnail_mime_type = Some(mime_type);
+            }
+            None => {
+                self.thumbnail_blob_id = None;
+                self.thumbnail_mime_type = None;
+            }
+        }
         self
     }
 
@@ -319,9 +339,10 @@ impl FileMessageBuilder {
 
         Ok(FileMessage {
             file_blob_id: self.file_blob_id,
+            file_mime_type: self.file_mime_type,
             thumbnail_blob_id: self.thumbnail_blob_id,
+            thumbnail_mime_type: self.thumbnail_mime_type,
             blob_encryption_key: self.blob_encryption_key,
-            mime_type: self.mime_type,
             file_name: self.file_name,
             file_size_bytes: self.file_size_bytes,
             description: self.description,
@@ -380,6 +401,17 @@ where
     serializer.serialize_str(&val.to_string())
 }
 
+fn serialize_opt_to_string<S, T>(val: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+    T: ToString,
+{
+    match val {
+        Some(v) => serializer.serialize_some(&v.to_string()),
+        None => serializer.serialize_none(),
+    }
+}
+
 fn key_to_hex<S: Serializer>(val: &Key, serializer: S) -> Result<S::Ok, S::Error> {
     serializer.serialize_str(&HEXLOWER.encode(&val.0))
 }
@@ -414,9 +446,10 @@ mod test {
         ]);
         let msg = FileMessage {
             file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
+            file_mime_type: "application/pdf".parse().unwrap(),
             thumbnail_blob_id: None,
+            thumbnail_mime_type: None,
             blob_encryption_key: pk,
-            mime_type: "application/pdf".parse().unwrap(),
             file_name: None,
             file_size_bytes: 2048,
             description: None,
@@ -453,9 +486,10 @@ mod test {
         ]);
         let msg = FileMessage {
             file_blob_id: BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap(),
+            file_mime_type: "application/pdf".parse().unwrap(),
             thumbnail_blob_id: Some(BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap()),
+            thumbnail_mime_type: Some("image/jpeg".parse().unwrap()),
             blob_encryption_key: pk,
-            mime_type: "application/pdf".parse().unwrap(),
             file_name: Some("secret.pdf".into()),
             file_size_bytes: 2048,
             description: Some("This is a fancy file".into()),
@@ -471,7 +505,7 @@ mod test {
         let data = json::to_string(&msg).unwrap();
         let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
 
-        assert_eq!(deserialized.keys().len(), 10);
+        assert_eq!(deserialized.keys().len(), 11);
         assert_eq!(
             deserialized.get("b").unwrap(),
             "0123456789abcdef0123456789abcdef"
@@ -485,6 +519,7 @@ mod test {
             "0102030401020304010203040102030401020304010203040102030401020304"
         );
         assert_eq!(deserialized.get("m").unwrap(), "application/pdf");
+        assert_eq!(deserialized.get("p").unwrap(), "image/jpeg");
         assert_eq!(deserialized.get("n").unwrap(), "secret.pdf");
         assert_eq!(deserialized.get("s").unwrap(), 2048);
         assert_eq!(deserialized.get("j").unwrap(), 2);
@@ -504,9 +539,10 @@ mod test {
         ]);
         let file_blob_id = BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap();
         let thumb_blob_id = BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap();
-        let mime_type: Mime = "image/jpeg".parse().unwrap();
-        let msg = FileMessage::builder(file_blob_id.clone(), key.clone(), mime_type.clone(), 2048)
-            .thumbnail(thumb_blob_id.clone())
+        let jpeg: Mime = "image/jpeg".parse().unwrap();
+        let png: Mime = "image/jpeg".parse().unwrap();
+        let msg = FileMessage::builder(file_blob_id.clone(), key.clone(), jpeg.clone(), 2048)
+            .thumbnail(thumb_blob_id.clone(), png.clone())
             .file_name("hello.jpg")
             .description(String::from("An image file"))
             .rendering_type(RenderingType::Media)
@@ -514,9 +550,10 @@ mod test {
             .unwrap();
 
         assert_eq!(msg.file_blob_id, file_blob_id);
+        assert_eq!(msg.file_mime_type, jpeg);
         assert_eq!(msg.thumbnail_blob_id, Some(thumb_blob_id));
+        assert_eq!(msg.thumbnail_mime_type, Some(png));
         assert_eq!(msg.blob_encryption_key, key);
-        assert_eq!(msg.mime_type, mime_type);
         assert_eq!(msg.file_name, Some("hello.jpg".to_string()));
         assert_eq!(msg.file_size_bytes, 2048);
         assert_eq!(msg.description, Some("An image file".to_string()));
