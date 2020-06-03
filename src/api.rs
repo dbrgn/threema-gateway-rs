@@ -9,7 +9,7 @@ use crate::crypto::{EncryptedMessage, RecipientKey};
 use crate::errors::{ApiBuilderError, ApiError};
 use crate::lookup::{lookup_capabilities, lookup_credits, lookup_id, lookup_pubkey};
 use crate::lookup::{Capabilities, LookupCriterion};
-use crate::types::{BlobId, MessageType};
+use crate::types::{BlobId, MessageType, RenderingType};
 use crate::MSGAPI_URL;
 use crate::{Key, Mime, SecretKey};
 
@@ -177,6 +177,7 @@ impl E2eApi {
         file_name: Option<&str>,
         file_size_bytes: u32,
         description: Option<&str>,
+        rendering_type: RenderingType,
         recipient_key: &RecipientKey,
     ) -> EncryptedMessage {
         encrypt_file_msg(
@@ -187,6 +188,7 @@ impl E2eApi {
             file_name,
             file_size_bytes,
             description,
+            rendering_type,
             &recipient_key.0,
             &self.private_key,
         )

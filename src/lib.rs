@@ -80,7 +80,7 @@ pub use crate::api::{ApiBuilder, E2eApi, SimpleApi};
 pub use crate::connection::Recipient;
 pub use crate::crypto::{EncryptedMessage, RecipientKey};
 pub use crate::lookup::{Capabilities, LookupCriterion};
-pub use crate::types::{BlobId, MessageType};
+pub use crate::types::{BlobId, MessageType, RenderingType};
 
 const MSGAPI_URL: &str = "https://msgapi.threema.ch";
 

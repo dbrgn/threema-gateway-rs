@@ -6,7 +6,7 @@ use std::process;
 
 use docopt::Docopt;
 use sodiumoxide::{self, crypto::secretbox};
-use threema_gateway::{ApiBuilder, RecipientKey};
+use threema_gateway::{ApiBuilder, RecipientKey, RenderingType};
 
 const USAGE: &str = "
 Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file> [<path-to-thumbnail>]
@@ -116,6 +116,7 @@ fn main() {
         file_name,
         file_data.len() as u32,
         Some("File message description"),
+        RenderingType::File,
         &recipient_key,
     );
 
