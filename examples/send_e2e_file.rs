@@ -6,7 +6,7 @@ use std::process;
 
 use docopt::Docopt;
 use sodiumoxide::{self, crypto::secretbox};
-use threema_gateway::{ApiBuilder, RecipientKey, RenderingType};
+use threema_gateway::{ApiBuilder, FileMessage, RecipientKey, RenderingType};
 
 const USAGE: &str = "
 Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file> [<path-to-thumbnail>]
@@ -108,20 +108,16 @@ fn main() {
     // Create file message
     let mime_type = mime_guess::from_path(&filepath).first_or_octet_stream();
     let file_name = filepath.file_name().and_then(OsStr::to_str);
-    let msg = api.encrypt_file_msg(
-        &file_blob_id,
-        thumb_blob_id.as_ref(),
-        &key,
-        &mime_type,
-        file_name,
-        file_data.len() as u32,
-        Some("File message description"),
-        RenderingType::File,
-        &recipient_key,
-    );
+    let msg = FileMessage::builder(file_blob_id, key, mime_type, file_data.len() as u32)
+        .thumbnail_opt(thumb_blob_id)
+        .file_name_opt(file_name)
+        .description("File message description")
+        .rendering_type(RenderingType::File)
+        .build();
+    let encrypted = api.encrypt_file_msg(&msg, &recipient_key);
 
     // Send
-    let msg_id = api.send(&to, &msg);
+    let msg_id = api.send(&to, &encrypted);
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {:?}", e),

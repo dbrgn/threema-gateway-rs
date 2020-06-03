@@ -4,7 +4,6 @@ use std::convert::Into;
 use std::io::Write;
 use std::iter::repeat;
 use std::str::FromStr;
-use std::string::ToString;
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
@@ -13,8 +12,8 @@ use sodiumoxide::crypto::box_;
 use sodiumoxide::randombytes::randombytes_into;
 
 use crate::errors::CryptoError;
-use crate::types::{BlobId, FileMessage, MessageType, RenderingType};
-use crate::{Key, Mime, PublicKey, SecretKey};
+use crate::types::{BlobId, FileMessage, MessageType};
+use crate::{PublicKey, SecretKey};
 
 /// Return a random number in the range `[1, 255]`.
 fn random_padding_amount() -> u8 {
@@ -145,28 +144,11 @@ pub fn encrypt_image_msg(
 
 /// Encrypt a file message for the recipient.
 pub fn encrypt_file_msg(
-    file_blob_id: &BlobId,
-    thumbnail_blob_id: Option<&BlobId>,
-    blob_encryption_key: &Key,
-    mime_type: &Mime,
-    file_name: Option<&str>,
-    file_size_bytes: u32,
-    description: Option<&str>,
-    rendering_type: RenderingType,
+    msg: &FileMessage,
     public_key: &PublicKey,
     private_key: &SecretKey,
 ) -> EncryptedMessage {
-    let msg = FileMessage::new(
-        file_blob_id.clone(),
-        thumbnail_blob_id.cloned(),
-        blob_encryption_key.clone(),
-        mime_type.clone(),
-        file_name.map(ToString::to_string),
-        file_size_bytes,
-        description.map(ToString::to_string),
-        rendering_type,
-    );
-    let data = json::to_string(&msg).unwrap();
+    let data = json::to_string(msg).unwrap();
     let msgtype = MessageType::File;
     encrypt(&data.as_bytes(), msgtype, &public_key, &private_key)
 }
