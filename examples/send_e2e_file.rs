@@ -98,17 +98,23 @@ fn main() {
         api.blob_upload_raw(&encrypted_file, false),
         "Could not upload file to blob server"
     );
-    let thumb_blob_id = encrypted_thumb.map(|t| {
-        etry!(
-            api.blob_upload_raw(&t, false),
-            "Could not upload thumbnail to blob server"
-        )
-    });
+    let thumb_blob_id = encrypted_thumb
+        .map(|t| {
+            etry!(
+                api.blob_upload_raw(&t, false),
+                "Could not upload thumbnail to blob server"
+            )
+        })
+        .map(|blob_id| {
+            let thumbnail_media_type =
+                mime_guess::from_path(&thumbpath.unwrap()).first_or_octet_stream();
+            (blob_id, thumbnail_media_type)
+        });
 
     // Create file message
-    let mime_type = mime_guess::from_path(&filepath).first_or_octet_stream();
+    let file_media_type = mime_guess::from_path(&filepath).first_or_octet_stream();
     let file_name = filepath.file_name().and_then(OsStr::to_str);
-    let msg = FileMessage::builder(file_blob_id, key, mime_type, file_data.len() as u32)
+    let msg = FileMessage::builder(file_blob_id, key, file_media_type, file_data.len() as u32)
         .thumbnail_opt(thumb_blob_id)
         .file_name_opt(file_name)
         .description("File message description")
