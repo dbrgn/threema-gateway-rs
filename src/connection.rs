@@ -3,6 +3,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::Read;
+use std::str::FromStr;
 
 use data_encoding::HEXLOWER;
 use reqwest::multipart;
@@ -15,10 +16,10 @@ use crate::types::BlobId;
 ///
 /// Optionally, you can pass in the meaning of a 400 response code.
 pub(crate) fn map_response_code(
-    status: &StatusCode,
+    status: StatusCode,
     bad_request_meaning: Option<ApiError>,
 ) -> Result<(), ApiError> {
-    match *status {
+    match status {
         // 200
         StatusCode::OK => Ok(()),
         // 400
@@ -39,7 +40,7 @@ pub(crate) fn map_response_code(
         StatusCode::PAYLOAD_TOO_LARGE => Err(ApiError::MessageTooLong),
         // 500
         StatusCode::INTERNAL_SERVER_ERROR => Err(ApiError::ServerError),
-        e @ _ => Err(ApiError::Other(format!("Bad response status code: {}", e))),
+        e => Err(ApiError::Other(format!("Bad response status code: {}", e))),
     }
 }
 
@@ -99,7 +100,7 @@ pub(crate) fn send_simple(
         .form(&params)
         .header("accept", "application/json")
         .send()?;
-    map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient))?;
+    map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
     let mut body = String::new();
@@ -135,7 +136,7 @@ pub(crate) fn send_e2e(
         .form(&params)
         .header("accept", "application/json")
         .send()?;
-    map_response_code(&res.status(), Some(ApiError::BadSenderOrRecipient))?;
+    map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
     let mut body = String::new();
@@ -179,7 +180,7 @@ pub(crate) fn blob_upload(
         .multipart(form)
         .header("accept", "text/plain")
         .send()?;
-    map_response_code(&res.status(), Some(ApiError::BadBlob))?;
+    map_response_code(res.status(), Some(ApiError::BadBlob))?;
 
     // Read response body containing blob ID
     let mut body = String::new();
@@ -205,9 +206,8 @@ mod tests {
             "secret",
             &text,
         );
-        match result {
-            Err(ApiError::MessageTooLong) => panic!(),
-            _ => (),
+        if let Err(ApiError::MessageTooLong) = result {
+            panic!()
         }
     }
 

@@ -7,7 +7,7 @@ use std::process;
 use docopt::Docopt;
 use threema_gateway::{ApiBuilder, RecipientKey};
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 Usage: send_e2e_image [options] <from> <to> <secret> <private-key> <path-to-jpegfile>
 
 Options:
@@ -48,7 +48,7 @@ fn main() {
         println!("Could not fetch public key: {}", e);
         process::exit(1);
     });
-    let recipient_key = RecipientKey::from_str(&public_key).unwrap_or_else(|e| {
+    let recipient_key: RecipientKey = public_key.parse().unwrap_or_else(|e| {
         println!("{}", e);
         process::exit(1);
     });

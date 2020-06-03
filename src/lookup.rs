@@ -31,10 +31,10 @@ pub enum LookupCriterion {
 impl fmt::Display for LookupCriterion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &LookupCriterion::Phone(ref n) => write!(f, "phone {}", n),
-            &LookupCriterion::PhoneHash(ref nh) => write!(f, "phone hash {}", nh),
-            &LookupCriterion::Email(ref e) => write!(f, "email {}", e),
-            &LookupCriterion::EmailHash(ref eh) => write!(f, "email hash {}", eh),
+            LookupCriterion::Phone(ref n) => write!(f, "phone {}", n),
+            LookupCriterion::PhoneHash(ref nh) => write!(f, "phone hash {}", nh),
+            LookupCriterion::Email(ref e) => write!(f, "email {}", e),
+            LookupCriterion::EmailHash(ref eh) => write!(f, "email hash {}", eh),
         }
     }
 }
@@ -80,7 +80,7 @@ impl str::FromStr for Capabilities {
                 "video" => capabilities.video = true,
                 "audio" => capabilities.audio = true,
                 "file" => capabilities.file = true,
-                _ if capability.len() > 0 => capabilities.other.push(capability),
+                _ if !capability.is_empty() => capabilities.other.push(capability),
                 _ => { /* skip empty entries */ }
             };
         }
@@ -95,7 +95,7 @@ impl fmt::Display for Capabilities {
             "{{ text: {}, image: {}, video: {}, audio: {}, file: {}",
             self.text, self.image, self.video, self.audio, self.file
         )?;
-        if self.other.len() > 0 {
+        if !self.other.is_empty() {
             write!(f, ", other: {} }}", self.other.join(","))?;
         } else {
             write!(f, " }}")?;
@@ -135,7 +135,7 @@ pub(crate) fn lookup_pubkey(
 
     // Send request
     let mut res = Client::new().get(&url).send()?;
-    map_response_code(&res.status(), None)?;
+    map_response_code(res.status(), None)?;
 
     // Read and return response body
     let mut body = String::new();
@@ -152,10 +152,10 @@ pub(crate) fn lookup_id(
 ) -> Result<String, ApiError> {
     // Build URL
     let url_base = match criterion {
-        &LookupCriterion::Phone(ref val) => format!("{}/lookup/phone/{}", endpoint, val),
-        &LookupCriterion::PhoneHash(ref val) => format!("{}/lookup/phone_hash/{}", endpoint, val),
-        &LookupCriterion::Email(ref val) => format!("{}/lookup/email/{}", endpoint, val),
-        &LookupCriterion::EmailHash(ref val) => format!("{}/lookup/email_hash/{}", endpoint, val),
+        LookupCriterion::Phone(ref val) => format!("{}/lookup/phone/{}", endpoint, val),
+        LookupCriterion::PhoneHash(ref val) => format!("{}/lookup/phone_hash/{}", endpoint, val),
+        LookupCriterion::Email(ref val) => format!("{}/lookup/email/{}", endpoint, val),
+        LookupCriterion::EmailHash(ref val) => format!("{}/lookup/email_hash/{}", endpoint, val),
     };
     let url = format!("{}?from={}&secret={}", url_base, our_id, secret);
 
@@ -163,7 +163,7 @@ pub(crate) fn lookup_id(
 
     // Send request
     let mut res = Client::new().get(&url).send()?;
-    map_response_code(&res.status(), Some(ApiError::BadHashLength))?;
+    map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read and return response body
     let mut body = String::new();
@@ -179,7 +179,7 @@ pub(crate) fn lookup_credits(endpoint: &str, our_id: &str, secret: &str) -> Resu
 
     // Send request
     let mut res = Client::new().get(&url).send()?;
-    map_response_code(&res.status(), None)?;
+    map_response_code(res.status(), None)?;
 
     // Read, parse and return response body
     let mut body = String::new();
@@ -209,7 +209,7 @@ pub(crate) fn lookup_capabilities(
 
     // Send request
     let mut res = Client::new().get(&url).send()?;
-    map_response_code(&res.status(), Some(ApiError::BadHashLength))?;
+    map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read response body
     let mut body = String::new();

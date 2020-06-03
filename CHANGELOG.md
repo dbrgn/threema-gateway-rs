@@ -12,6 +12,11 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### Unreleased
+
+- [changed] You now need to import `std::str::FromStr` to access
+  `BlobId::from_str` or `RecipientKey::from_str`
+
 ### v0.12.1 (2019-10-22)
 
 - Maintenance release

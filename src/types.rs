@@ -1,4 +1,5 @@
 use std::fmt;
+use std::str::FromStr;
 use std::string::ToString;
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
@@ -66,13 +67,13 @@ impl FileMessage {
         description: Option<String>,
     ) -> Self {
         FileMessage {
-            file_blob_id: file_blob_id,
-            thumbnail_blob_id: thumbnail_blob_id,
-            blob_encryption_key: blob_encryption_key,
-            mime_type: mime_type,
-            file_name: file_name,
-            file_size_bytes: file_size_bytes,
-            description: description,
+            file_blob_id,
+            thumbnail_blob_id,
+            blob_encryption_key,
+            mime_type,
+            file_name,
+            file_size_bytes,
+            description,
             reserved: 0,
         }
     }
@@ -87,9 +88,13 @@ impl BlobId {
     pub fn new(id: [u8; 16]) -> Self {
         BlobId(id)
     }
+}
+
+impl FromStr for BlobId {
+    type Err = ApiError;
 
     /// Create a new BlobId from a 32 character hexadecimal String.
-    pub fn from_str(id: &str) -> Result<Self, ApiError> {
+    fn from_str(id: &str) -> Result<Self, Self::Err> {
         let bytes = HEXLOWER_PERMISSIVE
             .decode(id.as_bytes())
             .map_err(|_| ApiError::BadBlobId)?;
@@ -97,9 +102,7 @@ impl BlobId {
             return Err(ApiError::BadBlobId);
         }
         let mut arr = [0; 16];
-        for i in 0..bytes.len() {
-            arr[i] = bytes[i];
-        }
+        arr[..].clone_from_slice(&bytes[..bytes.len()]);
         Ok(BlobId(arr))
     }
 }

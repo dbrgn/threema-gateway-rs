@@ -1,7 +1,7 @@
 use docopt::Docopt;
 use threema_gateway::ApiBuilder;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 Usage: lookup_capabilities [options] <our_id> <secret> <their_id>
 
 Options:

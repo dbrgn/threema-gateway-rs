@@ -3,12 +3,12 @@
 use std::convert::Into;
 use std::io::Write;
 use std::iter::repeat;
+use std::str::FromStr;
 use std::string::ToString;
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use serde_json as json;
-use sodiumoxide;
 use sodiumoxide::crypto::box_;
 use sodiumoxide::randombytes::randombytes_into;
 
@@ -66,17 +66,21 @@ impl RecipientKey {
         }
     }
 
+    /// Return a reference to the contained key bytes.
+    pub fn as_bytes(&self) -> &[u8] {
+        &(self.0).0
+    }
+}
+
+impl FromStr for RecipientKey {
+    type Err = CryptoError;
+
     /// Create a `RecipientKey` from a hex encoded string slice.
-    pub fn from_str(val: &str) -> Result<Self, CryptoError> {
+    fn from_str(val: &str) -> Result<Self, Self::Err> {
         let bytes = HEXLOWER_PERMISSIVE.decode(val.as_bytes()).map_err(|e| {
             CryptoError::BadKey(format!("Could not decode public key hex string: {}", e))
         })?;
         RecipientKey::from_bytes(bytes.as_slice())
-    }
-
-    /// Return a reference to the contained key bytes.
-    pub fn as_bytes(&self) -> &[u8] {
-        &(self.0).0
     }
 }
 
@@ -90,7 +94,7 @@ pub fn encrypt_raw(
     let nonce = box_::gen_nonce();
     let ciphertext = box_::seal(&data, &nonce, public_key, private_key);
     EncryptedMessage {
-        ciphertext: ciphertext,
+        ciphertext,
         nonce: nonce.0,
     }
 }
@@ -167,11 +171,13 @@ pub fn encrypt_file_msg(
 
 #[cfg(test)]
 mod test {
+    use std::str::FromStr;
 
-    use super::{random_padding_amount, RecipientKey};
     use crate::api::ApiBuilder;
     use crate::types::{BlobId, MessageType};
     use sodiumoxide::crypto::box_::{self, Nonce, PublicKey, SecretKey};
+
+    use super::*;
 
     #[test]
     fn test_randombytes_uniform() {
@@ -214,7 +220,7 @@ mod test {
         let blob_nonce = box_::gen_nonce();
 
         // Encrypt
-        let recipient_key = RecipientKey(other_pub.clone());
+        let recipient_key = RecipientKey(other_pub);
         let encrypted = api.encrypt_image_msg(&blob_id, 258, &blob_nonce.0, &recipient_key);
 
         // Decrypt
