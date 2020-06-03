@@ -117,6 +117,7 @@ pub(crate) fn send_e2e(
     secret: &str,
     nonce: &[u8],
     ciphertext: &[u8],
+    delivery_receipts: bool,
     additional_params: Option<HashMap<String, String>>,
 ) -> Result<String, ApiError> {
     // Prepare POST data
@@ -129,6 +130,9 @@ pub(crate) fn send_e2e(
     params.insert("secret".into(), secret.into());
     params.insert("nonce".into(), HEXLOWER.encode(nonce));
     params.insert("box".into(), HEXLOWER.encode(ciphertext));
+    if !delivery_receipts {
+        params.insert("noDeliveryReceipts".into(), "1".into());
+    }
 
     // Send request
     let mut res = Client::new()

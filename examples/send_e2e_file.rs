@@ -124,7 +124,7 @@ fn main() {
     let encrypted = api.encrypt_file_msg(&msg, &recipient_key);
 
     // Send
-    let msg_id = api.send(&to, &encrypted);
+    let msg_id = api.send(&to, &encrypted, false);
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {:?}", e),

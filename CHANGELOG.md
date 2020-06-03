@@ -16,6 +16,7 @@ Possible log types:
 
 - [added] Allow specifying `RenderingType` for file messages
 - [added] Allow specifying media metadata for file messages
+- [added] Allow disabling delivery receipts for e2e messages
 - [changed] The API for `E2eApi::encrypt_file_msg` has changed
 - [changed] The thumbnail media type must now be specified
 - [changed] You now need to import `std::str::FromStr` to directly access
