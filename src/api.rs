@@ -9,9 +9,9 @@ use crate::crypto::{EncryptedMessage, RecipientKey};
 use crate::errors::{ApiBuilderError, ApiError};
 use crate::lookup::{lookup_capabilities, lookup_credits, lookup_id, lookup_pubkey};
 use crate::lookup::{Capabilities, LookupCriterion};
-use crate::types::{BlobId, MessageType, RenderingType};
+use crate::types::{BlobId, FileMessage, MessageType};
+use crate::SecretKey;
 use crate::MSGAPI_URL;
-use crate::{Key, Mime, SecretKey};
 
 /// Implement methods available on both the simple and the e2e API objects.
 macro_rules! impl_common_functionality {
@@ -159,39 +159,16 @@ impl E2eApi {
 
     /// Encrypt a file message for the specified recipient public key.
     ///
-    /// Before calling this function, you need to symetrically encrypt the file
-    /// data (libsodium secretbox, random key) and upload the ciphertext to the
-    /// blob server. If you also want to set a thumbnail, do the same with the
-    /// update data (in JPEG format) and use the same key. Use the nonce
-    /// `000...1` for the file and `000...2` for the thumbnail.
+    /// To construct a [`FileMessage`], use [`FileMessageBuilder`].
     ///
-    /// The file size needs to be specified in bytes. Note that the size is
-    /// only used for download size displaying purposes and has no security
-    /// implications.
+    /// [`FileMessage`]: struct.FileMessage.html
+    /// [`FileMessageBuilder`]: struct.FileMessageBuilder.html
     pub fn encrypt_file_msg(
         &self,
-        file_blob_id: &BlobId,
-        thumbnail_blob_id: Option<&BlobId>,
-        blob_encryption_key: &Key,
-        mime_type: &Mime,
-        file_name: Option<&str>,
-        file_size_bytes: u32,
-        description: Option<&str>,
-        rendering_type: RenderingType,
+        msg: &FileMessage,
         recipient_key: &RecipientKey,
     ) -> EncryptedMessage {
-        encrypt_file_msg(
-            file_blob_id,
-            thumbnail_blob_id,
-            blob_encryption_key,
-            mime_type,
-            file_name,
-            file_size_bytes,
-            description,
-            rendering_type,
-            &recipient_key.0,
-            &self.private_key,
-        )
+        encrypt_file_msg(msg, &recipient_key.0, &self.private_key)
     }
 
     /// Send an encrypted E2E message to the specified Threema ID.

@@ -72,12 +72,23 @@ quick_error! {
 }
 
 quick_error! {
-    /// Errors when interacting with the [`ApiBuilder`](struct.ApiBuilder.html).
+    /// Errors when interacting with the [`ApiBuilder`](../struct.ApiBuilder.html).
     #[derive(Debug)]
     pub enum ApiBuilderError {
         /// No private key has been set.
         MissingKey {}
         /// Invalid libsodium private key.
         InvalidKey(msg: String) {}
+    }
+}
+
+quick_error! {
+    /// Errors when interacting with the [`FileMessageBuilder`](../struct.FileMessageBuilder.html).
+    #[derive(Debug)]
+    pub enum FileMessageBuilderError {
+        /// Illegal combination of fields (e.g. setting the `animated` flag on a PDF file message).
+        IllegalCombination(msg: &'static str) {
+            display("IllegalCombination: {}", msg)
+        }
     }
 }

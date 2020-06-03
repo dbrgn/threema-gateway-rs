@@ -15,7 +15,9 @@ Possible log types:
 ### Unreleased
 
 - [added] Allow specifying `RenderingType` for file messages
-- [changed] You now need to import `std::str::FromStr` to access
+- [added] Allow specifying media metadata for file messages
+- [changed] The API for `E2eApi::encrypt_file_msg` has changed
+- [changed] You now need to import `std::str::FromStr` to directly access
   `BlobId::from_str` or `RecipientKey::from_str`
 
 ### v0.12.1 (2019-10-22)
