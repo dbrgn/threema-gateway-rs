@@ -40,16 +40,16 @@
 //!
 //! // Create E2eApi instance
 //! let api = ApiBuilder::new(from, secret)
-//!                      .with_private_key_str(private_key)
-//!                      .and_then(|builder| builder.into_e2e())
-//!                      .unwrap();
+//!     .with_private_key_str(private_key)
+//!     .and_then(|builder| builder.into_e2e())
+//!     .unwrap();
 //!
 //! // Fetch public key
 //! // Note: In a real application, you should cache the public key
 //! let public_key = api.lookup_pubkey(to).unwrap();
 //!
 //! // Encrypt
-//! let recipient_key = RecipientKey::from_str(&public_key).unwrap();
+//! let recipient_key: RecipientKey = public_key.parse().unwrap();
 //! let encrypted = api.encrypt_text_msg(text, &recipient_key);
 //!
 //! // Send

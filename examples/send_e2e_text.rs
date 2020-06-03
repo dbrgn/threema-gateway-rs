@@ -36,7 +36,7 @@ fn main() {
     });
 
     // Encrypt and send
-    let recipient_key = RecipientKey::from_str(&public_key).unwrap_or_else(|e| {
+    let recipient_key: RecipientKey = public_key.parse().unwrap_or_else(|e| {
         println!("{}", e);
         process::exit(1);
     });

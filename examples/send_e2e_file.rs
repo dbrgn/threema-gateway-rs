@@ -58,7 +58,7 @@ fn main() {
     // Fetch public key
     // Note: In a real application, you should cache the public key
     let public_key = etry!(api.lookup_pubkey(to), "Could not fetch public key");
-    let recipient_key = etry!(RecipientKey::from_str(&public_key), "Error");
+    let recipient_key: RecipientKey = etry!(public_key.parse(), "Error");
 
     // Read files
     let mut file = etry!(File::open(filepath), "Could not open file");

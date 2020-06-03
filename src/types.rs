@@ -1,4 +1,5 @@
 use std::fmt;
+use std::str::FromStr;
 use std::string::ToString;
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
@@ -87,9 +88,13 @@ impl BlobId {
     pub fn new(id: [u8; 16]) -> Self {
         BlobId(id)
     }
+}
+
+impl FromStr for BlobId {
+    type Err = ApiError;
 
     /// Create a new BlobId from a 32 character hexadecimal String.
-    pub fn from_str(id: &str) -> Result<Self, ApiError> {
+    fn from_str(id: &str) -> Result<Self, Self::Err> {
         let bytes = HEXLOWER_PERMISSIVE
             .decode(id.as_bytes())
             .map_err(|_| ApiError::BadBlobId)?;

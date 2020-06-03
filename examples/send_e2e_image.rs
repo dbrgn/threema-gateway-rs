@@ -48,7 +48,7 @@ fn main() {
         println!("Could not fetch public key: {}", e);
         process::exit(1);
     });
-    let recipient_key = RecipientKey::from_str(&public_key).unwrap_or_else(|e| {
+    let recipient_key: RecipientKey = public_key.parse().unwrap_or_else(|e| {
         println!("{}", e);
         process::exit(1);
     });

@@ -3,6 +3,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::Read;
+use std::str::FromStr;
 
 use data_encoding::HEXLOWER;
 use reqwest::multipart;
