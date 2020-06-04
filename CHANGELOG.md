@@ -12,7 +12,7 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
-### Unreleased
+### v0.13.0-rc.1 (2020-06-04)
 
 - [added] Allow specifying `RenderingType` for file messages
 - [added] Allow specifying media metadata for file messages
