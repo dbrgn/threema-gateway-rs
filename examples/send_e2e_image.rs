@@ -82,7 +82,7 @@ fn main() {
     );
 
     // Send
-    let msg_id = api.send(&to, &msg);
+    let msg_id = api.send(&to, &msg, false);
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {:?}", e),

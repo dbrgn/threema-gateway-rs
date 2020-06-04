@@ -173,8 +173,18 @@ impl E2eApi {
 
     /// Send an encrypted E2E message to the specified Threema ID.
     ///
+    /// If `delivery_receipts` is set to `false`, then the recipient's device will
+    /// be instructed not to send any delivery receipts. This can be useful for
+    /// one-way communication where the delivery receipt will be discarded. If
+    /// you're unsure what value to use, set the flag to `false`.
+    ///
     /// Cost: 1 credit.
-    pub fn send(&self, to: &str, message: &EncryptedMessage) -> Result<String, ApiError> {
+    pub fn send(
+        &self,
+        to: &str,
+        message: &EncryptedMessage,
+        delivery_receipts: bool,
+    ) -> Result<String, ApiError> {
         send_e2e(
             self.endpoint.borrow(),
             &self.id,
@@ -182,6 +192,7 @@ impl E2eApi {
             &self.secret,
             &message.nonce,
             &message.ciphertext,
+            delivery_receipts,
             None,
         )
     }
@@ -192,6 +203,7 @@ impl E2eApi {
         &self,
         to: &str,
         message: &EncryptedMessage,
+        delivery_receipts: bool,
         additional_params: HashMap<String, String>,
     ) -> Result<String, ApiError> {
         send_e2e(
@@ -201,6 +213,7 @@ impl E2eApi {
             &self.secret,
             &message.nonce,
             &message.ciphertext,
+            delivery_receipts,
             Some(additional_params),
         )
     }

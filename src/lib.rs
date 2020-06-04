@@ -53,7 +53,7 @@
 //! let encrypted = api.encrypt_text_msg(text, &recipient_key);
 //!
 //! // Send
-//! match api.send(&to, &encrypted) {
+//! match api.send(&to, &encrypted, false) {
 //!     Ok(msg_id) => println!("Sent. Message id is {}.", msg_id),
 //!     Err(e) => println!("Could not send message: {:?}", e),
 //! }
