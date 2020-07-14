@@ -347,9 +347,7 @@ impl ApiBuilder {
     pub fn with_custom_endpoint<E: Into<Cow<'static, str>>>(mut self, endpoint: E) -> Self {
         let endpoint = endpoint.into();
         debug!("Using custom endpoint: {}", endpoint);
-        if endpoint.starts_with("http:") {
-            warn!("Custom endpoint does not use https!");
-        } else if !endpoint.starts_with("https:") {
+        if !(endpoint.starts_with("http:") || endpoint.starts_with("https:")) {
             warn!("Custom endpoint seems invalid!");
         }
         self.endpoint = endpoint;
