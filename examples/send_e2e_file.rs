@@ -25,7 +25,8 @@ macro_rules! etry {
     }};
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
         .unwrap_or_else(|e| e.exit());
@@ -57,7 +58,7 @@ fn main() {
 
     // Fetch public key
     // Note: In a real application, you should cache the public key
-    let public_key = etry!(api.lookup_pubkey(to), "Could not fetch public key");
+    let public_key = etry!(api.lookup_pubkey(to).await, "Could not fetch public key");
     let recipient_key: RecipientKey = etry!(public_key.parse(), "Error");
 
     // Read files
@@ -95,21 +96,20 @@ fn main() {
 
     // Upload files to blob server
     let file_blob_id = etry!(
-        api.blob_upload_raw(&encrypted_file, false),
+        api.blob_upload_raw(&encrypted_file, false).await,
         "Could not upload file to blob server"
     );
-    let thumb_blob_id = encrypted_thumb
-        .map(|t| {
-            etry!(
-                api.blob_upload_raw(&t, false),
-                "Could not upload thumbnail to blob server"
-            )
-        })
-        .map(|blob_id| {
-            let thumbnail_media_type =
-                mime_guess::from_path(&thumbpath.unwrap()).first_or_octet_stream();
-            (blob_id, thumbnail_media_type)
-        });
+    let thumb_blob_id = if let Some(et) = encrypted_thumb {
+        let blob_id = etry!(
+            api.blob_upload_raw(&et, false).await,
+            "Could not upload thumbnail to blob server"
+        );
+        let thumbnail_media_type =
+            mime_guess::from_path(&thumbpath.unwrap()).first_or_octet_stream();
+        Some((blob_id, thumbnail_media_type))
+    } else {
+        None
+    };
 
     // Create file message
     let file_media_type = mime_guess::from_path(&filepath).first_or_octet_stream();
@@ -124,7 +124,7 @@ fn main() {
     let encrypted = api.encrypt_file_msg(&msg, &recipient_key);
 
     // Send
-    let msg_id = api.send(&to, &encrypted, false);
+    let msg_id = api.send(&to, &encrypted, false).await;
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {}", e),

@@ -10,7 +10,8 @@ Options:
     -h, --help    Show this help
 ";
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
         .unwrap_or_else(|e| e.exit());
@@ -23,7 +24,7 @@ fn main() {
 
     // Look up ID
     let api = ApiBuilder::new(from, secret).into_simple();
-    match api.lookup_credits() {
+    match api.lookup_credits().await {
         Err(e) => {
             println!("Could not look up credits: {}", e);
             process::exit(1);

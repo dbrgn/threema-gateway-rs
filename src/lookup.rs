@@ -1,13 +1,10 @@
 //! ID and public key lookups.
 
-use std::fmt;
-use std::io::Read;
-use std::str;
+use std::{fmt, str};
 
-use reqwest::blocking::Client;
+use reqwest::Client;
 
-use crate::connection::map_response_code;
-use crate::errors::ApiError;
+use crate::{connection::map_response_code, errors::ApiError};
 
 /// Different ways to look up a Threema ID in the directory.
 #[derive(Debug, PartialEq)]
@@ -119,7 +116,8 @@ impl Capabilities {
 }
 
 /// Fetch the public key for the specified Threema ID.
-pub(crate) fn lookup_pubkey(
+pub(crate) async fn lookup_pubkey(
+    client: &Client,
     endpoint: &str,
     our_id: &str,
     their_id: &str,
@@ -134,17 +132,16 @@ pub(crate) fn lookup_pubkey(
     debug!("Looking up public key for {}", their_id);
 
     // Send request
-    let mut res = Client::new().get(&url).send()?;
+    let res = client.get(&url).send().await?;
     map_response_code(res.status(), None)?;
 
     // Read and return response body
-    let mut body = String::new();
-    res.read_to_string(&mut body)?;
-    Ok(body)
+    Ok(res.text().await?)
 }
 
 /// Look up an ID in the Threema directory.
-pub(crate) fn lookup_id(
+pub(crate) async fn lookup_id(
+    client: &Client,
     endpoint: &str,
     criterion: &LookupCriterion,
     our_id: &str,
@@ -162,28 +159,30 @@ pub(crate) fn lookup_id(
     debug!("Looking up id key for {}", criterion);
 
     // Send request
-    let mut res = Client::new().get(&url).send()?;
+    let res = client.get(&url).send().await?;
     map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read and return response body
-    let mut body = String::new();
-    res.read_to_string(&mut body)?;
-    Ok(body)
+    Ok(res.text().await?)
 }
 
 /// Look up remaining gateway credits.
-pub(crate) fn lookup_credits(endpoint: &str, our_id: &str, secret: &str) -> Result<i64, ApiError> {
+pub(crate) async fn lookup_credits(
+    client: &Client,
+    endpoint: &str,
+    our_id: &str,
+    secret: &str,
+) -> Result<i64, ApiError> {
     let url = format!("{}/credits?from={}&secret={}", endpoint, our_id, secret);
 
     debug!("Looking up remaining credits");
 
     // Send request
-    let mut res = Client::new().get(&url).send()?;
+    let res = client.get(&url).send().await?;
     map_response_code(res.status(), None)?;
 
     // Read, parse and return response body
-    let mut body = String::new();
-    res.read_to_string(&mut body)?;
+    let body = res.text().await?;
     body.trim().parse::<i64>().map_err(|_| {
         ApiError::ParseError(format!(
             "Could not parse response body as i64: \"{}\"",
@@ -193,7 +192,8 @@ pub(crate) fn lookup_credits(endpoint: &str, our_id: &str, secret: &str) -> Resu
 }
 
 /// Look up ID capabilities.
-pub(crate) fn lookup_capabilities(
+pub(crate) async fn lookup_capabilities(
+    client: &Client,
     endpoint: &str,
     our_id: &str,
     their_id: &str,
@@ -208,12 +208,11 @@ pub(crate) fn lookup_capabilities(
     debug!("Looking up capabilities for {}", their_id);
 
     // Send request
-    let mut res = Client::new().get(&url).send()?;
+    let res = client.get(&url).send().await?;
     map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read response body
-    let mut body = String::new();
-    res.read_to_string(&mut body)?;
+    let body = res.text().await?;
 
     // Parse response body
     body.parse()

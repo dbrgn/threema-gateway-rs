@@ -14,7 +14,8 @@ Options:
     -h, --help    Show this help
 ";
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
         .unwrap_or_else(|e| e.exit());
@@ -44,7 +45,7 @@ fn main() {
 
     // Fetch public key
     // Note: In a real application, you should cache the public key
-    let public_key = api.lookup_pubkey(to).unwrap_or_else(|e| {
+    let public_key = api.lookup_pubkey(to).await.unwrap_or_else(|e| {
         println!("Could not fetch public key: {}", e);
         process::exit(1);
     });
@@ -68,6 +69,7 @@ fn main() {
     // Upload image to blob server
     let blob_id = api
         .blob_upload(&encrypted_image, false)
+        .await
         .unwrap_or_else(|e| {
             println!("Could not upload image to blob server: {}", e);
             process::exit(1);
@@ -82,7 +84,7 @@ fn main() {
     );
 
     // Send
-    let msg_id = api.send(&to, &msg, false);
+    let msg_id = api.send(&to, &msg, false).await;
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {}", e),

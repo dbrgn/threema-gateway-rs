@@ -9,9 +9,15 @@
 //! Documentation of the HTTP API can be found at
 //! [gateway.threema.ch](https://gateway.threema.ch/de/developer/api).
 //!
+//! Note: This library is fully asynchronous (because the underlying HTTP
+//! client is async as well). To call the async methods, either call them from
+//! an async context, or wrap the returned future in a `block_on` method
+//! provided by an executor like tokio, async-std or smol.
+//!
 //! ## Example: Send simple (transport encrypted) message
 //!
 //! ```no_run
+//! # tokio_test::block_on(async {
 //! use threema_gateway::{ApiBuilder, Recipient};
 //!
 //! let from = "*YOUR_ID";
@@ -21,15 +27,17 @@
 //!
 //! // Send
 //! let api = ApiBuilder::new(from, secret).into_simple();
-//! match api.send(&to, &text) {
+//! match api.send(&to, &text).await {
 //!     Ok(msg_id) => println!("Sent. Message id is {}.", msg_id),
 //!     Err(e) => println!("Could not send message: {:?}", e),
 //! }
+//! # })
 //! ```
 //!
 //! ## Example: Send end-to-end encrypted message
 //!
 //! ```no_run
+//! # tokio_test::block_on(async {
 //! use threema_gateway::{ApiBuilder, RecipientKey};
 //!
 //! let from = "*YOUR_ID";
@@ -46,17 +54,18 @@
 //!
 //! // Fetch public key
 //! // Note: In a real application, you should cache the public key
-//! let public_key = api.lookup_pubkey(to).unwrap();
+//! let public_key = api.lookup_pubkey(to).await.unwrap();
 //!
 //! // Encrypt
 //! let recipient_key: RecipientKey = public_key.parse().unwrap();
 //! let encrypted = api.encrypt_text_msg(text, &recipient_key);
 //!
 //! // Send
-//! match api.send(&to, &encrypted, false) {
+//! match api.send(&to, &encrypted, false).await {
 //!     Ok(msg_id) => println!("Sent. Message id is {}.", msg_id),
 //!     Err(e) => println!("Could not send message: {:?}", e),
 //! }
+//! # })
 //! ```
 //!
 //! For more examples, see the
