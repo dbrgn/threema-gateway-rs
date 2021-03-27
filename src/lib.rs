@@ -12,6 +12,7 @@
 //! ## Example: Send simple (transport encrypted) message
 //!
 //! ```no_run
+//! # tokio_test::block_on(async {
 //! use threema_gateway::{ApiBuilder, Recipient};
 //!
 //! let from = "*YOUR_ID";
@@ -25,11 +26,13 @@
 //!     Ok(msg_id) => println!("Sent. Message id is {}.", msg_id),
 //!     Err(e) => println!("Could not send message: {:?}", e),
 //! }
+//! # })
 //! ```
 //!
 //! ## Example: Send end-to-end encrypted message
 //!
 //! ```no_run
+//! # tokio_test::block_on(async {
 //! use threema_gateway::{ApiBuilder, RecipientKey};
 //!
 //! let from = "*YOUR_ID";
@@ -46,7 +49,7 @@
 //!
 //! // Fetch public key
 //! // Note: In a real application, you should cache the public key
-//! let public_key = api.lookup_pubkey(to).unwrap();
+//! let public_key = api.lookup_pubkey(to).await.unwrap();
 //!
 //! // Encrypt
 //! let recipient_key: RecipientKey = public_key.parse().unwrap();
@@ -57,6 +60,7 @@
 //!     Ok(msg_id) => println!("Sent. Message id is {}.", msg_id),
 //!     Err(e) => println!("Could not send message: {:?}", e),
 //! }
+//! # })
 //! ```
 //!
 //! For more examples, see the

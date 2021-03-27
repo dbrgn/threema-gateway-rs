@@ -8,7 +8,8 @@ Options:
     -h, --help    Show this help
 ";
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
         .unwrap_or_else(|e| e.exit());
@@ -20,7 +21,7 @@ fn main() {
 
     // Fetch public key
     let api = ApiBuilder::new(our_id, secret).into_simple();
-    let pubkey = api.lookup_pubkey(their_id);
+    let pubkey = api.lookup_pubkey(their_id).await;
 
     // Show result
     match pubkey {

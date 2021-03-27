@@ -12,7 +12,8 @@ Options:
     -h, --help    Show this help
 ";
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
         .unwrap_or_else(|e| e.exit());

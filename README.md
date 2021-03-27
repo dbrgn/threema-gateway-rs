@@ -4,8 +4,8 @@
 [![Crates.io Version][crates-io-badge]][crates-io]
 [![Crates.io Downloads][crates-io-download-badge]][crates-io-download]
 
-This is a mostly-complete implementation of a blocking Threema Gateway client
-library in Rust. For implementation status, see feature list below.
+This is a mostly-complete implementation of an asynchronous Threema Gateway
+client library in Rust. For implementation status, see feature list below.
 
 [Docs](https://docs.rs/threema-gateway)
 
@@ -44,11 +44,6 @@ library in Rust. For implementation status, see feature list below.
 
 - [x] Upload files
 - [ ] Download files
-
-**API**
-
-- [x] Blocking API
-- [ ] Async API
 
 
 ## Usage

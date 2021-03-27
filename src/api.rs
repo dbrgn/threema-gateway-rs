@@ -33,8 +33,8 @@ macro_rules! impl_common_functionality {
         ///
         /// It is strongly recommended that you cache the public keys to avoid querying
         /// the API for each message.
-        pub fn lookup_pubkey(&self, id: &str) -> Result<String, ApiError> {
-            lookup_pubkey(self.endpoint.borrow(), &self.id, id, &self.secret)
+        pub async fn lookup_pubkey(&self, id: &str) -> Result<String, ApiError> {
+            lookup_pubkey(&self.client, self.endpoint.borrow(), &self.id, id, &self.secret).await
         }
 
         /// Look up a Threema ID in the directory.
@@ -43,8 +43,8 @@ macro_rules! impl_common_functionality {
         /// address, in plaintext or hashed form. You can specify one of those
         /// criteria using the [`LookupCriterion`](enum.LookupCriterion.html)
         /// enum.
-        pub fn lookup_id(&self, criterion: &LookupCriterion) -> Result<String, ApiError> {
-            lookup_id(self.endpoint.borrow(), criterion, &self.id, &self.secret)
+        pub async fn lookup_id(&self, criterion: &LookupCriterion) -> Result<String, ApiError> {
+            lookup_id(&self.client, self.endpoint.borrow(), criterion, &self.id, &self.secret).await
         }
 
         /// Look up the capabilities of a certain Threema ID.
@@ -54,13 +54,13 @@ macro_rules! impl_common_functionality {
         /// Threema version that supports receiving files. The receiver may be
         /// using an old version, or a platform where file reception is not
         /// supported.
-        pub fn lookup_capabilities(&self, id: &str) -> Result<Capabilities, ApiError> {
-            lookup_capabilities(self.endpoint.borrow(), &self.id, id, &self.secret)
+        pub async fn lookup_capabilities(&self, id: &str) -> Result<Capabilities, ApiError> {
+            lookup_capabilities(&self.client, self.endpoint.borrow(), &self.id, id, &self.secret).await
         }
 
         /// Look up a remaining gateway credits.
-        pub fn lookup_credits(&self) -> Result<i64, ApiError> {
-            lookup_credits(self.endpoint.borrow(), &self.id, &self.secret)
+        pub async fn lookup_credits(&self) -> Result<i64, ApiError> {
+            lookup_credits(&self.client, self.endpoint.borrow(), &self.id, &self.secret).await
         }
     };
 }

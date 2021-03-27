@@ -14,7 +14,8 @@ Options:
     -h, --help    Show this help
 ";
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
         .unwrap_or_else(|e| e.exit());
@@ -44,7 +45,7 @@ fn main() {
 
     // Fetch public key
     // Note: In a real application, you should cache the public key
-    let public_key = api.lookup_pubkey(to).unwrap_or_else(|e| {
+    let public_key = api.lookup_pubkey(to).await.unwrap_or_else(|e| {
         println!("Could not fetch public key: {}", e);
         process::exit(1);
     });

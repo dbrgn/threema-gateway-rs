@@ -25,7 +25,8 @@ macro_rules! etry {
     }};
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
         .unwrap_or_else(|e| e.exit());
@@ -57,7 +58,7 @@ fn main() {
 
     // Fetch public key
     // Note: In a real application, you should cache the public key
-    let public_key = etry!(api.lookup_pubkey(to), "Could not fetch public key");
+    let public_key = etry!(api.lookup_pubkey(to).await, "Could not fetch public key");
     let recipient_key: RecipientKey = etry!(public_key.parse(), "Error");
 
     // Read files
