@@ -17,6 +17,7 @@ Possible log types:
 - [changed] Upgraded to reqwest 0.11
 - [changed] This library now uses rustls instead of native-tls, this means that
   OpenSSL is no longer required
+- [changed] Fixed from quick-error to thiserror
 
 ### v0.13.0 (2020-06-10)
 

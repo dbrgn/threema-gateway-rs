@@ -2,93 +2,89 @@
 
 use std::io::Error as IoError;
 
-use quick_error::quick_error;
 use reqwest::Error as ReqwestError;
+use thiserror::Error;
 
-quick_error! {
-    /// Errors when interacting with the API.
-    #[derive(Debug)]
-    pub enum ApiError {
-        /// The recipient identity is invalid or the account is not set up for basic mode
-        BadSenderOrRecipient {}
+/// Errors when interacting with the API.
+#[derive(Debug, Error)]
+pub enum ApiError {
+    /// The recipient identity is invalid or the account is not set up for basic mode
+    #[error("bad sender or recipient")]
+    BadSenderOrRecipient,
 
-        /// API identity or secret is incorrect
-        BadCredentials {}
+    /// API identity or secret is incorrect
+    #[error("bad credentials")]
+    BadCredentials,
 
-        /// No credits remain
-        NoCredits {}
+    /// No credits remain
+    #[error("no credits")]
+    NoCredits,
 
-        /// Target ID not found
-        IdNotFound {}
+    /// Target ID not found
+    #[error("target ID not found")]
+    IdNotFound,
 
-        /// Message is too long
-        MessageTooLong {}
+    /// Message is too long
+    #[error("message is too long")]
+    MessageTooLong,
 
-        /// Internal server error
-        ServerError {}
+    /// Internal server error
+    #[error("internal server error")]
+    ServerError,
 
-        /// Wrong hash length
-        BadHashLength {}
+    /// Wrong hash length
+    #[error("bad hash length")]
+    BadHashLength,
 
-        /// Bad blob
-        BadBlob {}
+    /// Bad blob
+    #[error("bad blob")]
+    BadBlob,
 
-        /// Invalid blob ID
-        BadBlobId {}
+    /// Invalid blob ID
+    #[error("bad blob ID")]
+    BadBlobId,
 
-        /// Error when sending request (via reqwest)
-        RequestError(err: ReqwestError) {
-            from()
-            display("RequestError: {}", err)
-        }
+    /// Error when sending request (via reqwest)
+    #[error("request error: {0}")]
+    RequestError(#[from] ReqwestError),
 
-        /// Error when reading response
-        IoError(err: IoError) {
-            from()
-            display("IoError: {}", err)
-        }
+    /// Error when reading response
+    #[error("I/O error: {0}")]
+    IoError(#[from] IoError),
 
-        /// Error while parsing response
-        ParseError(msg: String) {
-            display("ParseError: {}", msg)
-        }
+    /// Error while parsing response
+    #[error("parse error: {0}")]
+    ParseError(String),
 
-        /// Other
-        Other(msg: String) {
-            display("{}", msg)
-        }
-    }
+    /// Other
+    #[error("other: {0}")]
+    Other(String),
 }
 
-quick_error! {
-    /// Crypto related errors.
-    #[derive(Debug)]
-    pub enum CryptoError {
-        /// Bad key
-        BadKey(msg: String) {
-            from()
-        }
-    }
+/// Crypto related errors.
+#[derive(Debug, Error)]
+pub enum CryptoError {
+    /// Bad key
+    #[error("bad key: {0}")]
+    BadKey(String),
 }
 
-quick_error! {
-    /// Errors when interacting with the [`ApiBuilder`](../struct.ApiBuilder.html).
-    #[derive(Debug)]
-    pub enum ApiBuilderError {
-        /// No private key has been set.
-        MissingKey {}
-        /// Invalid libsodium private key.
-        InvalidKey(msg: String) {}
-    }
+/// Errors when interacting with the [`ApiBuilder`](../struct.ApiBuilder.html).
+#[derive(Debug, Error)]
+pub enum ApiBuilderError {
+    /// No private key has been set.
+    #[error("missing private key")]
+    MissingKey,
+
+    /// Invalid libsodium private key.
+    #[error("invalid libsodium private key: {0}")]
+    InvalidKey(String),
 }
 
-quick_error! {
-    /// Errors when interacting with the [`FileMessageBuilder`](../struct.FileMessageBuilder.html).
-    #[derive(Debug)]
-    pub enum FileMessageBuilderError {
-        /// Illegal combination of fields (e.g. setting the `animated` flag on a PDF file message).
-        IllegalCombination(msg: &'static str) {
-            display("IllegalCombination: {}", msg)
-        }
-    }
+/// Errors when interacting with the [`FileMessageBuilder`](../struct.FileMessageBuilder.html).
+#[derive(Debug, Error)]
+pub enum FileMessageBuilderError {
+    /// Illegal combination of fields (e.g. setting the `animated` flag on a PDF file message).
+    #[error("illegal combination: {0}")]
+    IllegalCombination(&'static str),
 }
