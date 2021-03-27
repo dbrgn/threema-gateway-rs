@@ -4,8 +4,8 @@
 [![Crates.io Version][crates-io-badge]][crates-io]
 [![Crates.io Downloads][crates-io-download-badge]][crates-io-download]
 
-This is a mostly-complete implementation of a Threema Gateway client library
-in Rust. For implementation status, see feature list below.
+This is a mostly-complete implementation of a blocking Threema Gateway client
+library in Rust. For implementation status, see feature list below.
 
 [Docs](https://docs.rs/threema-gateway)
 
@@ -45,6 +45,11 @@ in Rust. For implementation status, see feature list below.
 - [x] Upload files
 - [ ] Download files
 
+**API**
+
+- [x] Blocking API
+- [ ] Async API
+
 
 ## Usage
 
@@ -81,6 +86,12 @@ guarantee backwards compatibility with older stable versions as much as
 possible. However, in many cases transitive dependencies make guaranteeing a
 minimal supported Rust version impossible (see [this
 discussion](https://users.rust-lang.org/t/rust-version-requirement-change-as-semver-breaking-or-not/20980/25)).
+
+
+## TLS
+
+This library uses [rustls](https://github.com/ctz/rustls) with native
+(system-provided) root certificates to establish a TLS connection.
 
 
 ## License

@@ -7,9 +7,9 @@ references:
     # Multiple caches are used to increase the chance of a cache hit.
     - restore_cache:
         keys:
-          - v2-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ checksum "Cargo.toml" }}
-          - v2-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ .Branch }}
-          - v2-{{ .Environment.CIRCLE_JOB }}-cargo-cache
+          - v3-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ checksum "Cargo.toml" }}
+          - v3-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ .Branch }}
+          - v3-{{ .Environment.CIRCLE_JOB }}-cargo-cache
     - run:
         name: Build libsodium
         command: |
@@ -31,28 +31,28 @@ references:
           export LD_LIBRARY_PATH=/opt/libsodium/lib:$LD_LIBRARY_PATH
           cargo update && cargo build && cargo test
     - save_cache:
-        key: v2-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ checksum "Cargo.toml" }}
+        key: v3-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ checksum "Cargo.toml" }}
         paths:
           - target
           - /usr/local/cargo
           - /opt/libsodium
     - save_cache:
-        key: v2-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ .Branch }}
+        key: v3-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ .Branch }}
         paths:
           - target
           - /usr/local/cargo
           - /opt/libsodium
     - save_cache:
-        key: v2-{{ .Environment.CIRCLE_JOB }}-cargo-cache
+        key: v3-{{ .Environment.CIRCLE_JOB }}-cargo-cache
         paths:
           - target
           - /usr/local/cargo
           - /opt/libsodium
 
 jobs:
-  test-1.42:
+  test-1.51:
     docker:
-      - image: rust:1.42
+      - image: rust:1.51
     steps: *build-steps
   test-stable:
     docker:
@@ -76,7 +76,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v2-cargo-audit-cache
+            - v3-cargo-audit-cache
       - run:
           name: Install cargo-audit
           command: cargo install --force cargo-audit
@@ -87,7 +87,7 @@ jobs:
           name: Run cargo audit
           command: cargo audit
       - save_cache:
-          key: v2-cargo-audit-cache
+          key: v3-cargo-audit-cache
           paths:
             - /usr/local/cargo
 
@@ -97,7 +97,7 @@ workflows:
   # Build on push
   on_push:
     jobs:
-      - test-1.42
+      - test-1.51
       - test-stable
       - audit
       - fmt
@@ -112,6 +112,6 @@ workflows:
               only:
                 - master
     jobs:
-      - test-1.42
+      - test-1.51
       - test-stable
       - audit
