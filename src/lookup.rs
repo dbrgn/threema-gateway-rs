@@ -4,7 +4,7 @@ use std::fmt;
 use std::io::Read;
 use std::str;
 
-use reqwest::Client;
+use reqwest::blocking::Client;
 
 use crate::connection::map_response_code;
 use crate::errors::ApiError;

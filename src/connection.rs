@@ -6,8 +6,10 @@ use std::io::Read;
 use std::str::FromStr;
 
 use data_encoding::HEXLOWER;
-use reqwest::multipart;
-use reqwest::{Client, StatusCode};
+use reqwest::{
+    blocking::{multipart, Client},
+    StatusCode,
+};
 
 use crate::errors::ApiError;
 use crate::types::BlobId;
