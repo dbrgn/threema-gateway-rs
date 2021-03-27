@@ -12,15 +12,31 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
-### Unreleased
+### v0.14.0 (2021-03-27)
+
+This release changes the entire API from blocking to async. This makes it much
+easier to integrate the library into asynchronous applications.
+
+If you prefer blocking APIs, simply wrap the async function calls in a
+`block_on`-function provided by an async executor like tokio, async-std or
+smol.
+
+Additionally, the library no longer depends on OpenSSL, making building much
+easier (including static builds).
+
+The last new feature is mainly interesting if you're doing a lot of API calls
+from a long-running process: The HTTP client used internally is re-used and you
+can even pass in your own client instance. Previously, a new client instance
+was created for every request, which prevents connection re-use.
 
 - [added] The internal HTTP client is now being re-used for consecutive requests (#46)
 - [added] Allow passing in a custom reqwest `Client` (#46)
 - [changed] The API is now fully async (#46)
-- [changed] Upgraded to reqwest 0.11
+- [changed] Upgraded to reqwest 0.11 (#44)
 - [changed] This library now uses rustls instead of native-tls, this means that
-  OpenSSL is no longer required
+  OpenSSL is no longer required (#44)
 - [changed] Replaced quick-error to thiserror
+- [changed] Remove warning when using custom endpoint with http (#38)
 
 ### v0.13.0 (2020-06-10)
 
