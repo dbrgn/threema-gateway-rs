@@ -42,7 +42,7 @@ async fn main() {
         process::exit(1);
     });
     let encrypted = api.encrypt_text_msg(&text, &recipient_key);
-    let msg_id = api.send(&to, &encrypted, false);
+    let msg_id = api.send(&to, &encrypted, false).await;
 
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),

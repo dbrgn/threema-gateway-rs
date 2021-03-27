@@ -36,7 +36,7 @@ async fn main() {
 
     // Send
     let api = ApiBuilder::new(from, secret).into_simple();
-    let msg_id = api.send(&recipient, &text);
+    let msg_id = api.send(&recipient, &text).await;
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {}", e),

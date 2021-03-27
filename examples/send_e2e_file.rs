@@ -96,21 +96,20 @@ async fn main() {
 
     // Upload files to blob server
     let file_blob_id = etry!(
-        api.blob_upload_raw(&encrypted_file, false),
+        api.blob_upload_raw(&encrypted_file, false).await,
         "Could not upload file to blob server"
     );
-    let thumb_blob_id = encrypted_thumb
-        .map(|t| {
-            etry!(
-                api.blob_upload_raw(&t, false),
-                "Could not upload thumbnail to blob server"
-            )
-        })
-        .map(|blob_id| {
-            let thumbnail_media_type =
-                mime_guess::from_path(&thumbpath.unwrap()).first_or_octet_stream();
-            (blob_id, thumbnail_media_type)
-        });
+    let thumb_blob_id = if let Some(et) = encrypted_thumb {
+        let blob_id = etry!(
+            api.blob_upload_raw(&et, false).await,
+            "Could not upload thumbnail to blob server"
+        );
+        let thumbnail_media_type =
+            mime_guess::from_path(&thumbpath.unwrap()).first_or_octet_stream();
+        Some((blob_id, thumbnail_media_type))
+    } else {
+        None
+    };
 
     // Create file message
     let file_media_type = mime_guess::from_path(&filepath).first_or_octet_stream();
@@ -125,7 +124,7 @@ async fn main() {
     let encrypted = api.encrypt_file_msg(&msg, &recipient_key);
 
     // Send
-    let msg_id = api.send(&to, &encrypted, false);
+    let msg_id = api.send(&to, &encrypted, false).await;
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {}", e),

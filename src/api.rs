@@ -34,7 +34,14 @@ macro_rules! impl_common_functionality {
         /// It is strongly recommended that you cache the public keys to avoid querying
         /// the API for each message.
         pub async fn lookup_pubkey(&self, id: &str) -> Result<String, ApiError> {
-            lookup_pubkey(&self.client, self.endpoint.borrow(), &self.id, id, &self.secret).await
+            lookup_pubkey(
+                &self.client,
+                self.endpoint.borrow(),
+                &self.id,
+                id,
+                &self.secret,
+            )
+            .await
         }
 
         /// Look up a Threema ID in the directory.
@@ -44,7 +51,14 @@ macro_rules! impl_common_functionality {
         /// criteria using the [`LookupCriterion`](enum.LookupCriterion.html)
         /// enum.
         pub async fn lookup_id(&self, criterion: &LookupCriterion) -> Result<String, ApiError> {
-            lookup_id(&self.client, self.endpoint.borrow(), criterion, &self.id, &self.secret).await
+            lookup_id(
+                &self.client,
+                self.endpoint.borrow(),
+                criterion,
+                &self.id,
+                &self.secret,
+            )
+            .await
         }
 
         /// Look up the capabilities of a certain Threema ID.
@@ -55,7 +69,14 @@ macro_rules! impl_common_functionality {
         /// using an old version, or a platform where file reception is not
         /// supported.
         pub async fn lookup_capabilities(&self, id: &str) -> Result<Capabilities, ApiError> {
-            lookup_capabilities(&self.client, self.endpoint.borrow(), &self.id, id, &self.secret).await
+            lookup_capabilities(
+                &self.client,
+                self.endpoint.borrow(),
+                &self.id,
+                id,
+                &self.secret,
+            )
+            .await
         }
 
         /// Look up a remaining gateway credits.
@@ -97,8 +118,16 @@ impl SimpleApi {
     /// Gateway server.
     ///
     /// Cost: 1 credit.
-    pub fn send(&self, to: &Recipient, text: &str) -> Result<String, ApiError> {
-        send_simple(self.endpoint.borrow(), &self.id, to, &self.secret, text)
+    pub async fn send(&self, to: &Recipient<'_>, text: &str) -> Result<String, ApiError> {
+        send_simple(
+            &self.client,
+            self.endpoint.borrow(),
+            &self.id,
+            to,
+            &self.secret,
+            text,
+        )
+        .await
     }
 
     impl_common_functionality!();
@@ -192,13 +221,14 @@ impl E2eApi {
     /// you're unsure what value to use, set the flag to `false`.
     ///
     /// Cost: 1 credit.
-    pub fn send(
+    pub async fn send(
         &self,
         to: &str,
         message: &EncryptedMessage,
         delivery_receipts: bool,
     ) -> Result<String, ApiError> {
         send_e2e(
+            &self.client,
             self.endpoint.borrow(),
             &self.id,
             to,
@@ -208,11 +238,12 @@ impl E2eApi {
             delivery_receipts,
             None,
         )
+        .await
     }
 
     /// Used for testing purposes. Not intended to be called by end users.
     #[doc(hidden)]
-    pub fn send_with_params(
+    pub async fn send_with_params(
         &self,
         to: &str,
         message: &EncryptedMessage,
@@ -220,6 +251,7 @@ impl E2eApi {
         additional_params: HashMap<String, String>,
     ) -> Result<String, ApiError> {
         send_e2e(
+            &self.client,
             self.endpoint.borrow(),
             &self.id,
             to,
@@ -229,6 +261,7 @@ impl E2eApi {
             delivery_receipts,
             Some(additional_params),
         )
+        .await
     }
 
     impl_common_functionality!();
@@ -240,8 +273,13 @@ impl E2eApi {
     /// distributing the same blob to multiple clients.
     ///
     /// Cost: 1 credit.
-    pub fn blob_upload(&self, data: &EncryptedMessage, persist: bool) -> Result<BlobId, ApiError> {
+    pub async fn blob_upload(
+        &self,
+        data: &EncryptedMessage,
+        persist: bool,
+    ) -> Result<BlobId, ApiError> {
         blob_upload(
+            &self.client,
             self.endpoint.borrow(),
             &self.id,
             &self.secret,
@@ -249,17 +287,19 @@ impl E2eApi {
             persist,
             None,
         )
+        .await
     }
 
     /// Used for testing purposes. Not intended to be called by end users.
     #[doc(hidden)]
-    pub fn blob_upload_with_params(
+    pub async fn blob_upload_with_params(
         &self,
         data: &EncryptedMessage,
         persist: bool,
         additional_params: HashMap<String, String>,
     ) -> Result<BlobId, ApiError> {
         blob_upload(
+            &self.client,
             self.endpoint.borrow(),
             &self.id,
             &self.secret,
@@ -267,6 +307,7 @@ impl E2eApi {
             persist,
             Some(additional_params),
         )
+        .await
     }
 
     /// Upload raw data to the blob server.
@@ -276,8 +317,9 @@ impl E2eApi {
     /// distributing the same blob to multiple clients.
     ///
     /// Cost: 1 credit.
-    pub fn blob_upload_raw(&self, data: &[u8], persist: bool) -> Result<BlobId, ApiError> {
+    pub async fn blob_upload_raw(&self, data: &[u8], persist: bool) -> Result<BlobId, ApiError> {
         blob_upload(
+            &self.client,
             self.endpoint.borrow(),
             &self.id,
             &self.secret,
@@ -285,17 +327,19 @@ impl E2eApi {
             persist,
             None,
         )
+        .await
     }
 
     /// Used for testing purposes. Not intended to be called by end users.
     #[doc(hidden)]
-    pub fn blob_upload_raw_with_params(
+    pub async fn blob_upload_raw_with_params(
         &self,
         data: &[u8],
         persist: bool,
         additional_params: HashMap<String, String>,
     ) -> Result<BlobId, ApiError> {
         blob_upload(
+            &self.client,
             self.endpoint.borrow(),
             &self.id,
             &self.secret,
@@ -303,6 +347,7 @@ impl E2eApi {
             persist,
             Some(additional_params),
         )
+        .await
     }
 }
 
@@ -341,7 +386,7 @@ pub struct ApiBuilder {
     pub secret: String,
     pub private_key: Option<SecretKey>,
     pub endpoint: Cow<'static, str>,
-	pub client: Option<Client>,
+    pub client: Option<Client>,
 }
 
 impl ApiBuilder {
@@ -352,7 +397,7 @@ impl ApiBuilder {
             secret: secret.into(),
             private_key: None,
             endpoint: Cow::Borrowed(MSGAPI_URL),
-			client: None,
+            client: None,
         }
     }
 
@@ -378,7 +423,12 @@ impl ApiBuilder {
 
     /// Return a [`SimpleAPI`](struct.SimpleApi.html) instance.
     pub fn into_simple(self) -> SimpleApi {
-        SimpleApi::new(self.endpoint, self.id, self.secret, self.client.unwrap_or_else(Client::new))
+        SimpleApi::new(
+            self.endpoint,
+            self.id,
+            self.secret,
+            self.client.unwrap_or_else(Client::new),
+        )
     }
 
     /// Set the private key. Only needed for E2e mode.
@@ -411,7 +461,13 @@ impl ApiBuilder {
     /// Return a [`E2eAPI`](struct.SimpleApi.html) instance.
     pub fn into_e2e(self) -> Result<E2eApi, ApiBuilderError> {
         match self.private_key {
-            Some(key) => Ok(E2eApi::new(self.endpoint, self.id, self.secret, key, self.client.unwrap_or_else(Client::new))),
+            Some(key) => Ok(E2eApi::new(
+                self.endpoint,
+                self.id,
+                self.secret,
+                key,
+                self.client.unwrap_or_else(Client::new),
+            )),
             None => Err(ApiBuilderError::MissingKey),
         }
     }

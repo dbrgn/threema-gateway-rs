@@ -69,6 +69,7 @@ async fn main() {
     // Upload image to blob server
     let blob_id = api
         .blob_upload(&encrypted_image, false)
+        .await
         .unwrap_or_else(|e| {
             println!("Could not upload image to blob server: {}", e);
             process::exit(1);
@@ -83,7 +84,7 @@ async fn main() {
     );
 
     // Send
-    let msg_id = api.send(&to, &msg, false);
+    let msg_id = api.send(&to, &msg, false).await;
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {}", e),

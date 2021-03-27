@@ -2,14 +2,10 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::io::Read;
 use std::str::FromStr;
 
 use data_encoding::HEXLOWER;
-use reqwest::{
-    blocking::{multipart, Client},
-    StatusCode,
-};
+use reqwest::{multipart, Client, StatusCode};
 
 use crate::errors::ApiError;
 use crate::types::BlobId;
@@ -72,10 +68,11 @@ impl<'a> Recipient<'a> {
 }
 
 /// Send a message to the specified recipient in basic mode.
-pub(crate) fn send_simple(
+pub(crate) async fn send_simple(
+    client: &Client,
     endpoint: &str,
     from: &str,
-    to: &Recipient,
+    to: &Recipient<'_>,
     secret: &str,
     text: &str,
 ) -> Result<String, ApiError> {
@@ -97,22 +94,21 @@ pub(crate) fn send_simple(
     };
 
     // Send request
-    let mut res = Client::new()
+    let res = client
         .post(&format!("{}/send_simple", endpoint))
         .form(&params)
         .header("accept", "application/json")
-        .send()?;
+        .send()
+        .await?;
     map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
-    let mut body = String::new();
-    res.read_to_string(&mut body)?;
-
-    Ok(body)
+    Ok(res.text().await?)
 }
 
 /// Send an encrypted E2E message to the specified recipient.
-pub(crate) fn send_e2e(
+pub(crate) async fn send_e2e(
+    client: &Client,
     endpoint: &str,
     from: &str,
     to: &str,
@@ -137,22 +133,21 @@ pub(crate) fn send_e2e(
     }
 
     // Send request
-    let mut res = Client::new()
+    let res = client
         .post(&format!("{}/send_e2e", endpoint))
         .form(&params)
         .header("accept", "application/json")
-        .send()?;
+        .send()
+        .await?;
     map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
-    let mut body = String::new();
-    res.read_to_string(&mut body)?;
-
-    Ok(body)
+    Ok(res.text().await?)
 }
 
 /// Upload a blob to the blob server.
-pub(crate) fn blob_upload(
+pub(crate) async fn blob_upload(
+    client: &Client,
     endpoint: &str,
     from: &str,
     secret: &str,
@@ -181,53 +176,58 @@ pub(crate) fn blob_upload(
     }
 
     // Send request
-    let mut res = Client::new()
+    let res = client
         .post(&url)
         .multipart(form)
         .header("accept", "text/plain")
-        .send()?;
+        .send()
+        .await?;
     map_response_code(res.status(), Some(ApiError::BadBlob))?;
 
     // Read response body containing blob ID
-    let mut body = String::new();
-    res.read_to_string(&mut body)?;
-
-    BlobId::from_str(body.trim())
+    BlobId::from_str(res.text().await?.trim())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::errors::ApiError;
-    use crate::MSGAPI_URL;
+
     use std::iter::repeat;
 
-    #[test]
-    fn test_simple_max_length_ok() {
+    use crate::{errors::ApiError, MSGAPI_URL};
+
+    #[tokio::test]
+    async fn test_simple_max_length_ok() {
         let text: String = repeat("à").take(3500 / 2).collect();
+        let client = Client::new();
         let result = send_simple(
+            &client,
             MSGAPI_URL,
             "TESTTEST",
             &Recipient::new_id("ECHOECHO"),
             "secret",
             &text,
-        );
+        )
+        .await;
         if let Err(ApiError::MessageTooLong) = result {
             panic!()
         }
     }
 
-    #[test]
-    fn test_simple_max_length_too_long() {
+    #[tokio::test]
+    async fn test_simple_max_length_too_long() {
         let mut text: String = repeat("à").take(3500 / 2).collect();
         text.push('x');
+        let client = Client::new();
         let result = send_simple(
+            &client,
             MSGAPI_URL,
             "TESTTEST",
             &Recipient::new_id("ECHOECHO"),
             "secret",
             &text,
-        );
+        )
+        .await;
         match result {
             Err(ApiError::MessageTooLong) => (),
             _ => panic!(),
