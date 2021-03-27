@@ -51,6 +51,10 @@ client library in Rust. For implementation status, see feature list below.
 Take a look at the examples in the `examples/` directory to see how they're
 implemented.
 
+Generate a new keypair:
+
+    cargo run --example generate_keypair
+
 Lookup public key:
 
     cargo run --example lookup_pubkey -- <our_id> <secret> <their_id>
