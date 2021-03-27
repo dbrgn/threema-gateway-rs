@@ -50,9 +50,9 @@ references:
           - /opt/libsodium
 
 jobs:
-  test-1.42:
+  test-1.51:
     docker:
-      - image: rust:1.42
+      - image: rust:1.51
     steps: *build-steps
   test-stable:
     docker:
@@ -97,7 +97,7 @@ workflows:
   # Build on push
   on_push:
     jobs:
-      - test-1.42
+      - test-1.51
       - test-stable
       - audit
       - fmt
@@ -112,6 +112,6 @@ workflows:
               only:
                 - master
     jobs:
-      - test-1.42
+      - test-1.51
       - test-stable
       - audit
