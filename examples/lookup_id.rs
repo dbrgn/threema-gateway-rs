@@ -13,7 +13,7 @@ Options:
     -h, --help    Show this help
 ";
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
