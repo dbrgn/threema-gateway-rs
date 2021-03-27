@@ -12,10 +12,10 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
-### Unreleased
+### v0.14.1 (2021-03-27)
 
 - [added] New helper function `encrypt_file_data` for encrypting the data and
-  thumbnail that is sent inside a file message (#?)
+  thumbnail that is sent inside a file message (#48)
 
 ### v0.14.0 (2021-03-27)
 
