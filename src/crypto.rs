@@ -8,7 +8,7 @@ use std::str::FromStr;
 use byteorder::{LittleEndian, WriteBytesExt};
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use serde_json as json;
-use sodiumoxide::crypto::box_;
+use sodiumoxide::crypto::{box_, secretbox};
 use sodiumoxide::randombytes::randombytes_into;
 
 use crate::errors::CryptoError;
@@ -151,6 +151,35 @@ pub fn encrypt_file_msg(
     let data = json::to_string(msg).unwrap();
     let msgtype = MessageType::File;
     encrypt(&data.as_bytes(), msgtype, &public_key, &private_key)
+}
+
+static FILE_NONCE: secretbox::Nonce = secretbox::Nonce([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+]);
+static THUMB_NONCE: secretbox::Nonce = secretbox::Nonce([
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+]);
+
+/// Encrypt file data and an optional thumbnail using a randomly generated
+/// symmetric key.
+///
+/// Return the encrypted bytes and the key.
+pub fn encrypt_file_data(
+    file_data: &[u8],
+    thumb_data: Option<&[u8]>,
+) -> (Vec<u8>, Option<Vec<u8>>, secretbox::Key) {
+    // Make sure to init sodiumoxide library
+    sodiumoxide::init().unwrap();
+
+    // Generate a random encryption key
+    let key = secretbox::gen_key();
+
+    // Encrypt data
+    // Note: Since we generate a random key, we can safely re-use constant nonces.
+    let encrypted_file = secretbox::seal(&file_data, &FILE_NONCE, &key);
+    let encrypted_thumb = thumb_data.map(|t| secretbox::seal(&t, &THUMB_NONCE, &key));
+
+    (encrypted_file, encrypted_thumb, key)
 }
 
 #[cfg(test)]
@@ -296,5 +325,42 @@ mod test {
             string,
             "ff000000000000000000000000000000000000000000000000000000000000ee"
         );
+    }
+
+    #[test]
+    fn test_encrypt_file_data() {
+        let file_data = [1, 2, 3, 4];
+        let thumb_data = [5, 6, 7];
+
+        // Encrypt
+        let (encrypted_file, encrypted_thumb, key) =
+            encrypt_file_data(&file_data, Some(&thumb_data));
+        let encrypted_thumb = encrypted_thumb.expect("Thumbnail missing");
+
+        // Ensure that encrypted data is different from plaintext data
+        assert_ne!(encrypted_file, file_data);
+        assert_ne!(encrypted_thumb, thumb_data);
+        assert_eq!(encrypted_file.len(), file_data.len() + secretbox::MACBYTES);
+        assert_eq!(
+            encrypted_thumb.len(),
+            thumb_data.len() + secretbox::MACBYTES
+        );
+
+        // Test that data can be decrypted
+        let decrypted_file = secretbox::open(&encrypted_file, &FILE_NONCE, &key).unwrap();
+        let decrypted_thumb = secretbox::open(&encrypted_thumb, &THUMB_NONCE, &key).unwrap();
+        assert_eq!(decrypted_file, &file_data);
+        assert_eq!(decrypted_thumb, &thumb_data);
+    }
+
+    #[test]
+    fn test_encrypt_file_data_random_key() {
+        // Ensure that a different key is generated each time
+        let (_, _, key1) = encrypt_file_data(&[1, 2, 3], None);
+        let (_, _, key2) = encrypt_file_data(&[1, 2, 3], None);
+        let (_, _, key3) = encrypt_file_data(&[1, 2, 3], None);
+        assert_ne!(key1, key2);
+        assert_ne!(key2, key3);
+        assert_ne!(key1, key3);
     }
 }

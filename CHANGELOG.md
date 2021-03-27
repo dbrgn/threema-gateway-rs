@@ -12,6 +12,11 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### Unreleased
+
+- [added] New helper function `encrypt_file_data` for encrypting the data and
+  thumbnail that is sent inside a file message (#?)
+
 ### v0.14.0 (2021-03-27)
 
 This release changes the entire API from blocking to async. This makes it much
