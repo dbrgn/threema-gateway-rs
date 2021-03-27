@@ -1,17 +1,24 @@
-use std::borrow::{Borrow, Cow};
-use std::collections::HashMap;
+use std::{
+    borrow::{Borrow, Cow},
+    collections::HashMap,
+};
 
 use data_encoding::HEXLOWER_PERMISSIVE;
+use reqwest::Client;
 
-use crate::connection::{blob_upload, send_e2e, send_simple, Recipient};
-use crate::crypto::{encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw};
-use crate::crypto::{EncryptedMessage, RecipientKey};
-use crate::errors::{ApiBuilderError, ApiError};
-use crate::lookup::{lookup_capabilities, lookup_credits, lookup_id, lookup_pubkey};
-use crate::lookup::{Capabilities, LookupCriterion};
-use crate::types::{BlobId, FileMessage, MessageType};
-use crate::SecretKey;
-use crate::MSGAPI_URL;
+use crate::{
+    connection::{blob_upload, send_e2e, send_simple, Recipient},
+    crypto::{
+        encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw, EncryptedMessage, RecipientKey,
+    },
+    errors::{ApiBuilderError, ApiError},
+    lookup::{
+        lookup_capabilities, lookup_credits, lookup_id, lookup_pubkey, Capabilities,
+        LookupCriterion,
+    },
+    types::{BlobId, FileMessage, MessageType},
+    SecretKey, MSGAPI_URL,
+};
 
 /// Implement methods available on both the simple and the e2e API objects.
 macro_rules! impl_common_functionality {
@@ -59,11 +66,12 @@ macro_rules! impl_common_functionality {
 }
 
 /// Struct to talk to the simple API (without end-to-end encryption).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct SimpleApi {
     id: String,
     secret: String,
     endpoint: Cow<'static, str>,
+    client: Client,
 }
 
 impl SimpleApi {
@@ -72,11 +80,13 @@ impl SimpleApi {
         endpoint: Cow<'static, str>,
         id: I,
         secret: S,
+        client: Client,
     ) -> Self {
         SimpleApi {
             id: id.into(),
             secret: secret.into(),
             endpoint,
+            client,
         }
     }
 
@@ -95,12 +105,13 @@ impl SimpleApi {
 }
 
 /// Struct to talk to the E2E API (with end-to-end encryption).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct E2eApi {
     id: String,
     secret: String,
     private_key: SecretKey,
     endpoint: Cow<'static, str>,
+    client: Client,
 }
 
 impl E2eApi {
@@ -111,12 +122,14 @@ impl E2eApi {
         id: I,
         secret: S,
         private_key: SecretKey,
+        client: Client,
     ) -> Self {
         E2eApi {
             id: id.into(),
             secret: secret.into(),
             private_key,
             endpoint,
+            client,
         }
     }
 
@@ -328,6 +341,7 @@ pub struct ApiBuilder {
     pub secret: String,
     pub private_key: Option<SecretKey>,
     pub endpoint: Cow<'static, str>,
+	pub client: Option<Client>,
 }
 
 impl ApiBuilder {
@@ -338,6 +352,7 @@ impl ApiBuilder {
             secret: secret.into(),
             private_key: None,
             endpoint: Cow::Borrowed(MSGAPI_URL),
+			client: None,
         }
     }
 
@@ -354,9 +369,16 @@ impl ApiBuilder {
         self
     }
 
+    /// Set a custom reqwest [`Client`][reqwest::Client] that will be re-used
+    /// for all connections.
+    pub fn with_client(mut self, client: Client) -> Self {
+        self.client = Some(client);
+        self
+    }
+
     /// Return a [`SimpleAPI`](struct.SimpleApi.html) instance.
     pub fn into_simple(self) -> SimpleApi {
-        SimpleApi::new(self.endpoint, self.id, self.secret)
+        SimpleApi::new(self.endpoint, self.id, self.secret, self.client.unwrap_or_else(Client::new))
     }
 
     /// Set the private key. Only needed for E2e mode.
@@ -389,7 +411,7 @@ impl ApiBuilder {
     /// Return a [`E2eAPI`](struct.SimpleApi.html) instance.
     pub fn into_e2e(self) -> Result<E2eApi, ApiBuilderError> {
         match self.private_key {
-            Some(key) => Ok(E2eApi::new(self.endpoint, self.id, self.secret, key)),
+            Some(key) => Ok(E2eApi::new(self.endpoint, self.id, self.secret, key, self.client.unwrap_or_else(Client::new))),
             None => Err(ApiBuilderError::MissingKey),
         }
     }
