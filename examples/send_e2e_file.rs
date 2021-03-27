@@ -5,8 +5,7 @@ use std::path::Path;
 use std::process;
 
 use docopt::Docopt;
-use sodiumoxide::{self, crypto::secretbox};
-use threema_gateway::{ApiBuilder, FileMessage, RecipientKey, RenderingType};
+use threema_gateway::{encrypt_file_data, ApiBuilder, FileMessage, RecipientKey, RenderingType};
 
 const USAGE: &str = "
 Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file> [<path-to-thumbnail>]
@@ -78,21 +77,9 @@ async fn main() {
         None => None,
     };
 
-    // Make sure to init sodiumoxide library
-    sodiumoxide::init().unwrap();
-
-    // Generate a random encryption key
-    let key = secretbox::gen_key();
-    let file_nonce = secretbox::Nonce([
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    ]);
-    let thumb_nonce = secretbox::Nonce([
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-    ]);
-
-    // Encrypt files
-    let encrypted_file = secretbox::seal(&file_data, &file_nonce, &key);
-    let encrypted_thumb = thumb_data.map(|t| secretbox::seal(&t, &thumb_nonce, &key));
+    // Encrypt file data
+    let (encrypted_file, encrypted_thumb, key) =
+        encrypt_file_data(&file_data, thumb_data.as_deref());
 
     // Upload files to blob server
     let file_blob_id = etry!(

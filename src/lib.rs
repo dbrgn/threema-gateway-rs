@@ -87,7 +87,7 @@ pub use sodiumoxide::crypto::secretbox::Key;
 
 pub use crate::api::{ApiBuilder, E2eApi, SimpleApi};
 pub use crate::connection::Recipient;
-pub use crate::crypto::{EncryptedMessage, RecipientKey};
+pub use crate::crypto::{encrypt_file_data, EncryptedMessage, RecipientKey};
 pub use crate::lookup::{Capabilities, LookupCriterion};
 pub use crate::types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType};
 
