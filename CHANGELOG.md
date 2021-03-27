@@ -14,10 +14,13 @@ Possible log types:
 
 ### Unreleased
 
+- [added] The internal HTTP client is now being re-used for consecutive requests (#46)
+- [added] Allow passing in a custom reqwest `Client` (#46)
+- [changed] The API is now fully async (#46)
 - [changed] Upgraded to reqwest 0.11
 - [changed] This library now uses rustls instead of native-tls, this means that
   OpenSSL is no longer required
-- [changed] Fixed from quick-error to thiserror
+- [changed] Replaced quick-error to thiserror
 
 ### v0.13.0 (2020-06-10)
 

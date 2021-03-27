@@ -9,6 +9,11 @@
 //! Documentation of the HTTP API can be found at
 //! [gateway.threema.ch](https://gateway.threema.ch/de/developer/api).
 //!
+//! Note: This library is fully asynchronous (because the underlying HTTP
+//! client is async as well). To call the async methods, either call them from
+//! an async context, or wrap the returned future in a `block_on` method
+//! provided by an executor like tokio, async-std or smol.
+//!
 //! ## Example: Send simple (transport encrypted) message
 //!
 //! ```no_run
