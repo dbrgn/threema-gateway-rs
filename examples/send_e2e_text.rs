@@ -31,7 +31,7 @@ fn main() {
     // Fetch public key
     // Note: In a real application, you should cache the public key
     let public_key = api.lookup_pubkey(to).unwrap_or_else(|e| {
-        println!("Could not fetch public key: {:?}", e);
+        println!("Could not fetch public key: {}", e);
         process::exit(1);
     });
 
@@ -45,6 +45,6 @@ fn main() {
 
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
-        Err(e) => println!("Could not send message: {:?}", e),
+        Err(e) => println!("Could not send message: {}", e),
     }
 }

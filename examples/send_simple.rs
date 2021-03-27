@@ -38,6 +38,6 @@ fn main() {
     let msg_id = api.send(&recipient, &text);
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
-        Err(e) => println!("Could not send message: {:?}", e),
+        Err(e) => println!("Could not send message: {}", e),
     }
 }

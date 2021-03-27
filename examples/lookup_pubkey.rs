@@ -2,7 +2,7 @@ use docopt::Docopt;
 use threema_gateway::ApiBuilder;
 
 const USAGE: &str = "
-Usage: send_e2e [options] <our_id> <secret> <their_id>
+Usage: lookup_pubkey [options] <our_id> <secret> <their_id>
 
 Options:
     -h, --help    Show this help
@@ -25,6 +25,6 @@ fn main() {
     // Show result
     match pubkey {
         Ok(pk) => println!("Public key for {} is {}.", their_id, pk),
-        Err(e) => println!("Could not fetch public key: {:?}", e),
+        Err(e) => println!("Could not fetch public key: {}", e),
     }
 }
