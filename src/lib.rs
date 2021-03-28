@@ -79,17 +79,23 @@ mod connection;
 mod crypto;
 pub mod errors;
 mod lookup;
+mod receive;
 mod types;
 
 pub use mime::Mime;
-pub use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
-pub use sodiumoxide::crypto::secretbox::Key;
+pub use sodiumoxide::crypto::{
+    box_::{PublicKey, SecretKey},
+    secretbox::Key,
+};
 
-pub use crate::api::{ApiBuilder, E2eApi, SimpleApi};
-pub use crate::connection::Recipient;
-pub use crate::crypto::{encrypt_file_data, EncryptedMessage, RecipientKey};
-pub use crate::lookup::{Capabilities, LookupCriterion};
-pub use crate::types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType};
+pub use crate::{
+    api::{ApiBuilder, E2eApi, SimpleApi},
+    connection::Recipient,
+    crypto::{encrypt_file_data, EncryptedMessage, RecipientKey},
+    lookup::{Capabilities, LookupCriterion},
+    receive::IncomingMessage,
+    types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType},
+};
 
 const MSGAPI_URL: &str = "https://msgapi.threema.ch";
 

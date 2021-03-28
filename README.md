@@ -37,6 +37,7 @@ client library in Rust. For implementation status, see feature list below.
 
 **Receiving**
 
+- [x] Decode incoming request body
 - [ ] Verify MAC of incoming message
 - [ ] Decrypt incoming message
 
