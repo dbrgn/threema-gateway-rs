@@ -79,6 +79,7 @@ mod connection;
 mod crypto;
 pub mod errors;
 mod lookup;
+#[cfg(feature = "receive")]
 mod receive;
 mod types;
 
@@ -93,9 +94,11 @@ pub use crate::{
     connection::Recipient,
     crypto::{encrypt_file_data, EncryptedMessage, RecipientKey},
     lookup::{Capabilities, LookupCriterion},
-    receive::IncomingMessage,
     types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType},
 };
+
+#[cfg(feature = "receive")]
+pub use crate::receive::IncomingMessage;
 
 const MSGAPI_URL: &str = "https://msgapi.threema.ch";
 
