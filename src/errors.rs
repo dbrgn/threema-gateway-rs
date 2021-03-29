@@ -62,7 +62,7 @@ pub enum ApiError {
 }
 
 /// Crypto related errors.
-#[derive(Debug, Error)]
+#[derive(Debug, PartialEq, Clone, Error)]
 pub enum CryptoError {
     /// Bad key
     #[error("bad key: {0}")]
@@ -70,7 +70,7 @@ pub enum CryptoError {
 }
 
 /// Errors when interacting with the [`ApiBuilder`](../struct.ApiBuilder.html).
-#[derive(Debug, Error)]
+#[derive(Debug, PartialEq, Clone, Error)]
 pub enum ApiBuilderError {
     /// No private key has been set.
     #[error("missing private key")]
@@ -82,7 +82,7 @@ pub enum ApiBuilderError {
 }
 
 /// Errors when interacting with the [`FileMessageBuilder`](../struct.FileMessageBuilder.html).
-#[derive(Debug, Error)]
+#[derive(Debug, PartialEq, Clone, Error)]
 pub enum FileMessageBuilderError {
     /// Illegal combination of fields (e.g. setting the `animated` flag on a PDF file message).
     #[error("illegal combination: {0}")]
