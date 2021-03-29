@@ -44,6 +44,10 @@ pub enum ApiError {
     #[error("bad blob ID")]
     BadBlobId,
 
+    /// Invalid MAC
+    #[error("invalid MAC")]
+    InvalidMac,
+
     /// Error when sending request (via reqwest)
     #[error("request error: {0}")]
     RequestError(#[from] ReqwestError),

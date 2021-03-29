@@ -38,7 +38,7 @@ client library in Rust. For implementation status, see feature list below.
 **Receiving**
 
 - [x] Decode incoming request body
-- [ ] Verify MAC of incoming message
+- [x] Verify MAC of incoming message
 - [x] Decrypt incoming message
 - [ ] Decode incoming message
 
@@ -81,7 +81,7 @@ Look up Threema ID by email hash:
 
 Decode and decrypt an incoming message payload:
 
-    cargo run --example receive -- <secret> <request-body> <our-id> <our-private-key>
+    cargo run --example receive -- <our-id> <secret> <private-key> <request-body>
 
 
 ## Cargo Features

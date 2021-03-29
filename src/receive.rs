@@ -1,10 +1,15 @@
 //! Code related to incoming messages received from Threema Gateway.
 
+use std::{borrow::Cow, collections::HashMap};
+
 use data_encoding::HEXLOWER_PERMISSIVE;
 use serde::{Deserialize, Deserializer};
-use sodiumoxide::crypto::box_::{self, Nonce, PublicKey, SecretKey};
+use sodiumoxide::crypto::{
+    auth::hmacsha256,
+    box_::{self, Nonce, PublicKey, SecretKey},
+};
 
-use crate::errors::CryptoError;
+use crate::errors::{ApiError, CryptoError};
 
 /// Deserialize a hex string into a byte vector.
 fn deserialize_hex_string<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
@@ -22,6 +27,9 @@ where
 /// To receive the message, you'll need to provide your own HTTP callback
 /// server implementation. The request body bytes that are received this way
 /// can then be parsed using [`IncomingMessage::from_urlencoded_bytes`].
+///
+/// Note: The [`IncomingMessage::from_urlencoded_bytes`] function validates the
+/// MAC, that's why it's not included in here again.
 ///
 /// See <https://gateway.threema.ch/de/developer/api> for details.
 #[serde(rename_all = "camelCase")]
@@ -42,9 +50,6 @@ pub struct IncomingMessage {
     #[serde(rename = "box")]
     #[serde(deserialize_with = "deserialize_hex_string")]
     pub box_data: Vec<u8>,
-    /// Message Authentication Code (32 bytes, hex encoded, see below)
-    #[serde(deserialize_with = "deserialize_hex_string")]
-    pub mac: Vec<u8>,
     /// Public nickname of the sender, if set
     pub nickname: Option<String>,
 }
@@ -52,11 +57,58 @@ pub struct IncomingMessage {
 impl IncomingMessage {
     /// Deserialize an incoming Threema Gateway message in
     /// `application/x-www-form-urlencoded` format.
+    ///
+    /// This will validate the MAC. If the MAC is invalid,
+    /// [`ApiError::InvalidMac`] will be returned.
+    ///
+    /// Note: You should probably not use this directly, but instead use
+    /// [`E2eApi::decode_incoming_message`](crate::E2eApi::decode_incoming_message)!
     pub fn from_urlencoded_bytes(
         bytes: impl AsRef<[u8]>,
-    ) -> Result<Self, serde_urlencoded::de::Error> {
-        let msg: IncomingMessage = serde_urlencoded::from_bytes(bytes.as_ref())?;
-        Ok(msg)
+        api_secret: &str,
+    ) -> Result<Self, ApiError> {
+        let bytes = bytes.as_ref();
+
+        // Unfortunately we need to parse the urlencoding twice, first to
+        // validate the MAC, then to deserialize the data.
+        let values: HashMap<Cow<str>, Cow<str>> = form_urlencoded::parse(bytes).collect();
+
+        // Decode MAC
+        let mac_hex = values
+            .get("mac")
+            .ok_or_else(|| ApiError::ParseError("Missing request body field: mac".to_string()))?;
+        let mut mac = [0u8; 32];
+        let bytes_decoded = HEXLOWER_PERMISSIVE
+            .decode_mut(mac_hex.as_bytes(), &mut mac)
+            .map_err(|_| ApiError::ParseError("Invalid hex bytes for MAC".to_string()))?;
+        if bytes_decoded != 32 {
+            return Err(ApiError::ParseError(format!(
+                "Invalid MAC: Length must be 32 bytes, but is {} bytes",
+                bytes_decoded
+            )));
+        }
+
+        // Validate MAC
+        let mut hmac_state = hmacsha256::State::init(api_secret.as_bytes());
+        for field in &["from", "to", "messageId", "date", "nonce", "box"] {
+            hmac_state.update(
+                values
+                    .get(*field)
+                    .ok_or_else(|| {
+                        ApiError::ParseError(format!("Missing request body field: {}", field))
+                    })?
+                    .as_bytes(),
+            );
+        }
+        let given_tag = hmacsha256::Tag(mac);
+        let calculated_tag = hmac_state.finalize();
+        if given_tag != calculated_tag {
+            return Err(ApiError::InvalidMac);
+        }
+
+        // MAC is valid, we can now deserialize
+        serde_urlencoded::from_bytes(bytes)
+            .map_err(|e| ApiError::ParseError(format!("Could not parse message: {}", e)))
     }
 
     /// Decrypt the box using the specified keys and remove padding.
@@ -93,14 +145,30 @@ impl IncomingMessage {
 mod tests {
     use super::*;
 
-    #[test]
-    fn incoming_message_deserialize() {
-        let msg = IncomingMessage::from_urlencoded_bytes(b"from=ECHOECHO&to=*TESTTST&messageId=0102030405060708&date=1616950936&nonce=ffffffffffffffffffffffffffffffffffffffffffffffff&box=012345abcdef&mac=0011223344556677001122334455667700112233445566770011223344556677").unwrap();
-        assert_eq!(msg.from, "ECHOECHO");
-        assert_eq!(msg.to, "*TESTTST");
-        assert_eq!(msg.nonce, vec![0xff; 24]);
-        assert_eq!(msg.box_data, vec![0x01, 0x23, 0x45, 0xab, 0xcd, 0xef]);
-        assert_eq!(msg.nickname, None);
+    mod incoming_message_deserialize {
+        use super::*;
+
+        const TEST_PAYLOAD: &[u8] = b"from=ECHOECHO&to=*TESTTST&messageId=0102030405060708&date=1616950936&nonce=ffffffffffffffffffffffffffffffffffffffffffffffff&box=012345abcdef&mac=622b362e8353658ee649a5548acecc9ce9b88384d6b7e08e212446d68455b14e";
+        const TEST_MAC_SECRET: &str = "nevergonnagiveyouup";
+
+        #[test]
+        fn success() {
+            let msg =
+                IncomingMessage::from_urlencoded_bytes(TEST_PAYLOAD, TEST_MAC_SECRET).unwrap();
+            assert_eq!(msg.from, "ECHOECHO");
+            assert_eq!(msg.to, "*TESTTST");
+            assert_eq!(msg.nonce, vec![0xff; 24]);
+            assert_eq!(msg.box_data, vec![0x01, 0x23, 0x45, 0xab, 0xcd, 0xef]);
+            assert_eq!(msg.nickname, None);
+        }
+
+        #[test]
+        fn invalid_mac() {
+            match IncomingMessage::from_urlencoded_bytes(TEST_PAYLOAD, "nevergonnaletyoudown") {
+                Err(ApiError::InvalidMac) => { /* good! */ }
+                other => panic!("Unexpected result: {:?}", other),
+            }
+        }
     }
 
     mod decrypt_box {
@@ -124,7 +192,6 @@ mod tests {
                     &b_pk,
                     &a_sk,
                 ),
-                mac: vec![0],
                 nickname: None,
             };
 
@@ -147,7 +214,6 @@ mod tests {
                 date: 0,
                 nonce: vec![1, 2, 3, 4], // Nonce too short!
                 box_data: vec![0],
-                mac: vec![0],
                 nickname: None,
             };
 
@@ -173,7 +239,6 @@ mod tests {
                     &b_pk,
                     &a_sk,
                 ),
-                mac: vec![0],
                 nickname: None,
             };
 

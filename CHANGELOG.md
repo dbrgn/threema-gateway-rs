@@ -15,12 +15,14 @@ Possible log types:
 ### Unreleased
 
 - [added] New `IncomingMessage` type for parsing and decrypting incoming messages
+- [added] Validate MAC for incoming messages
 - [added] Derive `PartialEq` and `Clone` for most error types
 - [added] New `to_hex_string` method on `RecipientKey`
 - [removed] Removed `Into<String>` impl for `RecipientKey`, use `to_hex_string` method instead
 - [changed] The `lookup_pubkey` function now returns a `PublicKey`, not a `String`
-- [changed] `CryptoError` type has two new error variants: `BadNonce`, `BadPadding` and
+- [changed] `CryptoError` type has three new error variants: `BadNonce`, `BadPadding` and
   `DecryptionFailed`
+- [changed] `ApiError` type has one new error variant: `InvalidMac`
 
 ### v0.14.1 (2021-03-27)
 
