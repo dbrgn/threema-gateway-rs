@@ -71,15 +71,12 @@ jobs:
           command: cargo fmt -- --check
   audit:
     docker:
-      - image: rust:latest
+      - image: dbrgn/cargo-audit:latest
     steps:
       - checkout
       - restore_cache:
           keys:
-            - v3-cargo-audit-cache
-      - run:
-          name: Install cargo-audit
-          command: cargo install --force cargo-audit
+            - v4-cargo-audit-cache
       - run:
           name: Run cargo update
           command: cargo update
@@ -87,7 +84,7 @@ jobs:
           name: Run cargo audit
           command: cargo audit
       - save_cache:
-          key: v3-cargo-audit-cache
+          key: v4-cargo-audit-cache
           paths:
             - /usr/local/cargo
 
