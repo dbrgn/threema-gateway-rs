@@ -57,8 +57,7 @@
 //! let public_key = api.lookup_pubkey(to).await.unwrap();
 //!
 //! // Encrypt
-//! let recipient_key: RecipientKey = public_key.parse().unwrap();
-//! let encrypted = api.encrypt_text_msg(text, &recipient_key);
+//! let encrypted = api.encrypt_text_msg(text, &public_key.into());
 //!
 //! // Send
 //! match api.send(&to, &encrypted, false).await {

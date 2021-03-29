@@ -1,7 +1,7 @@
 use std::process;
 
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, RecipientKey};
+use threema_gateway::ApiBuilder;
 
 const USAGE: &str = "
 Usage: send_e2e_text [options] <from> <to> <secret> <private-key> <text>...
@@ -37,11 +37,7 @@ async fn main() {
     });
 
     // Encrypt and send
-    let recipient_key: RecipientKey = public_key.parse().unwrap_or_else(|e| {
-        println!("{}", e);
-        process::exit(1);
-    });
-    let encrypted = api.encrypt_text_msg(&text, &recipient_key);
+    let encrypted = api.encrypt_text_msg(&text, &public_key.into());
     let msg_id = api.send(&to, &encrypted, false).await;
 
     match msg_id {

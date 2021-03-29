@@ -5,6 +5,7 @@ use std::{
 
 use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
+use sodiumoxide::crypto::box_::PublicKey;
 
 use crate::{
     connection::{blob_upload, send_e2e, send_simple, Recipient},
@@ -33,7 +34,7 @@ macro_rules! impl_common_functionality {
         ///
         /// It is strongly recommended that you cache the public keys to avoid querying
         /// the API for each message.
-        pub async fn lookup_pubkey(&self, id: &str) -> Result<String, ApiError> {
+        pub async fn lookup_pubkey(&self, id: &str) -> Result<PublicKey, ApiError> {
             lookup_pubkey(
                 &self.client,
                 self.endpoint.borrow(),

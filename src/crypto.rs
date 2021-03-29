@@ -49,13 +49,6 @@ impl From<[u8; 32]> for RecipientKey {
     }
 }
 
-impl Into<String> for RecipientKey {
-    /// Encode the key bytes as lowercase hex string.
-    fn into(self) -> String {
-        HEXLOWER.encode(&(self.0).0)
-    }
-}
-
 impl RecipientKey {
     /// Create a `RecipientKey` from a byte slice. It must contain 32 bytes.
     pub fn from_bytes(val: &[u8]) -> Result<Self, CryptoError> {
@@ -68,6 +61,11 @@ impl RecipientKey {
     /// Return a reference to the contained key bytes.
     pub fn as_bytes(&self) -> &[u8] {
         &(self.0).0
+    }
+
+    /// Encode the key bytes as lowercase hex string.
+    pub fn to_hex_string(&self) -> String {
+        HEXLOWER.encode(&(self.0).0)
     }
 }
 
@@ -320,9 +318,8 @@ mod test {
         bytes[0] = 0xff;
         bytes[31] = 0xee;
         let recipient = RecipientKey::from_bytes(&bytes).unwrap();
-        let string: String = recipient.into();
         assert_eq!(
-            string,
+            recipient.to_hex_string(),
             "ff000000000000000000000000000000000000000000000000000000000000ee"
         );
     }
