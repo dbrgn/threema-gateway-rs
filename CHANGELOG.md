@@ -19,7 +19,7 @@ Possible log types:
 - [added] New `to_hex_string` method on `RecipientKey`
 - [removed] Removed `Into<String>` impl for `RecipientKey`, use `to_hex_string` method instead
 - [changed] The `lookup_pubkey` function now returns a `PublicKey`, not a `String`
-- [changed] `CryptoError` type has two new error variants: `BadNonce` and
+- [changed] `CryptoError` type has two new error variants: `BadNonce`, `BadPadding` and
   `DecryptionFailed`
 
 ### v0.14.1 (2021-03-27)

@@ -97,6 +97,8 @@ pub fn encrypt_raw(
 }
 
 /// Encrypt a message for the recipient.
+///
+/// The encrypted data will include PKCS#7 style random padding.
 pub fn encrypt(
     data: &[u8],
     msgtype: MessageType,

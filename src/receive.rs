@@ -59,18 +59,33 @@ impl IncomingMessage {
         Ok(msg)
     }
 
-    /// Decrypt the box using the specified keys.
+    /// Decrypt the box using the specified keys and remove padding.
     ///
     /// The public key belongs to the sender in the `from` field. The private
     /// key belongs to the gateway ID in the `to` field.
+    ///
+    /// The PKCS#7 padding will be removed. If the padding is missing or
+    /// invalid, an [`CryptoError::BadPadding`] will be returned.
     pub fn decrypt_box(
         &self,
         public_key: &PublicKey,
         private_key: &SecretKey,
     ) -> Result<Vec<u8>, CryptoError> {
+        // Decode nonce
         let nonce: Nonce = Nonce::from_slice(&self.nonce).ok_or(CryptoError::BadNonce)?;
-        box_::open(&self.box_data, &nonce, &public_key, &private_key)
-            .map_err(|_| CryptoError::DecryptionFailed)
+
+        // Decrypt bytes
+        let mut decrypted = box_::open(&self.box_data, &nonce, &public_key, &private_key)
+            .map_err(|_| CryptoError::DecryptionFailed)?;
+
+        // Remove PKCS#7 style padding
+        let padding_amount = decrypted.last().cloned().ok_or(CryptoError::BadPadding)? as usize;
+        if padding_amount >= decrypted.len() {
+            return Err(CryptoError::BadPadding);
+        }
+        decrypted.resize(decrypted.len() - padding_amount, 0);
+
+        Ok(decrypted)
     }
 }
 
@@ -103,7 +118,12 @@ mod tests {
                 message_id: "00112233".into(),
                 date: 0,
                 nonce: nonce.0.to_vec(),
-                box_data: box_::seal(&[1, 2, 42], &nonce, &b_pk, &a_sk),
+                box_data: box_::seal(
+                    &[/* data */ 1, 2, 42, /* padding */ 3, 3, 3],
+                    &nonce,
+                    &b_pk,
+                    &a_sk,
+                ),
                 mac: vec![0],
                 nickname: None,
             };
@@ -133,6 +153,33 @@ mod tests {
 
             let err = msg.decrypt_box(&pk, &sk).unwrap_err();
             assert_eq!(err, CryptoError::BadNonce);
+        }
+
+        #[test]
+        fn decrypt_bad_padding() {
+            let (a_pk, a_sk) = box_::gen_keypair();
+            let (b_pk, b_sk) = box_::gen_keypair();
+            let nonce = box_::gen_nonce();
+
+            let msg = IncomingMessage {
+                from: "AAAAAAAA".into(),
+                to: "*BBBBBBB".into(),
+                message_id: "00112233".into(),
+                date: 0,
+                nonce: nonce.0.to_vec(),
+                box_data: box_::seal(
+                    &[/* data */ 1, 2, 42 /* no padding */],
+                    &nonce,
+                    &b_pk,
+                    &a_sk,
+                ),
+                mac: vec![0],
+                nickname: None,
+            };
+
+            // Bad padding
+            let err = msg.decrypt_box(&a_pk, &b_sk).unwrap_err();
+            assert_eq!(err, CryptoError::BadPadding);
         }
     }
 }

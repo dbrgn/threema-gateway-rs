@@ -72,6 +72,10 @@ pub enum CryptoError {
     #[error("bad nonce")]
     BadNonce,
 
+    /// Invalid PKCS#7 padding
+    #[error("invalid padding")]
+    BadPadding,
+
     /// Decryption failed
     #[error("decryption failed")]
     DecryptionFailed,
