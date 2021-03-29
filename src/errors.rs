@@ -67,6 +67,14 @@ pub enum CryptoError {
     /// Bad key
     #[error("bad key: {0}")]
     BadKey(String),
+
+    /// Invalid nonce
+    #[error("bad nonce")]
+    BadNonce,
+
+    /// Decryption failed
+    #[error("decryption failed")]
+    DecryptionFailed,
 }
 
 /// Errors when interacting with the [`ApiBuilder`](../struct.ApiBuilder.html).

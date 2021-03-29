@@ -12,6 +12,13 @@ Possible log types:
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
 
+### Unreleased
+
+- [added] New `IncomingMessage` type for parsing and decrypting incoming messages
+- [added] Derive `PartialEq` and `Clone` for most error typess
+- [changed] `CryptoError` type has two new error variants: `BadNonce` and
+  `DecryptionFailed`
+
 ### v0.14.1 (2021-03-27)
 
 - [added] New helper function `encrypt_file_data` for encrypting the data and
