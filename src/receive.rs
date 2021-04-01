@@ -118,6 +118,9 @@ impl IncomingMessage {
     ///
     /// The PKCS#7 padding will be removed. If the padding is missing or
     /// invalid, an [`CryptoError::BadPadding`] will be returned.
+    ///
+    /// Note: For more convenience, you might want to prefer the shortcut
+    /// [`E2eApi::decrypt_incoming_message`](crate::E2eApi::decrypt_incoming_message)!
     pub fn decrypt_box(
         &self,
         public_key: &PublicKey,

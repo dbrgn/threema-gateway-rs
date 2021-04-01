@@ -12,7 +12,7 @@ use crate::{
     crypto::{
         encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw, EncryptedMessage, RecipientKey,
     },
-    errors::{ApiBuilderError, ApiError},
+    errors::{ApiBuilderError, ApiError, CryptoError},
     lookup::{
         lookup_capabilities, lookup_credits, lookup_id, lookup_pubkey, Capabilities,
         LookupCriterion,
@@ -362,6 +362,16 @@ impl E2eApi {
         bytes: impl AsRef<[u8]>,
     ) -> Result<IncomingMessage, ApiError> {
         IncomingMessage::from_urlencoded_bytes(bytes, &self.secret)
+    }
+
+    /// Decrypt an [`IncomingMessage`] using the provided public key and our
+    /// own private key.
+    pub fn decrypt_incoming_message(
+        &self,
+        message: &IncomingMessage,
+        public_key: &PublicKey,
+    ) -> Result<Vec<u8>, CryptoError> {
+        message.decrypt_box(public_key, &self.private_key)
     }
 }
 

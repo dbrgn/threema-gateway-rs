@@ -56,10 +56,12 @@ async fn main() {
     });
 
     // Decrypt
-    let data = msg.decrypt_box(&pubkey, &private_key).unwrap_or_else(|e| {
-        println!("Could not decrypt box: {}", e);
-        std::process::exit(1);
-    });
+    let data = api
+        .decrypt_incoming_message(&msg, &pubkey)
+        .unwrap_or_else(|e| {
+            println!("Could not decrypt box: {}", e);
+            std::process::exit(1);
+        });
 
     // Show result
     println!("Decrypted box: {:?}", data);
