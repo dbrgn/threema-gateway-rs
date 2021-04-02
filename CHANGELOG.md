@@ -14,7 +14,14 @@ Possible log types:
 
 ### Unreleased
 
+...
+
+### v0.15.0 (2021-04-02)
+
+This release adds initial support for incoming messages. See #49 for details.
+
 - [added] New `IncomingMessage` type for parsing and decrypting incoming messages
+- [added] New methods `decode_incoming_message` and `decrypt_incoming_message` on `E2eApi`
 - [added] Validate MAC for incoming messages
 - [added] Derive `PartialEq` and `Clone` for most error types
 - [added] New `to_hex_string` method on `RecipientKey`
