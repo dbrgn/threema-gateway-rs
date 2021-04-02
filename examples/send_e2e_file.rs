@@ -5,7 +5,7 @@ use std::path::Path;
 use std::process;
 
 use docopt::Docopt;
-use threema_gateway::{encrypt_file_data, ApiBuilder, FileMessage, RecipientKey, RenderingType};
+use threema_gateway::{encrypt_file_data, ApiBuilder, FileMessage, RenderingType};
 
 const USAGE: &str = "
 Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file> [<path-to-thumbnail>]
@@ -58,7 +58,6 @@ async fn main() {
     // Fetch public key
     // Note: In a real application, you should cache the public key
     let public_key = etry!(api.lookup_pubkey(to).await, "Could not fetch public key");
-    let recipient_key: RecipientKey = etry!(public_key.parse(), "Error");
 
     // Read files
     let mut file = etry!(File::open(filepath), "Could not open file");
@@ -108,7 +107,7 @@ async fn main() {
         .rendering_type(RenderingType::File)
         .build()
         .expect("Could not build FileMessage");
-    let encrypted = api.encrypt_file_msg(&msg, &recipient_key);
+    let encrypted = api.encrypt_file_msg(&msg, &public_key.into());
 
     // Send
     let msg_id = api.send(&to, &encrypted, false).await;

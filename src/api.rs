@@ -5,17 +5,19 @@ use std::{
 
 use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
+use sodiumoxide::crypto::box_::PublicKey;
 
 use crate::{
     connection::{blob_upload, send_e2e, send_simple, Recipient},
     crypto::{
         encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw, EncryptedMessage, RecipientKey,
     },
-    errors::{ApiBuilderError, ApiError},
+    errors::{ApiBuilderError, ApiError, CryptoError},
     lookup::{
         lookup_capabilities, lookup_credits, lookup_id, lookup_pubkey, Capabilities,
         LookupCriterion,
     },
+    receive::IncomingMessage,
     types::{BlobId, FileMessage, MessageType},
     SecretKey, MSGAPI_URL,
 };
@@ -33,7 +35,7 @@ macro_rules! impl_common_functionality {
         ///
         /// It is strongly recommended that you cache the public keys to avoid querying
         /// the API for each message.
-        pub async fn lookup_pubkey(&self, id: &str) -> Result<String, ApiError> {
+        pub async fn lookup_pubkey(&self, id: &str) -> Result<PublicKey, ApiError> {
             lookup_pubkey(
                 &self.client,
                 self.endpoint.borrow(),
@@ -349,6 +351,28 @@ impl E2eApi {
         )
         .await
     }
+
+    /// Deserialize an incoming Threema Gateway message in
+    /// `application/x-www-form-urlencoded` format.
+    ///
+    /// This will validate the MAC. If the MAC is invalid,
+    /// [`ApiError::InvalidMac`] will be returned.
+    pub fn decode_incoming_message(
+        &self,
+        bytes: impl AsRef<[u8]>,
+    ) -> Result<IncomingMessage, ApiError> {
+        IncomingMessage::from_urlencoded_bytes(bytes, &self.secret)
+    }
+
+    /// Decrypt an [`IncomingMessage`] using the provided public key and our
+    /// own private key.
+    pub fn decrypt_incoming_message(
+        &self,
+        message: &IncomingMessage,
+        public_key: &PublicKey,
+    ) -> Result<Vec<u8>, CryptoError> {
+        message.decrypt_box(public_key, &self.private_key)
+    }
 }
 
 /// A convenient way to set up the API object.
@@ -361,9 +385,9 @@ impl E2eApi {
 /// use threema_gateway::{ApiBuilder, SimpleApi};
 ///
 /// let gateway_id = "*3MAGWID";
-/// let gateway_secret = "hihghrg98h00ghrg";
+/// let api_secret = "hihghrg98h00ghrg";
 ///
-/// let api: SimpleApi = ApiBuilder::new(gateway_id, gateway_secret).into_simple();
+/// let api: SimpleApi = ApiBuilder::new(gateway_id, api_secret).into_simple();
 /// ```
 ///
 /// ## E2E API
@@ -372,10 +396,10 @@ impl E2eApi {
 /// use threema_gateway::{ApiBuilder, E2eApi};
 ///
 /// let gateway_id = "*3MAGWID";
-/// let gateway_secret = "hihghrg98h00ghrg";
+/// let api_secret = "hihghrg98h00ghrg";
 /// let private_key = "998730fbcac1c57dbb181139de41d12835b3fae6af6acdf6ce91670262e88453";
 ///
-/// let api: E2eApi = ApiBuilder::new(gateway_id, gateway_secret)
+/// let api: E2eApi = ApiBuilder::new(gateway_id, api_secret)
 ///                              .with_private_key_str(private_key)
 ///                              .and_then(|builder| builder.into_e2e())
 ///                              .unwrap();
@@ -459,6 +483,8 @@ impl ApiBuilder {
     }
 
     /// Return a [`E2eAPI`](struct.SimpleApi.html) instance.
+    ///
+    /// This will fail if no private key was set.
     pub fn into_e2e(self) -> Result<E2eApi, ApiBuilderError> {
         match self.private_key {
             Some(key) => Ok(E2eApi::new(

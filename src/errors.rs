@@ -44,6 +44,10 @@ pub enum ApiError {
     #[error("bad blob ID")]
     BadBlobId,
 
+    /// Invalid MAC
+    #[error("invalid MAC")]
+    InvalidMac,
+
     /// Error when sending request (via reqwest)
     #[error("request error: {0}")]
     RequestError(#[from] ReqwestError),
@@ -62,15 +66,27 @@ pub enum ApiError {
 }
 
 /// Crypto related errors.
-#[derive(Debug, Error)]
+#[derive(Debug, PartialEq, Clone, Error)]
 pub enum CryptoError {
     /// Bad key
     #[error("bad key: {0}")]
     BadKey(String),
+
+    /// Invalid nonce
+    #[error("bad nonce")]
+    BadNonce,
+
+    /// Invalid PKCS#7 padding
+    #[error("invalid padding")]
+    BadPadding,
+
+    /// Decryption failed
+    #[error("decryption failed")]
+    DecryptionFailed,
 }
 
 /// Errors when interacting with the [`ApiBuilder`](../struct.ApiBuilder.html).
-#[derive(Debug, Error)]
+#[derive(Debug, PartialEq, Clone, Error)]
 pub enum ApiBuilderError {
     /// No private key has been set.
     #[error("missing private key")]
@@ -82,7 +98,7 @@ pub enum ApiBuilderError {
 }
 
 /// Errors when interacting with the [`FileMessageBuilder`](../struct.FileMessageBuilder.html).
-#[derive(Debug, Error)]
+#[derive(Debug, PartialEq, Clone, Error)]
 pub enum FileMessageBuilderError {
     /// Illegal combination of fields (e.g. setting the `animated` flag on a PDF file message).
     #[error("illegal combination: {0}")]

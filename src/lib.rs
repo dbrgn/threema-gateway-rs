@@ -57,8 +57,7 @@
 //! let public_key = api.lookup_pubkey(to).await.unwrap();
 //!
 //! // Encrypt
-//! let recipient_key: RecipientKey = public_key.parse().unwrap();
-//! let encrypted = api.encrypt_text_msg(text, &recipient_key);
+//! let encrypted = api.encrypt_text_msg(text, &public_key.into());
 //!
 //! // Send
 //! match api.send(&to, &encrypted, false).await {
@@ -79,17 +78,26 @@ mod connection;
 mod crypto;
 pub mod errors;
 mod lookup;
+#[cfg(feature = "receive")]
+mod receive;
 mod types;
 
 pub use mime::Mime;
-pub use sodiumoxide::crypto::box_::{PublicKey, SecretKey};
-pub use sodiumoxide::crypto::secretbox::Key;
+pub use sodiumoxide::crypto::{
+    box_::{PublicKey, SecretKey},
+    secretbox::Key,
+};
 
-pub use crate::api::{ApiBuilder, E2eApi, SimpleApi};
-pub use crate::connection::Recipient;
-pub use crate::crypto::{encrypt_file_data, EncryptedMessage, RecipientKey};
-pub use crate::lookup::{Capabilities, LookupCriterion};
-pub use crate::types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType};
+pub use crate::{
+    api::{ApiBuilder, E2eApi, SimpleApi},
+    connection::Recipient,
+    crypto::{encrypt_file_data, EncryptedMessage, RecipientKey},
+    lookup::{Capabilities, LookupCriterion},
+    types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType},
+};
+
+#[cfg(feature = "receive")]
+pub use crate::receive::IncomingMessage;
 
 const MSGAPI_URL: &str = "https://msgapi.threema.ch";
 

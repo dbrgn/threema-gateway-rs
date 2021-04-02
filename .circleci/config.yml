@@ -29,7 +29,7 @@ references:
         command: |
           export PKG_CONFIG_PATH=/opt/libsodium/lib/pkgconfig:$PKG_CONFIG_PATH
           export LD_LIBRARY_PATH=/opt/libsodium/lib:$LD_LIBRARY_PATH
-          cargo update && cargo build && cargo test
+          cargo update && cargo build --all-targets && cargo build --all-targets --all-features && cargo test --all-features
     - save_cache:
         key: v3-{{ .Environment.CIRCLE_JOB }}-cargo-cache-{{ checksum "Cargo.toml" }}
         paths:
