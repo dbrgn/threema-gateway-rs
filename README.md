@@ -1,6 +1,6 @@
 # Rust SDK for Threema Gateway
 
-![GitHub CI][github-actions-badge]][github-actions]
+[![GitHub CI][github-actions-badge]][github-actions]
 [![Crates.io Version][crates-io-badge]][crates-io]
 [![Crates.io Downloads][crates-io-download-badge]][crates-io-download]
 
