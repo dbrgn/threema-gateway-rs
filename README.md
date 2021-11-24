@@ -1,6 +1,6 @@
 # Rust SDK for Threema Gateway
 
-[![CircleCI][circle-ci-badge]][circle-ci]
+![GitHub CI][github-actions-badge]][github-actions]
 [![Crates.io Version][crates-io-badge]][crates-io]
 [![Crates.io Downloads][crates-io-download-badge]][crates-io-download]
 
@@ -123,8 +123,8 @@ for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 be dual licensed as above, without any additional terms or conditions.
 
 <!-- Badges -->
-[circle-ci]: https://circleci.com/gh/dbrgn/threema-gateway-rs/tree/master
-[circle-ci-badge]: https://circleci.com/gh/dbrgn/threema-gateway-rs/tree/master.svg?style=shield
+[github-actions]: https://github.com/dbrgn/threema-gateway-rs/actions?query=branch%3Amaster
+[github-actions-badge]: https://github.com/dbrgn/threema-gateway-rs/workflows/CI/badge.svg
 [crates-io]: https://crates.io/crates/threema-gateway
 [crates-io-badge]: https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600
 [crates-io-download]: https://crates.io/crates/threema-gateway
