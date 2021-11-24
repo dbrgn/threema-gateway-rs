@@ -1,8 +1,5 @@
 //! # Threema Gateway SDK for Rust
 //!
-//! [![CircleCI](https://circleci.com/gh/dbrgn/threema-gateway-rs/tree/master.svg?style=shield)](https://circleci.com/gh/dbrgn/threema-gateway-rs/tree/master)
-//! [![Crates.io](https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600)](https://crates.io/crates/threema-gateway)
-//!
 //! This library makes it easy to use the [Threema
 //! Gateway](https://gateway.threema.ch/) from Rust programs.
 //!
