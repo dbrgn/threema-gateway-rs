@@ -1,6 +1,7 @@
 use std::{
     borrow::{Borrow, Cow},
     collections::HashMap,
+    time::Duration,
 };
 
 use data_encoding::HEXLOWER_PERMISSIVE;
@@ -21,6 +22,13 @@ use crate::{
     types::{BlobId, FileMessage, MessageType},
     SecretKey, MSGAPI_URL,
 };
+
+fn make_reqwest_client() -> Client {
+    Client::builder()
+        .timeout(Duration::from_secs(10))
+        .build()
+        .expect("Could not build client")
+}
 
 /// Implement methods available on both the simple and the e2e API objects.
 macro_rules! impl_common_functionality {
@@ -451,7 +459,7 @@ impl ApiBuilder {
             self.endpoint,
             self.id,
             self.secret,
-            self.client.unwrap_or_else(Client::new),
+            self.client.unwrap_or_else(make_reqwest_client),
         )
     }
 
@@ -492,7 +500,7 @@ impl ApiBuilder {
                 self.id,
                 self.secret,
                 key,
-                self.client.unwrap_or_else(Client::new),
+                self.client.unwrap_or_else(make_reqwest_client),
             )),
             None => Err(ApiBuilderError::MissingKey),
         }
