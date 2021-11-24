@@ -8,10 +8,12 @@ use docopt::Docopt;
 use threema_gateway::{encrypt_file_data, ApiBuilder, FileMessage, RenderingType};
 
 const USAGE: &str = "
-Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file> [<path-to-thumbnail>]
+Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file>
 
 Options:
-    -h, --help    Show this help
+    --thumbnail <path>   Optional path to thumbnail
+    --caption <caption>  Optional caption
+    -h, --help           Show this help
 ";
 
 /// Try or exit.
@@ -36,9 +38,13 @@ async fn main() {
     let secret = args.get_str("<secret>");
     let private_key = args.get_str("<private-key>");
     let filepath = Path::new(args.get_str("<path-to-file>"));
-    let thumbpath = match args.get_str("<path-to-thumbnail>") {
+    let thumbpath = match args.get_str("--thumbnail") {
         "" => None,
         p => Some(Path::new(p)),
+    };
+    let caption = match args.get_str("--caption") {
+        "" => None,
+        c => Some(c),
     };
 
     // Verify thumbnail file type
@@ -103,7 +109,7 @@ async fn main() {
     let msg = FileMessage::builder(file_blob_id, key, file_media_type, file_data.len() as u32)
         .thumbnail_opt(thumb_blob_id)
         .file_name_opt(file_name)
-        .description("File message description")
+        .description_opt(caption)
         .rendering_type(RenderingType::File)
         .build()
         .expect("Could not build FileMessage");
