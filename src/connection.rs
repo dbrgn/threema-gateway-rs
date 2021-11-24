@@ -1,14 +1,11 @@
 //! Send and receive messages.
 
-use std::borrow::Cow;
-use std::collections::HashMap;
-use std::str::FromStr;
+use std::{borrow::Cow, collections::HashMap, str::FromStr};
 
 use data_encoding::HEXLOWER;
 use reqwest::{multipart, Client, StatusCode};
 
-use crate::errors::ApiError;
-use crate::types::BlobId;
+use crate::{errors::ApiError, types::BlobId};
 
 /// Map HTTP response status code to an ApiError if it isn't "200".
 ///
@@ -76,6 +73,12 @@ pub(crate) async fn send_simple(
     secret: &str,
     text: &str,
 ) -> Result<String, ApiError> {
+    log::debug!(
+        "Sending transport encrypted message from {} to {:?}",
+        from,
+        to
+    );
+
     // Check text length (max 3500 bytes)
     // Note: Strings in Rust are UTF8, so len() returns the byte count.
     if text.len() > 3500 {
@@ -94,12 +97,14 @@ pub(crate) async fn send_simple(
     };
 
     // Send request
+    log::trace!("Sending HTTP request");
     let res = client
         .post(&format!("{}/send_simple", endpoint))
         .form(&params)
         .header("accept", "application/json")
         .send()
         .await?;
+    log::trace!("Received HTTP response");
     map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
@@ -118,6 +123,8 @@ pub(crate) async fn send_e2e(
     delivery_receipts: bool,
     additional_params: Option<HashMap<String, String>>,
 ) -> Result<String, ApiError> {
+    log::debug!("Sending e2e encrypted message from {} to {}", from, to);
+
     // Prepare POST data
     let mut params = match additional_params {
         Some(p) => p,
@@ -133,12 +140,14 @@ pub(crate) async fn send_e2e(
     }
 
     // Send request
+    log::trace!("Sending HTTP request");
     let res = client
         .post(&format!("{}/send_e2e", endpoint))
         .form(&params)
         .header("accept", "application/json")
         .send()
         .await?;
+    log::trace!("Received HTTP response");
     map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
