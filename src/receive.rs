@@ -32,8 +32,8 @@ where
 /// MAC, that's why it's not included in here again.
 ///
 /// See <https://gateway.threema.ch/de/developer/api> for details.
-#[serde(rename_all = "camelCase")]
 #[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct IncomingMessage {
     /// Sender identity (8 characters)
     pub from: String,

@@ -1,24 +1,23 @@
-use std::ffi::OsStr;
-use std::fs::File;
-use std::io::Read;
-use std::path::Path;
-use std::process;
+use std::{ffi::OsStr, fs::File, io::Read, path::Path, process};
 
 use docopt::Docopt;
 use threema_gateway::{encrypt_file_data, ApiBuilder, FileMessage, RenderingType};
 
 const USAGE: &str = "
-Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file> [<path-to-thumbnail>]
+Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file>
 
 Options:
-    -h, --help    Show this help
+    --thumbnail <path>       Optional path to thumbnail
+    --caption <caption>      Optional caption
+    --rendering-type <type>  Set the rendering type (file, media or sticker)
+    -h, --help               Show this help
 ";
 
 /// Try or exit.
 macro_rules! etry {
     ($result:expr, $msg:expr) => {{
         $result.unwrap_or_else(|e| {
-            println!("{}: {}", $msg, e);
+            eprintln!("{}: {}", $msg, e);
             process::exit(1);
         })
     }};
@@ -36,15 +35,28 @@ async fn main() {
     let secret = args.get_str("<secret>");
     let private_key = args.get_str("<private-key>");
     let filepath = Path::new(args.get_str("<path-to-file>"));
-    let thumbpath = match args.get_str("<path-to-thumbnail>") {
+    let thumbpath = match args.get_str("--thumbnail") {
         "" => None,
         p => Some(Path::new(p)),
+    };
+    let rendering_type = match args.get_str("--rendering-type") {
+        "" | "file" => RenderingType::File,
+        "media" => RenderingType::Media,
+        "sticker" => RenderingType::Sticker,
+        other => {
+            eprintln!("Invalid rendering type: {}", other);
+            process::exit(1);
+        }
+    };
+    let caption = match args.get_str("--caption") {
+        "" => None,
+        c => Some(c),
     };
 
     // Verify thumbnail file type
     if let Some(t) = thumbpath {
         if t.extension() != Some(OsStr::new("jpg")) {
-            println!("Thumbnail at {:?} must end with .jpg", t);
+            eprintln!("Thumbnail at {:?} must end with .jpg", t);
             process::exit(1);
         }
     }
@@ -103,8 +115,8 @@ async fn main() {
     let msg = FileMessage::builder(file_blob_id, key, file_media_type, file_data.len() as u32)
         .thumbnail_opt(thumb_blob_id)
         .file_name_opt(file_name)
-        .description("File message description")
-        .rendering_type(RenderingType::File)
+        .description_opt(caption)
+        .rendering_type(rendering_type)
         .build()
         .expect("Could not build FileMessage");
     let encrypted = api.encrypt_file_msg(&msg, &public_key.into());
