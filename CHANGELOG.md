@@ -16,6 +16,12 @@ Possible log types:
 
 ...
 
+### v0.15.1 (2021-12-06)
+
+- [added] send_e2e_file example: Allow setting rendering type and caption (#52)
+- [changed] Set timeout of 10s on default HTTP client (#56) 
+- [changed] Add some more logging
+
 ### v0.15.0 (2021-04-02)
 
 This release adds initial support for incoming messages. See #49 for details.
