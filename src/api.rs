@@ -172,11 +172,6 @@ impl E2eApi {
         }
     }
 
-    /// Encrypt raw bytes for the specified recipient public key.
-    pub fn encrypt_raw(&self, data: &[u8], recipient_key: &RecipientKey) -> EncryptedMessage {
-        encrypt_raw(data, &recipient_key.0, &self.private_key)
-    }
-
     /// Encrypt a text message for the specified recipient public key.
     pub fn encrypt_text_msg(&self, text: &str, recipient_key: &RecipientKey) -> EncryptedMessage {
         let data = text.as_bytes();
@@ -221,6 +216,30 @@ impl E2eApi {
         recipient_key: &RecipientKey,
     ) -> EncryptedMessage {
         encrypt_file_msg(msg, &recipient_key.0, &self.private_key)
+    }
+
+    /// Encrypt an arbitrary message for the specified recipient public key.
+    ///
+    /// The encrypted data will include PKCS#7 style random padding.
+    ///
+    /// Note: In almost all cases you should use [`encrypt_text_msg`],
+    /// [`encrypt_file_msg`] or [`encrypt_image_msg`] instead.
+    ///
+    /// [`encrypt_text_msg`]: Self::encrypt_text_msg
+    /// [`encrypt_file_msg`]: Self::encrypt_file_msg
+    /// [`encrypt_image_msg`]: Self::encrypt_image_msg
+    pub fn encrypt(
+        &self,
+        raw_data: &[u8],
+        msgtype: MessageType,
+        recipient_key: &RecipientKey,
+    ) -> EncryptedMessage {
+        encrypt(raw_data, msgtype, &recipient_key.0, &self.private_key)
+    }
+
+    /// Encrypt raw bytes for the specified recipient public key.
+    pub fn encrypt_raw(&self, raw_data: &[u8], recipient_key: &RecipientKey) -> EncryptedMessage {
+        encrypt_raw(raw_data, &recipient_key.0, &self.private_key)
     }
 
     /// Send an encrypted E2E message to the specified Threema ID.
