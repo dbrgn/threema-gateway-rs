@@ -130,7 +130,7 @@ impl IncomingMessage {
         let nonce: Nonce = Nonce::from_slice(&self.nonce).ok_or(CryptoError::BadNonce)?;
 
         // Decrypt bytes
-        let mut decrypted = box_::open(&self.box_data, &nonce, &public_key, &private_key)
+        let mut decrypted = box_::open(&self.box_data, &nonce, public_key, private_key)
             .map_err(|_| CryptoError::DecryptionFailed)?;
 
         // Remove PKCS#7 style padding
