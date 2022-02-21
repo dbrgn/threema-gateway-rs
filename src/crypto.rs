@@ -1,19 +1,20 @@
 //! Encrypt and decrypt messages.
 
-use std::convert::Into;
-use std::io::Write;
-use std::iter::repeat;
-use std::str::FromStr;
+use std::{convert::Into, io::Write, iter::repeat, str::FromStr};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use serde_json as json;
-use sodiumoxide::crypto::{box_, secretbox};
-use sodiumoxide::randombytes::randombytes_into;
+use sodiumoxide::{
+    crypto::{box_, secretbox},
+    randombytes::randombytes_into,
+};
 
-use crate::errors::CryptoError;
-use crate::types::{BlobId, FileMessage, MessageType};
-use crate::{PublicKey, SecretKey};
+use crate::{
+    errors::CryptoError,
+    types::{BlobId, FileMessage, MessageType},
+    PublicKey, SecretKey,
+};
 
 /// Return a random number in the range `[1, 255]`.
 fn random_padding_amount() -> u8 {
@@ -89,7 +90,7 @@ pub fn encrypt_raw(
 ) -> EncryptedMessage {
     sodiumoxide::init().expect("Could not initialize sodiumoxide library.");
     let nonce = box_::gen_nonce();
-    let ciphertext = box_::seal(&data, &nonce, public_key, private_key);
+    let ciphertext = box_::seal(data, &nonce, public_key, private_key);
     EncryptedMessage {
         ciphertext,
         nonce: nonce.0,
@@ -115,7 +116,7 @@ pub fn encrypt(
         .collect();
 
     // Encrypt
-    encrypt_raw(&padded_plaintext, &public_key, &private_key)
+    encrypt_raw(&padded_plaintext, public_key, private_key)
 }
 
 /// Encrypt an image message for the recipient.
@@ -150,7 +151,7 @@ pub fn encrypt_file_msg(
 ) -> EncryptedMessage {
     let data = json::to_string(msg).unwrap();
     let msgtype = MessageType::File;
-    encrypt(&data.as_bytes(), msgtype, &public_key, &private_key)
+    encrypt(data.as_bytes(), msgtype, public_key, private_key)
 }
 
 static FILE_NONCE: secretbox::Nonce = secretbox::Nonce([
@@ -176,8 +177,8 @@ pub fn encrypt_file_data(
 
     // Encrypt data
     // Note: Since we generate a random key, we can safely re-use constant nonces.
-    let encrypted_file = secretbox::seal(&file_data, &FILE_NONCE, &key);
-    let encrypted_thumb = thumb_data.map(|t| secretbox::seal(&t, &THUMB_NONCE, &key));
+    let encrypted_file = secretbox::seal(file_data, &FILE_NONCE, &key);
+    let encrypted_thumb = thumb_data.map(|t| secretbox::seal(t, &THUMB_NONCE, &key));
 
     (encrypted_file, encrypted_thumb, key)
 }
@@ -288,19 +289,19 @@ mod test {
     #[test]
     fn test_recipient_key_from_str() {
         let encoded = "5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0";
-        let recipient = RecipientKey::from_str(&encoded);
+        let recipient = RecipientKey::from_str(encoded);
         assert!(recipient.is_ok());
 
         let encoded = "5CF143CD8F3652F31D9B44786C323FBC222ECFCBB8DAC5CAF5CAA257AC272DF0";
-        let recipient = RecipientKey::from_str(&encoded);
+        let recipient = RecipientKey::from_str(encoded);
         assert!(recipient.is_ok());
 
         let too_short = "5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5ca";
-        let recipient = RecipientKey::from_str(&too_short);
+        let recipient = RecipientKey::from_str(too_short);
         assert!(recipient.is_err());
 
         let invalid = "qyz143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0";
-        let recipient = RecipientKey::from_str(&invalid);
+        let recipient = RecipientKey::from_str(invalid);
         assert!(recipient.is_err());
     }
 

@@ -1,13 +1,12 @@
-use std::default::Default;
-use std::fmt;
-use std::str::FromStr;
-use std::string::ToString;
+use std::{default::Default, fmt, str::FromStr, string::ToString};
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use serde::{Serialize, Serializer};
 
-use crate::errors::{ApiError, FileMessageBuilderError};
-use crate::{Key, Mime};
+use crate::{
+    errors::{ApiError, FileMessageBuilderError},
+    Key, Mime,
+};
 
 /// A message type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -19,9 +18,9 @@ pub enum MessageType {
     DeliveryReceipt,
 }
 
-impl Into<u8> for MessageType {
-    fn into(self) -> u8 {
-        match self {
+impl From<MessageType> for u8 {
+    fn from(val: MessageType) -> Self {
+        match val {
             MessageType::Text => 0x01,
             MessageType::Image => 0x02,
             MessageType::Video => 0x13,
@@ -43,19 +42,19 @@ pub enum RenderingType {
     Sticker,
 }
 
-impl Into<u8> for RenderingType {
-    fn into(self) -> u8 {
-        match self {
-            Self::File => 0,
-            Self::Media => 1,
-            Self::Sticker => 2,
+impl From<RenderingType> for u8 {
+    fn from(val: RenderingType) -> Self {
+        match val {
+            RenderingType::File => 0,
+            RenderingType::Media => 1,
+            RenderingType::Sticker => 2,
         }
     }
 }
 
 impl Serialize for RenderingType {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_u8(self.clone().into())
+        serializer.serialize_u8((*self).into())
     }
 }
 
