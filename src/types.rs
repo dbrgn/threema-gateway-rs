@@ -11,11 +11,18 @@ use crate::{
 /// A message type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MessageType {
+    /// Text message
     Text,
+    /// Image message (deprecated)
     Image,
+    /// Video message (deprecated)
     Video,
+    /// File message
     File,
+    /// Delivery receipt
     DeliveryReceipt,
+    /// Another message type
+    Other(u8),
 }
 
 impl From<MessageType> for u8 {
@@ -26,6 +33,7 @@ impl From<MessageType> for u8 {
             MessageType::Video => 0x13,
             MessageType::File => 0x17,
             MessageType::DeliveryReceipt => 0x80,
+            MessageType::Other(msgtype_byte) => msgtype_byte,
         }
     }
 }
