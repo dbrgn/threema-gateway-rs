@@ -183,6 +183,16 @@ pub fn encrypt_file_data(
     (encrypted_file, encrypted_thumb, key)
 }
 
+pub fn decrypt_blob(
+    encrypted_data: &[u8],
+    blob_key: [u8; 32],
+) -> Result<Vec<u8>, CryptoError> {
+    let key = secretbox::Key(blob_key);
+    let decrypted_blob = secretbox::open(encrypted_data, &FILE_NONCE, &key);
+    return decrypted_blob.map_err(|_| { CryptoError::DecryptionFailed });
+}
+
+
 #[cfg(test)]
 mod test {
     use std::str::FromStr;
@@ -244,7 +254,7 @@ mod test {
             &other_pub,
             &own_sec,
         )
-        .unwrap();
+            .unwrap();
 
         // Validate and remove padding
         let padding_bytes = decrypted[decrypted.len() - 1] as usize;

@@ -22,6 +22,7 @@ use crate::{
     types::{BlobId, FileMessage, MessageType},
     SecretKey, MSGAPI_URL,
 };
+use crate::connection::blob_download;
 
 fn make_reqwest_client() -> Client {
     Client::builder()
@@ -377,6 +378,19 @@ impl E2eApi {
             Some(additional_params),
         )
         .await
+    }
+
+    pub async fn blob_download(
+        &self,
+        blob_id: &str,
+    ) -> Result<Vec<u8>, ApiError> {
+        blob_download(
+            &self.client,
+            self.endpoint.borrow(),
+            &self.id,
+            &self.secret,
+            blob_id,
+        ).await
     }
 
     /// Deserialize an incoming Threema Gateway message in
