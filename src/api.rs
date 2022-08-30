@@ -9,7 +9,7 @@ use reqwest::Client;
 use sodiumoxide::crypto::box_::PublicKey;
 
 use crate::{
-    connection::{blob_upload, send_e2e, send_simple, Recipient},
+    connection::{blob_upload, blob_download, send_e2e, send_simple, Recipient},
     crypto::{
         encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw, EncryptedMessage, RecipientKey,
     },
@@ -22,7 +22,6 @@ use crate::{
     types::{BlobId, FileMessage, MessageType},
     SecretKey, MSGAPI_URL,
 };
-use crate::connection::blob_download;
 
 fn make_reqwest_client() -> Client {
     Client::builder()

@@ -183,7 +183,7 @@ pub fn encrypt_file_data(
     (encrypted_file, encrypted_thumb, key)
 }
 
-pub fn decrypt_blob(
+pub fn decrypt_file_data(
     encrypted_data: &[u8],
     blob_key: [u8; 32],
 ) -> Result<Vec<u8>, CryptoError> {
