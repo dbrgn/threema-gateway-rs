@@ -9,7 +9,7 @@ use reqwest::Client;
 use sodiumoxide::crypto::box_::PublicKey;
 
 use crate::{
-    connection::{blob_upload, send_e2e, send_simple, Recipient},
+    connection::{blob_upload, blob_download, send_e2e, send_simple, Recipient},
     crypto::{
         encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw, EncryptedMessage, RecipientKey,
     },
@@ -377,6 +377,19 @@ impl E2eApi {
             Some(additional_params),
         )
         .await
+    }
+
+    pub async fn blob_download(
+        &self,
+        blob_id: &BlobId,
+    ) -> Result<Vec<u8>, ApiError> {
+        blob_download(
+            &self.client,
+            self.endpoint.borrow(),
+            &self.id,
+            &self.secret,
+            blob_id,
+        ).await
     }
 
     /// Deserialize an incoming Threema Gateway message in
