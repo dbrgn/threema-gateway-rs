@@ -381,7 +381,7 @@ impl E2eApi {
 
     pub async fn blob_download(
         &self,
-        blob_id: &str,
+        blob_id: &BlobId,
     ) -> Result<Vec<u8>, ApiError> {
         blob_download(
             &self.client,

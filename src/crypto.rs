@@ -13,7 +13,7 @@ use sodiumoxide::{
 use crate::{
     errors::CryptoError,
     types::{BlobId, FileMessage, MessageType},
-    PublicKey, SecretKey,
+    PublicKey, SecretKey, Key
 };
 
 /// Return a random number in the range `[1, 255]`.
@@ -185,11 +185,10 @@ pub fn encrypt_file_data(
 
 pub fn decrypt_file_data(
     encrypted_data: &[u8],
-    blob_key: [u8; 32],
+    blob_key: &Key,
 ) -> Result<Vec<u8>, CryptoError> {
-    let key = secretbox::Key(blob_key);
-    let decrypted_blob = secretbox::open(encrypted_data, &FILE_NONCE, &key);
-    return decrypted_blob.map_err(|_| { CryptoError::DecryptionFailed });
+    let decrypted_blob = secretbox::open(encrypted_data, &FILE_NONCE, blob_key);
+    decrypted_blob.map_err(|_| { CryptoError::DecryptionFailed })
 }
 
 

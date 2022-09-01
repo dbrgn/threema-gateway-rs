@@ -1,7 +1,9 @@
 use std::{default::Default, fmt, str::FromStr, string::ToString};
+use std::fmt::Formatter;
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{Error, Visitor};
 
 use crate::{
     errors::{ApiError, FileMessageBuilderError},
@@ -60,9 +62,29 @@ impl From<RenderingType> for u8 {
     }
 }
 
+impl TryFrom<u8> for RenderingType {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(RenderingType::File),
+            1 => Ok(RenderingType::Media),
+            2 => Ok(RenderingType::Sticker),
+            _ => Err(())
+        }
+    }
+}
+
 impl Serialize for RenderingType {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_u8((*self).into())
+    }
+}
+
+impl<'de> Deserialize<'de> for RenderingType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        let val : u8 = Deserialize::deserialize(deserializer)?;
+        Ok(RenderingType::try_from(val).map_err(|_| {D::Error::custom("Renderingtype does not exists")})?)
     }
 }
 
@@ -73,12 +95,13 @@ impl Default for RenderingType {
 }
 
 /// A file message.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FileMessage {
     #[serde(rename = "b")]
     file_blob_id: BlobId,
     #[serde(rename = "m")]
     #[serde(serialize_with = "serialize_to_string")]
+    #[serde(deserialize_with = "deserialize_to_mime")]
     file_media_type: Mime,
 
     #[serde(rename = "t")]
@@ -87,10 +110,12 @@ pub struct FileMessage {
     #[serde(rename = "p")]
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(serialize_with = "serialize_opt_to_string")]
+    #[serde(deserialize_with = "deserialize_opt_to_mime")]
     thumbnail_media_type: Option<Mime>,
 
     #[serde(rename = "k")]
     #[serde(serialize_with = "key_to_hex")]
+    #[serde(deserialize_with = "hex_to_key")]
     blob_encryption_key: Key,
 
     #[serde(rename = "n")]
@@ -115,8 +140,8 @@ pub struct FileMessage {
 /// Metadata for a file message (depending on media type).
 ///
 /// This data is intended to enhance the layout logic.
-#[derive(Debug, Serialize, Default)]
-struct FileMetadata {
+#[derive(Debug, Serialize, Default, Deserialize)]
+pub struct FileMetadata {
     #[serde(rename = "a")]
     #[serde(skip_serializing_if = "Option::is_none")]
     animated: Option<bool>,
@@ -139,6 +164,19 @@ impl FileMetadata {
             && self.width.is_none()
             && self.duration_seconds.is_none()
     }
+
+    pub fn animated(&self) -> Option<bool> {
+        self.animated
+    }
+    pub fn height(&self) -> Option<u32> {
+        self.height
+    }
+    pub fn width(&self) -> Option<u32> {
+        self.width
+    }
+    pub fn duration_seconds(&self) -> Option<f32> {
+        self.duration_seconds
+    }
 }
 
 impl FileMessage {
@@ -155,6 +193,40 @@ impl FileMessage {
             media_type,
             file_size_bytes,
         )
+    }
+
+    pub fn file_blob_id(&self) -> &BlobId {
+        &self.file_blob_id
+    }
+    pub fn file_media_type(&self) -> &Mime {
+        &self.file_media_type
+    }
+    pub fn thumbnail_blob_id(&self) -> &Option<BlobId> {
+        &self.thumbnail_blob_id
+    }
+    pub fn thumbnail_media_type(&self) -> &Option<Mime> {
+        &self.thumbnail_media_type
+    }
+    pub fn blob_encryption_key(&self) -> &Key {
+        &self.blob_encryption_key
+    }
+    pub fn file_name(&self) -> &Option<String> {
+        &self.file_name
+    }
+    pub fn file_size_bytes(&self) -> u32 {
+        self.file_size_bytes
+    }
+    pub fn description(&self) -> &Option<String> {
+        &self.description
+    }
+    pub fn rendering_type(&self) -> RenderingType {
+        self.rendering_type
+    }
+    pub fn reserved(&self) -> u8 {
+        self.reserved
+    }
+    pub fn metadata(&self) -> &Option<FileMetadata> {
+        &self.metadata
     }
 }
 
@@ -321,9 +393,9 @@ impl FileMessageBuilder {
         if let Some(metadata) = &self.metadata {
             if self.rendering_type == RenderingType::File
                 && (metadata.animated.is_some()
-                    || metadata.duration_seconds.is_some()
-                    || metadata.height.is_some()
-                    || metadata.width.is_some())
+                || metadata.duration_seconds.is_some()
+                || metadata.height.is_some()
+                || metadata.width.is_some())
             {
                 return Err(FileMessageBuilderError::IllegalCombination(
                     "File message with rendering type file may not contain media metadata",
@@ -400,18 +472,39 @@ impl Serialize for BlobId {
     }
 }
 
+struct BlobIdVisitor;
+
+impl<'de> Visitor<'de> for BlobIdVisitor {
+    type Value = BlobId;
+
+    fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
+        formatter.write_str("an byte array with 16 bytes")
+    }
+
+
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E> where E: Error {
+        Ok(BlobId::new(HEXLOWER.decode(v).map_err(|e| {Error::custom(e)})?.try_into().unwrap()))
+    }
+}
+
+impl<'de> Deserialize<'de> for BlobId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        deserializer.deserialize_bytes(BlobIdVisitor)
+    }
+}
+
 fn serialize_to_string<S, T>(val: &T, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-    T: ToString,
+    where
+        S: Serializer,
+        T: ToString,
 {
     serializer.serialize_str(&val.to_string())
 }
 
 fn serialize_opt_to_string<S, T>(val: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-    T: ToString,
+    where
+        S: Serializer,
+        T: ToString,
 {
     match val {
         Some(v) => serializer.serialize_some(&v.to_string()),
@@ -419,8 +512,30 @@ where
     }
 }
 
+fn deserialize_to_mime<'de, D>(deserializer: D) -> Result<Mime, D::Error> where D: Deserializer<'de> {
+    let val: String = Deserialize::deserialize(deserializer)?;
+    Mime::from_str(val.as_str()).map_err(|e| {D::Error::custom(e)})
+}
+
+fn deserialize_opt_to_mime<'de, D>(deserializer: D) -> Result<Option<Mime>, D::Error> where D: Deserializer<'de> {
+    let result: Option<String> = Deserialize::deserialize(deserializer)?;
+    match result {
+        Some(val) => {
+            Ok(Some(Mime::from_str(val.as_str()).map_err(|e| {D::Error::custom(e)})?))
+        }
+        None => {
+            Ok(None)
+        }
+    }
+}
+
 fn key_to_hex<S: Serializer>(val: &Key, serializer: S) -> Result<S::Ok, S::Error> {
     serializer.serialize_str(&HEXLOWER.encode(&val.0))
+}
+
+fn hex_to_key<'de, D>(deserializer: D) -> Result<Key, D::Error> where D: Deserializer<'de> {
+    let val: &[u8] = Deserialize::deserialize(deserializer)?;
+    Ok(Key(HEXLOWER.decode(val).map_err(|e| {Error::custom(e)})?.try_into().unwrap()))
 }
 
 #[cfg(test)]
