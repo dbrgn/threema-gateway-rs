@@ -84,7 +84,7 @@ impl Serialize for RenderingType {
 impl<'de> Deserialize<'de> for RenderingType {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
         let val : u8 = Deserialize::deserialize(deserializer)?;
-        Ok(RenderingType::try_from(val).map_err(|_| {D::Error::custom("Renderingtype does not exists")})?)
+        Ok(RenderingType::try_from(val).map_err(|_| {D::Error::custom("RenderingType does not exist")})?)
     }
 }
 
