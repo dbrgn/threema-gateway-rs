@@ -91,7 +91,8 @@ pub use crate::{
     api::{ApiBuilder, E2eApi, SimpleApi},
     connection::Recipient,
     crypto::{
-        decrypt_file_data, encrypt, encrypt_file_data, encrypt_raw, EncryptedMessage, RecipientKey,
+        decrypt_file_data, encrypt, encrypt_file_data, encrypt_raw, EncryptedFileData,
+        EncryptedMessage, FileData, RecipientKey,
     },
     lookup::{Capabilities, LookupCriterion},
     types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType},

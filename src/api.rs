@@ -379,7 +379,9 @@ impl E2eApi {
         .await
     }
 
-    /// Download a blob from the blob server and return the bytes.
+    /// Download a blob from the blob server and return the encrypted bytes.
+    ///
+    /// Cost: 0 credits.
     pub async fn blob_download(&self, blob_id: &BlobId) -> Result<Vec<u8>, ApiError> {
         blob_download(
             &self.client,
