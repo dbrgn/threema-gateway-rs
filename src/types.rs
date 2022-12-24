@@ -105,7 +105,7 @@ pub struct FileMessage {
     #[serde(rename = "j")]
     rendering_type: RenderingType,
     #[serde(rename = "i")]
-    reserved: u8,
+    legacy_rendering_type: u8,
 
     #[serde(rename = "x")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -169,7 +169,6 @@ pub struct FileMessageBuilder {
     file_size_bytes: u32,
     description: Option<String>,
     rendering_type: RenderingType,
-    reserved: u8,
     metadata: Option<FileMetadata>,
 }
 
@@ -204,7 +203,6 @@ impl FileMessageBuilder {
             file_size_bytes,
             description: None,
             rendering_type: RenderingType::File,
-            reserved: 0,
             metadata: None,
         }
     }
@@ -279,11 +277,6 @@ impl FileMessageBuilder {
     /// See [`RenderingType`](enum.RenderingType.html) docs for more information.
     pub fn rendering_type(mut self, rendering_type: RenderingType) -> Self {
         self.rendering_type = rendering_type;
-        self.reserved = match rendering_type {
-            RenderingType::File => 0,
-            RenderingType::Media => 1,
-            RenderingType::Sticker => 1,
-        };
         self
     }
 
@@ -354,7 +347,12 @@ impl FileMessageBuilder {
             file_size_bytes: self.file_size_bytes,
             description: self.description,
             rendering_type: self.rendering_type,
-            reserved: self.reserved,
+            legacy_rendering_type: match self.rendering_type {
+                // For compatibility reasons, set `legacy_rendering_type` to 1
+                // for media file messages, and 0 otherwise.
+                RenderingType::Media => 1,
+                _ => 0,
+            },
             metadata: self.metadata,
         })
     }
@@ -461,7 +459,7 @@ mod test {
             file_size_bytes: 2048,
             description: None,
             rendering_type: RenderingType::File,
-            reserved: 0,
+            legacy_rendering_type: 0,
             metadata: None,
         };
         let data = json::to_string(&msg).unwrap();
@@ -501,7 +499,7 @@ mod test {
             file_size_bytes: 2048,
             description: Some("This is a fancy file".into()),
             rendering_type: RenderingType::Sticker,
-            reserved: 1,
+            legacy_rendering_type: 1,
             metadata: Some(FileMetadata {
                 animated: Some(true),
                 height: Some(320),
@@ -565,6 +563,6 @@ mod test {
         assert_eq!(msg.file_size_bytes, 2048);
         assert_eq!(msg.description, Some("An image file".to_string()));
         assert_eq!(msg.rendering_type, RenderingType::Media);
-        assert_eq!(msg.reserved, 1);
+        assert_eq!(msg.legacy_rendering_type, 1);
     }
 }
