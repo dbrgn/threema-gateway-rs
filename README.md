@@ -45,7 +45,7 @@ client library in Rust. For implementation status, see feature list below.
 **Files**
 
 - [x] Upload files
-- [ ] Download files
+- [x] Download files
 
 
 ## Usage
