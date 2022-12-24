@@ -212,7 +212,11 @@ pub(crate) async fn blob_download(
     );
 
     // Send request
-    Ok(client.get(&url).send().await?.bytes().await?.to_vec())
+    let res = client.get(&url).send().await?;
+    map_response_code(res.status(), Some(ApiError::BadBlob))?;
+
+    // Read response bytes
+    Ok(res.bytes().await?.to_vec())
 }
 
 #[cfg(test)]
