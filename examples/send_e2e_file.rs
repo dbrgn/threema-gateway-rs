@@ -102,15 +102,18 @@ async fn main() {
             api.blob_upload_raw(&et, false).await,
             "Could not upload thumbnail to blob server"
         );
-        let thumbnail_media_type =
-            mime_guess::from_path(&thumbpath.unwrap()).first_or_octet_stream();
+        let thumbnail_media_type = mime_guess::from_path(thumbpath.unwrap())
+            .first_or_octet_stream()
+            .to_string();
         Some((blob_id, thumbnail_media_type))
     } else {
         None
     };
 
     // Create file message
-    let file_media_type = mime_guess::from_path(&filepath).first_or_octet_stream();
+    let file_media_type = mime_guess::from_path(filepath)
+        .first_or_octet_stream()
+        .to_string();
     let file_name = filepath.file_name().and_then(OsStr::to_str);
     let msg = FileMessage::builder(file_blob_id, key, file_media_type, file_data.len() as u32)
         .thumbnail_opt(thumb_blob_id)
@@ -122,7 +125,7 @@ async fn main() {
     let encrypted = api.encrypt_file_msg(&msg, &public_key.into());
 
     // Send
-    let msg_id = api.send(&to, &encrypted, false).await;
+    let msg_id = api.send(to, &encrypted, false).await;
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {}", e),

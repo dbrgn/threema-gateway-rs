@@ -82,7 +82,6 @@ mod lookup;
 mod receive;
 mod types;
 
-pub use mime::Mime;
 pub use sodiumoxide::crypto::{
     box_::{PublicKey, SecretKey},
     secretbox::Key,
