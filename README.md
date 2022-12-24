@@ -45,7 +45,7 @@ client library in Rust. For implementation status, see feature list below.
 **Files**
 
 - [x] Upload files
-- [ ] Download files
+- [x] Download files
 
 
 ## Usage
@@ -82,6 +82,10 @@ Look up Threema ID by email hash:
 Decode and decrypt an incoming message payload:
 
     cargo run --example receive -- <our-id> <secret> <private-key> <request-body>
+
+Download a blob:
+
+    cargo run --example download_blob -- <our-id> <secret> <private-key> <blob-id>
 
 
 ## Cargo Features

@@ -197,6 +197,28 @@ pub(crate) async fn blob_upload(
     BlobId::from_str(res.text().await?.trim())
 }
 
+/// Download a blob from the blob server.
+pub(crate) async fn blob_download(
+    client: &Client,
+    endpoint: &str,
+    from: &str,
+    secret: &str,
+    blob_id: &BlobId,
+) -> Result<Vec<u8>, ApiError> {
+    // Build URL
+    let url = format!(
+        "{}/blobs/{}?from={}&secret={}",
+        endpoint, blob_id, from, secret
+    );
+
+    // Send request
+    let res = client.get(&url).send().await?;
+    map_response_code(res.status(), Some(ApiError::BadBlob))?;
+
+    // Read response bytes
+    Ok(res.bytes().await?.to_vec())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
