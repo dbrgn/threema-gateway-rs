@@ -13,7 +13,7 @@ use sodiumoxide::{
 use crate::{
     errors::CryptoError,
     types::{BlobId, FileMessage, MessageType},
-    PublicKey, SecretKey,
+    Key, PublicKey, SecretKey,
 };
 
 /// Return a random number in the range `[1, 255]`.
@@ -161,14 +161,31 @@ static THUMB_NONCE: secretbox::Nonce = secretbox::Nonce([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
 ]);
 
+/// Raw unencrypted bytes of a file and optionally a thumbnail.
+///
+/// This struct is used as a parameter type for [`encrypt_file_data`] and
+/// returned by [`decrypt_file_data`].
+#[derive(Clone)]
+pub struct FileData {
+    pub file: Vec<u8>,
+    pub thumbnail: Option<Vec<u8>>,
+}
+
+/// Encrypted bytes of a file and optionally a thumbnail.
+///
+/// This struct is used as a parameter type for [`decrypt_file_data`] and
+/// returned by [`encrypt_file_data`].
+#[derive(Clone)]
+pub struct EncryptedFileData {
+    pub file: Vec<u8>,
+    pub thumbnail: Option<Vec<u8>>,
+}
+
 /// Encrypt file data and an optional thumbnail using a randomly generated
 /// symmetric key.
 ///
 /// Return the encrypted bytes and the key.
-pub fn encrypt_file_data(
-    file_data: &[u8],
-    thumb_data: Option<&[u8]>,
-) -> (Vec<u8>, Option<Vec<u8>>, secretbox::Key) {
+pub fn encrypt_file_data(data: &FileData) -> (EncryptedFileData, Key) {
     // Make sure to init sodiumoxide library
     sodiumoxide::init().unwrap();
 
@@ -177,18 +194,48 @@ pub fn encrypt_file_data(
 
     // Encrypt data
     // Note: Since we generate a random key, we can safely re-use constant nonces.
-    let encrypted_file = secretbox::seal(file_data, &FILE_NONCE, &key);
-    let encrypted_thumb = thumb_data.map(|t| secretbox::seal(t, &THUMB_NONCE, &key));
+    let file = secretbox::seal(&data.file, &FILE_NONCE, &key);
+    let thumbnail = data
+        .thumbnail
+        .as_ref()
+        .map(|t| secretbox::seal(t, &THUMB_NONCE, &key));
 
-    (encrypted_file, encrypted_thumb, key)
+    (EncryptedFileData { file, thumbnail }, key)
+}
+
+/// Decrypt file data and optional thumbnail data with the provided symmetric
+/// key.
+///
+/// Return the decrypted bytes.
+pub fn decrypt_file_data(
+    data: &EncryptedFileData,
+    encryption_key: &Key,
+) -> Result<FileData, CryptoError> {
+    // Make sure to init sodiumoxide library
+    sodiumoxide::init().unwrap();
+
+    let file = secretbox::open(&data.file, &FILE_NONCE, encryption_key)
+        .map_err(|_| CryptoError::DecryptionFailed)?;
+    let thumbnail = match data.thumbnail.as_ref() {
+        Some(t) => {
+            let decrypted = secretbox::open(t, &THUMB_NONCE, encryption_key)
+                .map_err(|_| CryptoError::DecryptionFailed)?;
+            Some(decrypted)
+        }
+        None => None,
+    };
+
+    Ok(FileData { file, thumbnail })
 }
 
 #[cfg(test)]
 mod test {
     use std::str::FromStr;
 
-    use crate::api::ApiBuilder;
-    use crate::types::{BlobId, MessageType};
+    use crate::{
+        api::ApiBuilder,
+        types::{BlobId, MessageType},
+    };
     use sodiumoxide::crypto::box_::{self, Nonce, PublicKey, SecretKey};
 
     use super::*;
@@ -331,23 +378,26 @@ mod test {
     fn test_encrypt_file_data() {
         let file_data = [1, 2, 3, 4];
         let thumb_data = [5, 6, 7];
+        let data = FileData {
+            file: file_data.to_vec(),
+            thumbnail: Some(thumb_data.to_vec()),
+        };
 
         // Encrypt
-        let (encrypted_file, encrypted_thumb, key) =
-            encrypt_file_data(&file_data, Some(&thumb_data));
-        let encrypted_thumb = encrypted_thumb.expect("Thumbnail missing");
+        let (encrypted, key) = encrypt_file_data(&data);
+        let encrypted_thumb = encrypted.thumbnail.expect("Thumbnail missing");
 
         // Ensure that encrypted data is different from plaintext data
-        assert_ne!(encrypted_file, file_data);
+        assert_ne!(encrypted.file, file_data);
         assert_ne!(encrypted_thumb, thumb_data);
-        assert_eq!(encrypted_file.len(), file_data.len() + secretbox::MACBYTES);
+        assert_eq!(encrypted.file.len(), file_data.len() + secretbox::MACBYTES);
         assert_eq!(
             encrypted_thumb.len(),
             thumb_data.len() + secretbox::MACBYTES
         );
 
         // Test that data can be decrypted
-        let decrypted_file = secretbox::open(&encrypted_file, &FILE_NONCE, &key).unwrap();
+        let decrypted_file = secretbox::open(&encrypted.file, &FILE_NONCE, &key).unwrap();
         let decrypted_thumb = secretbox::open(&encrypted_thumb, &THUMB_NONCE, &key).unwrap();
         assert_eq!(decrypted_file, &file_data);
         assert_eq!(decrypted_thumb, &thumb_data);
@@ -356,11 +406,41 @@ mod test {
     #[test]
     fn test_encrypt_file_data_random_key() {
         // Ensure that a different key is generated each time
-        let (_, _, key1) = encrypt_file_data(&[1, 2, 3], None);
-        let (_, _, key2) = encrypt_file_data(&[1, 2, 3], None);
-        let (_, _, key3) = encrypt_file_data(&[1, 2, 3], None);
+        let (_, key1) = encrypt_file_data(&FileData {
+            file: [1, 2, 3].to_vec(),
+            thumbnail: None,
+        });
+        let (_, key2) = encrypt_file_data(&FileData {
+            file: [1, 2, 3].to_vec(),
+            thumbnail: None,
+        });
+        let (_, key3) = encrypt_file_data(&FileData {
+            file: [1, 2, 3].to_vec(),
+            thumbnail: None,
+        });
         assert_ne!(key1, key2);
         assert_ne!(key2, key3);
         assert_ne!(key1, key3);
+    }
+
+    #[test]
+    fn test_decrypt_file_data() {
+        let file_data = [1, 2, 3, 4];
+        let thumb_data = [5, 6, 7];
+        let data = FileData {
+            file: file_data.to_vec(),
+            thumbnail: Some(thumb_data.to_vec()),
+        };
+
+        // Encrypt
+        let (encrypted, key) = encrypt_file_data(&data);
+        assert_ne!(encrypted.file, data.file);
+        assert!(encrypted.thumbnail.is_some());
+        assert_ne!(encrypted.thumbnail, data.thumbnail);
+
+        // Decrypt
+        let decrypted = decrypt_file_data(&encrypted, &key).unwrap();
+        assert_eq!(decrypted.file, &file_data);
+        assert_eq!(decrypted.thumbnail.unwrap(), &thumb_data);
     }
 }

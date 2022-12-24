@@ -1,7 +1,7 @@
 use std::{ffi::OsStr, fs::File, io::Read, path::Path, process};
 
 use docopt::Docopt;
-use threema_gateway::{encrypt_file_data, ApiBuilder, FileMessage, RenderingType};
+use threema_gateway::{encrypt_file_data, ApiBuilder, FileData, FileMessage, RenderingType};
 
 const USAGE: &str = "
 Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file>
@@ -73,9 +73,9 @@ async fn main() {
 
     // Read files
     let mut file = etry!(File::open(filepath), "Could not open file");
-    let mut file_data: Vec<u8> = vec![];
-    etry!(file.read_to_end(&mut file_data), "Could not read file");
-    let thumb_data = match thumbpath {
+    let mut file_bytes: Vec<u8> = vec![];
+    etry!(file.read_to_end(&mut file_bytes), "Could not read file");
+    let thumbnail_bytes = match thumbpath {
         Some(p) => {
             let mut thumb = etry!(File::open(p), format!("Could not open thumbnail {:?}", p));
             let mut thumb_data: Vec<u8> = vec![];
@@ -89,15 +89,18 @@ async fn main() {
     };
 
     // Encrypt file data
-    let (encrypted_file, encrypted_thumb, key) =
-        encrypt_file_data(&file_data, thumb_data.as_deref());
+    let file_data = FileData {
+        file: file_bytes,
+        thumbnail: thumbnail_bytes,
+    };
+    let (encrypted, key) = encrypt_file_data(&file_data);
 
     // Upload files to blob server
     let file_blob_id = etry!(
-        api.blob_upload_raw(&encrypted_file, false).await,
+        api.blob_upload_raw(&encrypted.file, false).await,
         "Could not upload file to blob server"
     );
-    let thumb_blob_id = if let Some(et) = encrypted_thumb {
+    let thumb_blob_id = if let Some(et) = encrypted.thumbnail {
         let blob_id = etry!(
             api.blob_upload_raw(&et, false).await,
             "Could not upload thumbnail to blob server"
@@ -115,7 +118,8 @@ async fn main() {
         .first_or_octet_stream()
         .to_string();
     let file_name = filepath.file_name().and_then(OsStr::to_str);
-    let msg = FileMessage::builder(file_blob_id, key, file_media_type, file_data.len() as u32)
+    let file_size_bytes = file_data.file.len() as u32;
+    let msg = FileMessage::builder(file_blob_id, key, file_media_type, file_size_bytes)
         .thumbnail_opt(thumb_blob_id)
         .file_name_opt(file_name)
         .description_opt(caption)

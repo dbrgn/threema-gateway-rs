@@ -90,7 +90,10 @@ pub use sodiumoxide::crypto::{
 pub use crate::{
     api::{ApiBuilder, E2eApi, SimpleApi},
     connection::Recipient,
-    crypto::{encrypt, encrypt_file_data, encrypt_raw, EncryptedMessage, RecipientKey},
+    crypto::{
+        decrypt_file_data, encrypt, encrypt_file_data, encrypt_raw, EncryptedFileData,
+        EncryptedMessage, FileData, RecipientKey,
+    },
     lookup::{Capabilities, LookupCriterion},
     types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType},
 };

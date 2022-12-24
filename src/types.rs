@@ -173,9 +173,10 @@ pub struct FileMessageBuilder {
 impl FileMessageBuilder {
     /// Create a new [`FileMessage`] builder.
     ///
-    /// Before calling this function, you need to symmetrically encrypt the file
-    /// data (libsodium secretbox, random key) and upload the ciphertext to the
-    /// blob server. Use the nonce `000...1` to encrypt the file data.
+    /// Before calling this function, you need to symmetrically encrypt the
+    /// file data with [`encrypt_file_data`](crate::encrypt_file_data) and
+    /// upload the ciphertext to the blob server with
+    /// [`blob_upload`](crate::E2eApi::blob_upload).
     ///
     /// The `file_blob_id` must point to the blob id of the uploaded file data,
     /// encrypted with `blob_encryption_key`.
@@ -216,18 +217,18 @@ impl FileMessageBuilder {
 
     /// Set a thumbnail.
     ///
-    /// Before calling this function, you need to symmetrically encrypt the
-    /// thumbnail data (in JPEG format) with the same key used for the file
-    /// data and with the nonce `000...2`.
+    /// Before calling this function, you need to encrypt and upload the
+    /// thumbnail data along with the file data (as described in
+    /// [`FileMessageBuilder::new`]).
     pub fn thumbnail(self, blob_id: BlobId, media_type: impl Into<String>) -> Self {
         self.thumbnail_opt(Some((blob_id, media_type)))
     }
 
     /// Set a thumbnail from an Option.
     ///
-    /// Before calling this function, you need to symmetrically encrypt the
-    /// thumbnail data (in JPEG format) with the same key used for the file
-    /// data and with the nonce `000...2`.
+    /// Before calling this function, you need to encrypt and upload the
+    /// thumbnail data along with the file data (as described in
+    /// [`FileMessageBuilder::new`]).
     pub fn thumbnail_opt(mut self, blob: Option<(BlobId, impl Into<String>)>) -> Self {
         match blob {
             Some((blob_id, media_type)) => {
