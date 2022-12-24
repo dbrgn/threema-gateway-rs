@@ -83,6 +83,10 @@ Decode and decrypt an incoming message payload:
 
     cargo run --example receive -- <our-id> <secret> <private-key> <request-body>
 
+Download a blob:
+
+    cargo run --example download_blob -- <our-id> <secret> <private-key> <blob-id>
+
 
 ## Cargo Features
 
