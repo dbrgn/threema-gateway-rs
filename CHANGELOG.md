@@ -14,7 +14,7 @@ Possible log types:
 
 ### Unreleased
 
-...
+- [changed] Remove `mime` dependency in favor of plain strings (#64)
 
 ### v0.15.1 (2021-12-06)
 
