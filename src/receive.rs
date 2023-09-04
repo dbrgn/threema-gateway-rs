@@ -31,7 +31,10 @@ where
 /// Note: The [`IncomingMessage::from_urlencoded_bytes`] function validates the
 /// MAC, that's why it's not included in here again.
 ///
-/// See <https://gateway.threema.ch/de/developer/api> for details.
+/// Further docs:
+///
+/// - API docs: <https://gateway.threema.ch/de/developer/api>
+/// - E2E message format docs: <https://gateway.threema.ch/de/developer/e2e>
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IncomingMessage {
