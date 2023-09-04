@@ -407,6 +407,9 @@ impl E2eApi {
 
     /// Decrypt an [`IncomingMessage`] using the provided public key and our
     /// own private key.
+    ///
+    /// The format of the returned decrypted message bytes is documented at
+    /// <https://gateway.threema.ch/de/developer/e2e>.
     pub fn decrypt_incoming_message(
         &self,
         message: &IncomingMessage,
