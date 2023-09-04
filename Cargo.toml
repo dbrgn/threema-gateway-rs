@@ -1,6 +1,6 @@
 [package]
 name = "threema-gateway"
-version = "0.15.1"
+version = "0.16.0"
 authors = ["Danilo Bargen <mail@dbrgn.ch>"]
 documentation = "https://docs.rs/threema-gateway"
 repository = "https://github.com/dbrgn/threema-gateway-rs"

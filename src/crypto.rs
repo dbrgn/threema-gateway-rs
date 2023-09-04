@@ -82,7 +82,7 @@ impl FromStr for RecipientKey {
     }
 }
 
-/// Encrypt data for the recipient.
+/// Encrypt raw data for the recipient.
 pub fn encrypt_raw(
     data: &[u8],
     public_key: &PublicKey,

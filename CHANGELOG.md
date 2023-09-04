@@ -14,10 +14,14 @@ Possible log types:
 
 ### Unreleased
 
+### v0.16.0 (2023-09-04)
+
+- [added] Expose encryption functions: `encrypt` and `encrypt_raw` (#59)
 - [added] Support downloading of blobs (#65)
 - [added] New `decrypt_file_data` helper function (#67)
 - [changed] Remove `mime` dependency in favor of plain strings (#64)
 - [changed] The API of `encrypt_file_data` has changed (#67)
+- [changed] Add `MessageType::Other(u8)` variant (#58)
 
 ### v0.15.1 (2021-12-06)
 
