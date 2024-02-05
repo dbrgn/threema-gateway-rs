@@ -393,13 +393,14 @@ impl Serialize for BlobId {
 }
 
 fn key_to_hex<S: Serializer>(val: &Key, serializer: S) -> Result<S::Ok, S::Error> {
-    serializer.serialize_str(&HEXLOWER.encode(&val.0))
+    serializer.serialize_str(&HEXLOWER.encode(val))
 }
 
 #[cfg(test)]
 mod test {
     use std::collections::HashMap;
 
+    use crypto_secretbox::cipher::generic_array::GenericArray;
     use serde_json as json;
 
     use super::*;
@@ -420,7 +421,7 @@ mod test {
 
     #[test]
     fn test_serialize_to_string_minimal() {
-        let pk = Key([
+        let pk: Key = GenericArray::from([
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
         ]);
@@ -460,7 +461,7 @@ mod test {
 
     #[test]
     fn test_serialize_to_string_full() {
-        let pk = Key([
+        let pk: Key = GenericArray::from([
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
         ]);
@@ -513,13 +514,13 @@ mod test {
 
     #[test]
     fn test_builder() {
-        let key = Key([
+        let key: Key = GenericArray::from([
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
         ]);
         let file_blob_id = BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap();
         let thumb_blob_id = BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap();
-        let msg = FileMessage::builder(file_blob_id.clone(), key.clone(), "image/jpeg", 2048)
+        let msg = FileMessage::builder(file_blob_id.clone(), key, "image/jpeg", 2048)
             .thumbnail(thumb_blob_id.clone(), "image/png")
             .file_name("hello.jpg")
             .description(String::from("An image file"))

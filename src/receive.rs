@@ -2,14 +2,19 @@
 
 use std::{borrow::Cow, collections::HashMap};
 
+use crypto_box::{aead::Aead, PublicKey, SalsaBox, SecretKey};
+use crypto_secretbox::{aead::Payload, Nonce};
 use data_encoding::HEXLOWER_PERMISSIVE;
+use hmac::{Hmac, Mac};
 use serde::{Deserialize, Deserializer};
-use sodiumoxide::crypto::{
-    auth::hmacsha256,
-    box_::{self, Nonce, PublicKey, SecretKey},
+use sha2::Sha256;
+
+use crate::{
+    crypto::NONCE_SIZE,
+    errors::{ApiError, CryptoError},
 };
 
-use crate::errors::{ApiError, CryptoError};
+type HmacSha256 = Hmac<Sha256>;
 
 /// Deserialize a hex string into a byte vector.
 fn deserialize_hex_string<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
@@ -92,7 +97,8 @@ impl IncomingMessage {
         }
 
         // Validate MAC
-        let mut hmac_state = hmacsha256::State::init(api_secret.as_bytes());
+        let mut hmac_state = HmacSha256::new_from_slice(api_secret.as_bytes())
+            .map_err(|_| ApiError::Other("Invalid api_secret".to_string()))?;
         for field in &["from", "to", "messageId", "date", "nonce", "box"] {
             hmac_state.update(
                 values
@@ -103,9 +109,8 @@ impl IncomingMessage {
                     .as_bytes(),
             );
         }
-        let given_tag = hmacsha256::Tag(mac);
-        let calculated_tag = hmac_state.finalize();
-        if given_tag != calculated_tag {
+
+        if hmac_state.verify_slice(&mac).is_err() {
             return Err(ApiError::InvalidMac);
         }
 
@@ -130,10 +135,14 @@ impl IncomingMessage {
         private_key: &SecretKey,
     ) -> Result<Vec<u8>, CryptoError> {
         // Decode nonce
-        let nonce: Nonce = Nonce::from_slice(&self.nonce).ok_or(CryptoError::BadNonce)?;
+        let nonce_bytes =
+            <[u8; NONCE_SIZE]>::try_from(&self.nonce[..]).map_err(|_| CryptoError::BadNonce)?;
+        let nonce: Nonce = Nonce::from(nonce_bytes);
 
         // Decrypt bytes
-        let mut decrypted = box_::open(&self.box_data, &nonce, public_key, private_key)
+        let crypto_box: SalsaBox = SalsaBox::new(public_key, private_key);
+        let mut decrypted = crypto_box
+            .decrypt(&nonce, Payload::from(self.box_data.as_ref()))
             .map_err(|_| CryptoError::DecryptionFailed)?;
 
         // Remove PKCS#7 style padding
@@ -178,26 +187,38 @@ mod tests {
     }
 
     mod decrypt_box {
+        use crypto_secretbox::aead::OsRng;
+
+        use crypto_box::aead::AeadCore;
+
         use super::*;
 
         #[test]
         fn decrypt() {
-            let (a_pk, a_sk) = box_::gen_keypair();
-            let (b_pk, b_sk) = box_::gen_keypair();
-            let nonce = box_::gen_nonce();
+            let a_sk = SecretKey::generate(&mut OsRng);
+            let a_pk = a_sk.public_key();
+
+            let b_sk = SecretKey::generate(&mut OsRng);
+            let b_pk = b_sk.public_key();
+
+            let a_box = SalsaBox::new(&b_pk, &a_sk);
+
+            let nonce = SalsaBox::generate_nonce(&mut OsRng);
+
+            let box_data = a_box
+                .encrypt(
+                    &nonce,
+                    Payload::from([/* data */ 1, 2, 42, /* padding */ 3, 3, 3].as_ref()),
+                )
+                .expect("Failed to encrypt data");
 
             let msg = IncomingMessage {
                 from: "AAAAAAAA".into(),
                 to: "*BBBBBBB".into(),
                 message_id: "00112233".into(),
                 date: 0,
-                nonce: nonce.0.to_vec(),
-                box_data: box_::seal(
-                    &[/* data */ 1, 2, 42, /* padding */ 3, 3, 3],
-                    &nonce,
-                    &b_pk,
-                    &a_sk,
-                ),
+                nonce: nonce.to_vec(),
+                box_data,
                 nickname: None,
             };
 
@@ -212,7 +233,8 @@ mod tests {
 
         #[test]
         fn decrypt_bad_nonce() {
-            let (pk, sk) = box_::gen_keypair();
+            let sk = SecretKey::generate(&mut OsRng);
+            let pk = sk.public_key();
             let msg = IncomingMessage {
                 from: "AAAAAAAA".into(),
                 to: "*BBBBBBB".into(),
@@ -229,22 +251,30 @@ mod tests {
 
         #[test]
         fn decrypt_bad_padding() {
-            let (a_pk, a_sk) = box_::gen_keypair();
-            let (b_pk, b_sk) = box_::gen_keypair();
-            let nonce = box_::gen_nonce();
+            let a_sk = SecretKey::generate(&mut OsRng);
+            let a_pk = a_sk.public_key();
+
+            let b_sk = SecretKey::generate(&mut OsRng);
+            let b_pk = b_sk.public_key();
+
+            let nonce = SalsaBox::generate_nonce(&mut OsRng);
+
+            let a_box = SalsaBox::new(&b_pk, &a_sk);
+
+            let box_data = a_box
+                .encrypt(
+                    &nonce,
+                    Payload::from([/* data */ 1, 2, 42 /* no padding */].as_ref()),
+                )
+                .expect("Failed to encrypt data");
 
             let msg = IncomingMessage {
                 from: "AAAAAAAA".into(),
                 to: "*BBBBBBB".into(),
                 message_id: "00112233".into(),
                 date: 0,
-                nonce: nonce.0.to_vec(),
-                box_data: box_::seal(
-                    &[/* data */ 1, 2, 42 /* no padding */],
-                    &nonce,
-                    &b_pk,
-                    &a_sk,
-                ),
+                nonce: nonce.to_vec(),
+                box_data,
                 nickname: None,
             };
 

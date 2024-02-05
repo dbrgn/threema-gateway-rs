@@ -18,20 +18,22 @@ async fn main() {
     // Command line arguments
     let our_id = args.get_str("<our-id>");
     let secret = args.get_str("<secret>");
-    let private_key = HEXLOWER_PERMISSIVE
+    let key_bytes = HEXLOWER_PERMISSIVE
         .decode(args.get_str("<private-key>").as_bytes())
-        .ok()
-        .and_then(|bytes| SecretKey::from_slice(&bytes))
-        .unwrap_or_else(|| {
-            eprintln!("Invalid private key");
+        .unwrap_or_else(|_| {
+            eprintln!("No private key provided");
             std::process::exit(1);
         });
+    let private_key = SecretKey::from_slice(&key_bytes).unwrap_or_else(|_| {
+        eprintln!("Invalid private key");
+        std::process::exit(1);
+    });
     let request_body = args.get_str("<request-body>");
 
     // Create E2eApi instance
     let api = ApiBuilder::new(our_id, secret)
-        .with_private_key_bytes(private_key.as_ref())
-        .and_then(|builder| builder.into_e2e())
+        .with_private_key(private_key)
+        .into_e2e()
         .unwrap();
 
     // Parse request body

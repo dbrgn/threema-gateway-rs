@@ -4,9 +4,10 @@ use std::{
     time::Duration,
 };
 
+use crypto_box::{PublicKey, SecretKey};
+use crypto_secretbox::Nonce;
 use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
-use sodiumoxide::crypto::box_::PublicKey;
 
 use crate::{
     connection::{blob_download, blob_upload, send_e2e, send_simple, Recipient},
@@ -20,7 +21,7 @@ use crate::{
     },
     receive::IncomingMessage,
     types::{BlobId, FileMessage, MessageType},
-    SecretKey, MSGAPI_URL,
+    MSGAPI_URL,
 };
 
 fn make_reqwest_client() -> Client {
@@ -173,7 +174,11 @@ impl E2eApi {
     }
 
     /// Encrypt a text message for the specified recipient public key.
-    pub fn encrypt_text_msg(&self, text: &str, recipient_key: &RecipientKey) -> EncryptedMessage {
+    pub fn encrypt_text_msg(
+        &self,
+        text: &str,
+        recipient_key: &RecipientKey,
+    ) -> Result<EncryptedMessage, CryptoError> {
         let data = text.as_bytes();
         let msgtype = MessageType::Text;
         encrypt(data, msgtype, &recipient_key.0, &self.private_key)
@@ -192,9 +197,9 @@ impl E2eApi {
         &self,
         blob_id: &BlobId,
         img_size_bytes: u32,
-        image_data_nonce: &[u8; 24],
+        image_data_nonce: &Nonce,
         recipient_key: &RecipientKey,
-    ) -> EncryptedMessage {
+    ) -> Result<EncryptedMessage, CryptoError> {
         encrypt_image_msg(
             blob_id,
             img_size_bytes,
@@ -214,7 +219,7 @@ impl E2eApi {
         &self,
         msg: &FileMessage,
         recipient_key: &RecipientKey,
-    ) -> EncryptedMessage {
+    ) -> Result<EncryptedMessage, CryptoError> {
         encrypt_file_msg(msg, &recipient_key.0, &self.private_key)
     }
 
@@ -233,12 +238,16 @@ impl E2eApi {
         raw_data: &[u8],
         msgtype: MessageType,
         recipient_key: &RecipientKey,
-    ) -> EncryptedMessage {
+    ) -> Result<EncryptedMessage, CryptoError> {
         encrypt(raw_data, msgtype, &recipient_key.0, &self.private_key)
     }
 
     /// Encrypt raw bytes for the specified recipient public key.
-    pub fn encrypt_raw(&self, raw_data: &[u8], recipient_key: &RecipientKey) -> EncryptedMessage {
+    pub fn encrypt_raw(
+        &self,
+        raw_data: &[u8],
+        recipient_key: &RecipientKey,
+    ) -> Result<EncryptedMessage, CryptoError> {
         encrypt_raw(raw_data, &recipient_key.0, &self.private_key)
     }
 
@@ -507,8 +516,9 @@ impl ApiBuilder {
 
     /// Set the private key from a byte slice. Only needed for E2e mode.
     pub fn with_private_key_bytes(mut self, private_key: &[u8]) -> Result<Self, ApiBuilderError> {
-        let private_key = SecretKey::from_slice(private_key)
-            .ok_or_else(|| ApiBuilderError::InvalidKey("Invalid libsodium private key".into()))?;
+        let private_key = SecretKey::from_slice(private_key).map_err(|e| {
+            ApiBuilderError::InvalidKey(format!("Invalid libsodium private key: {e}"))
+        })?;
         self.private_key = Some(private_key);
         Ok(self)
     }

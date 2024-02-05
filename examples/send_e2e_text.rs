@@ -37,7 +37,12 @@ async fn main() {
     });
 
     // Encrypt and send
-    let encrypted = api.encrypt_text_msg(&text, &public_key.into());
+    let encrypted = api
+        .encrypt_text_msg(&text, &public_key.into())
+        .unwrap_or_else(|e| {
+            println!("Could not encrypt text msg: {e}");
+            process::exit(1);
+        });
     let msg_id = api.send(to, &encrypted, false).await;
 
     match msg_id {

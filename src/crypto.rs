@@ -1,14 +1,16 @@
 //! Encrypt and decrypt messages.
 
-use std::{convert::Into, io::Write, iter::repeat, str::FromStr};
+use std::{convert::Into, io::Write, iter::repeat, str::FromStr, sync::OnceLock};
 
 use byteorder::{LittleEndian, WriteBytesExt};
-use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
-use serde_json as json;
-use sodiumoxide::{
-    crypto::{box_, secretbox},
-    randombytes::randombytes_into,
+use crypto_box::{aead::Aead, SalsaBox};
+use crypto_secretbox::{
+    aead::{OsRng, Payload},
+    AeadCore, KeyInit, Nonce, XSalsa20Poly1305,
 };
+use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
+use rand::Rng;
+use serde_json as json;
 
 use crate::{
     errors::CryptoError,
@@ -16,21 +18,36 @@ use crate::{
     Key, PublicKey, SecretKey,
 };
 
+pub const NONCE_SIZE: usize = 24;
+
+fn get_file_nonce() -> &'static Nonce {
+    static FILE_NONCE: OnceLock<Nonce> = OnceLock::new();
+    FILE_NONCE.get_or_init(|| {
+        Nonce::from([
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+        ])
+    })
+}
+
+fn get_thumb_nonce() -> &'static Nonce {
+    static THUMB_NONCE: OnceLock<Nonce> = OnceLock::new();
+    THUMB_NONCE.get_or_init(|| {
+        Nonce::from([
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+        ])
+    })
+}
+
 /// Return a random number in the range `[1, 255]`.
 fn random_padding_amount() -> u8 {
-    let mut buf: [u8; 1] = [0];
-    loop {
-        randombytes_into(&mut buf);
-        if buf[0] < 255 {
-            return buf[0] + 1;
-        }
-    }
+    let mut rng = rand::thread_rng();
+    rng.gen_range(1..=255)
 }
 
 /// An encrypted message. Contains both the ciphertext and the nonce.
 pub struct EncryptedMessage {
     pub ciphertext: Vec<u8>,
-    pub nonce: [u8; 24],
+    pub nonce: Nonce,
 }
 
 /// The public key of a recipient.
@@ -46,27 +63,26 @@ impl From<PublicKey> for RecipientKey {
 impl From<[u8; 32]> for RecipientKey {
     /// Create a `RecipientKey` from a byte array
     fn from(val: [u8; 32]) -> Self {
-        RecipientKey(PublicKey(val))
+        RecipientKey(PublicKey::from(val))
     }
 }
 
 impl RecipientKey {
     /// Create a `RecipientKey` from a byte slice. It must contain 32 bytes.
     pub fn from_bytes(val: &[u8]) -> Result<Self, CryptoError> {
-        match PublicKey::from_slice(val) {
-            Some(pk) => Ok(RecipientKey(pk)),
-            None => Err(CryptoError::BadKey("Invalid libsodium public key".into())),
-        }
+        PublicKey::from_slice(val)
+            .map(RecipientKey::from)
+            .map_err(|_| CryptoError::BadKey("Invalid public key".into()))
     }
 
     /// Return a reference to the contained key bytes.
     pub fn as_bytes(&self) -> &[u8] {
-        &(self.0).0
+        self.0.as_ref()
     }
 
     /// Encode the key bytes as lowercase hex string.
     pub fn to_hex_string(&self) -> String {
-        HEXLOWER.encode(&(self.0).0)
+        HEXLOWER.encode(self.as_bytes())
     }
 }
 
@@ -87,14 +103,13 @@ pub fn encrypt_raw(
     data: &[u8],
     public_key: &PublicKey,
     private_key: &SecretKey,
-) -> EncryptedMessage {
-    sodiumoxide::init().expect("Could not initialize sodiumoxide library.");
-    let nonce = box_::gen_nonce();
-    let ciphertext = box_::seal(data, &nonce, public_key, private_key);
-    EncryptedMessage {
-        ciphertext,
-        nonce: nonce.0,
-    }
+) -> Result<EncryptedMessage, CryptoError> {
+    let crypto_box: SalsaBox = SalsaBox::new(public_key, private_key);
+    let nonce: Nonce = SalsaBox::generate_nonce(&mut OsRng);
+    let ciphertext = crypto_box
+        .encrypt(&nonce, data)
+        .map_err(|_| CryptoError::EncryptionFailed)?;
+    Ok(EncryptedMessage { ciphertext, nonce })
 }
 
 /// Encrypt a message with the specified `msgtype` for the recipient.
@@ -105,7 +120,7 @@ pub fn encrypt(
     msgtype: MessageType,
     public_key: &PublicKey,
     private_key: &SecretKey,
-) -> EncryptedMessage {
+) -> Result<EncryptedMessage, CryptoError> {
     // Add random amount of PKCS#7 style padding
     let padding_amount = random_padding_amount();
     let padding = repeat(padding_amount).take(padding_amount as usize);
@@ -123,10 +138,10 @@ pub fn encrypt(
 pub fn encrypt_image_msg(
     blob_id: &BlobId,
     img_size_bytes: u32,
-    image_data_nonce: &[u8; 24],
+    image_data_nonce: &Nonce,
     public_key: &PublicKey,
     private_key: &SecretKey,
-) -> EncryptedMessage {
+) -> Result<EncryptedMessage, CryptoError> {
     let mut data = [0; 44];
     // Since we're writing to an array and not to a file or socket, these
     // write operations should never fail.
@@ -148,18 +163,11 @@ pub fn encrypt_file_msg(
     msg: &FileMessage,
     public_key: &PublicKey,
     private_key: &SecretKey,
-) -> EncryptedMessage {
+) -> Result<EncryptedMessage, CryptoError> {
     let data = json::to_string(msg).unwrap();
     let msgtype = MessageType::File;
     encrypt(data.as_bytes(), msgtype, public_key, private_key)
 }
-
-static FILE_NONCE: secretbox::Nonce = secretbox::Nonce([
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-]);
-static THUMB_NONCE: secretbox::Nonce = secretbox::Nonce([
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
-]);
 
 /// Raw unencrypted bytes of a file and optionally a thumbnail.
 ///
@@ -185,22 +193,24 @@ pub struct EncryptedFileData {
 /// symmetric key.
 ///
 /// Return the encrypted bytes and the key.
-pub fn encrypt_file_data(data: &FileData) -> (EncryptedFileData, Key) {
-    // Make sure to init sodiumoxide library
-    sodiumoxide::init().unwrap();
-
+pub fn encrypt_file_data(data: &FileData) -> Result<(EncryptedFileData, Key), CryptoError> {
     // Generate a random encryption key
-    let key = secretbox::gen_key();
+    let key = XSalsa20Poly1305::generate_key(&mut OsRng);
+    let secretbox = XSalsa20Poly1305::new(&key);
 
     // Encrypt data
     // Note: Since we generate a random key, we can safely re-use constant nonces.
-    let file = secretbox::seal(&data.file, &FILE_NONCE, &key);
+    let file = XSalsa20Poly1305::new(&key)
+        .encrypt(get_file_nonce(), Payload::from(data.file.as_ref()))
+        .map_err(|_| CryptoError::EncryptionFailed)?;
     let thumbnail = data
         .thumbnail
         .as_ref()
-        .map(|t| secretbox::seal(t, &THUMB_NONCE, &key));
+        .map(|bytes| secretbox.encrypt(get_thumb_nonce(), Payload::from(bytes.as_ref())))
+        .transpose()
+        .map_err(|_| CryptoError::EncryptionFailed)?;
 
-    (EncryptedFileData { file, thumbnail }, key)
+    Ok((EncryptedFileData { file, thumbnail }, key))
 }
 
 /// Decrypt file data and optional thumbnail data with the provided symmetric
@@ -211,19 +221,18 @@ pub fn decrypt_file_data(
     data: &EncryptedFileData,
     encryption_key: &Key,
 ) -> Result<FileData, CryptoError> {
-    // Make sure to init sodiumoxide library
-    sodiumoxide::init().unwrap();
+    let secretbox: XSalsa20Poly1305 = XSalsa20Poly1305::new(encryption_key);
 
-    let file = secretbox::open(&data.file, &FILE_NONCE, encryption_key)
+    let file = secretbox
+        .decrypt(get_file_nonce(), Payload::from(data.file.as_ref()))
         .map_err(|_| CryptoError::DecryptionFailed)?;
-    let thumbnail = match data.thumbnail.as_ref() {
-        Some(t) => {
-            let decrypted = secretbox::open(t, &THUMB_NONCE, encryption_key)
-                .map_err(|_| CryptoError::DecryptionFailed)?;
-            Some(decrypted)
-        }
-        None => None,
-    };
+
+    let thumbnail = data
+        .thumbnail
+        .as_ref()
+        .map(|bytes| secretbox.decrypt(get_thumb_nonce(), Payload::from(bytes.as_ref())))
+        .transpose()
+        .map_err(|_| CryptoError::DecryptionFailed)?;
 
     Ok(FileData { file, thumbnail })
 }
@@ -236,7 +245,7 @@ mod test {
         api::ApiBuilder,
         types::{BlobId, MessageType},
     };
-    use sodiumoxide::crypto::box_::{self, Nonce, PublicKey, SecretKey};
+    use crypto_box::{Nonce, PublicKey, SalsaBox, SecretKey};
 
     use super::*;
 
@@ -261,11 +270,11 @@ mod test {
     #[test]
     fn test_encrypt_image_msg() {
         // Set up keys
-        let own_sec = SecretKey([
+        let own_sec = SecretKey::from([
             113, 146, 154, 1, 241, 143, 18, 181, 240, 174, 72, 16, 247, 83, 161, 29, 215, 123, 130,
             243, 235, 222, 137, 151, 107, 162, 47, 119, 98, 145, 68, 146,
         ]);
-        let other_pub = PublicKey([
+        let other_pub = PublicKey::from([
             153, 153, 204, 118, 225, 119, 78, 112, 88, 6, 167, 2, 67, 73, 254, 255, 96, 134, 225,
             8, 36, 229, 124, 219, 43, 50, 241, 185, 244, 236, 55, 77,
         ]);
@@ -278,20 +287,23 @@ mod test {
 
         // Fake a blob upload
         let blob_id = BlobId::from_str("00112233445566778899aabbccddeeff").unwrap();
-        let blob_nonce = box_::gen_nonce();
+        let blob_nonce: Nonce = SalsaBox::generate_nonce(&mut OsRng);
 
         // Encrypt
         let recipient_key = RecipientKey(other_pub);
-        let encrypted = api.encrypt_image_msg(&blob_id, 258, &blob_nonce.0, &recipient_key);
+        let encrypted = api
+            .encrypt_image_msg(&blob_id, 258, &blob_nonce, &recipient_key)
+            .unwrap();
+
+        let crypto_box: SalsaBox = SalsaBox::new(&recipient_key.0, &own_sec);
 
         // Decrypt
-        let decrypted = box_::open(
-            &encrypted.ciphertext,
-            &Nonce(encrypted.nonce),
-            &other_pub,
-            &own_sec,
-        )
-        .unwrap();
+        let decrypted = crypto_box
+            .decrypt(
+                &encrypted.nonce,
+                Payload::from(encrypted.ciphertext.as_ref()),
+            )
+            .unwrap();
 
         // Validate and remove padding
         let padding_bytes = decrypted[decrypted.len() - 1] as usize;
@@ -306,7 +318,7 @@ mod test {
         assert_eq!(data.len(), 44 + 1);
         assert_eq!(&data[1..17], &blob_id.0);
         assert_eq!(&data[17..21], &[2, 1, 0, 0]);
-        assert_eq!(&data[21..45], &blob_nonce.0);
+        assert_eq!(&data[21..45], &blob_nonce[..]);
     }
 
     #[test]
@@ -384,21 +396,22 @@ mod test {
         };
 
         // Encrypt
-        let (encrypted, key) = encrypt_file_data(&data);
+        let (encrypted, key) = encrypt_file_data(&data).unwrap();
         let encrypted_thumb = encrypted.thumbnail.expect("Thumbnail missing");
+
+        let secretbox: XSalsa20Poly1305 = XSalsa20Poly1305::new(&key);
 
         // Ensure that encrypted data is different from plaintext data
         assert_ne!(encrypted.file, file_data);
         assert_ne!(encrypted_thumb, thumb_data);
-        assert_eq!(encrypted.file.len(), file_data.len() + secretbox::MACBYTES);
-        assert_eq!(
-            encrypted_thumb.len(),
-            thumb_data.len() + secretbox::MACBYTES
-        );
 
         // Test that data can be decrypted
-        let decrypted_file = secretbox::open(&encrypted.file, &FILE_NONCE, &key).unwrap();
-        let decrypted_thumb = secretbox::open(&encrypted_thumb, &THUMB_NONCE, &key).unwrap();
+        let decrypted_file = secretbox
+            .decrypt(get_file_nonce(), Payload::from(encrypted.file.as_ref()))
+            .unwrap();
+        let decrypted_thumb = secretbox
+            .decrypt(get_thumb_nonce(), Payload::from(encrypted_thumb.as_ref()))
+            .unwrap();
         assert_eq!(decrypted_file, &file_data);
         assert_eq!(decrypted_thumb, &thumb_data);
     }
@@ -409,15 +422,18 @@ mod test {
         let (_, key1) = encrypt_file_data(&FileData {
             file: [1, 2, 3].to_vec(),
             thumbnail: None,
-        });
+        })
+        .unwrap();
         let (_, key2) = encrypt_file_data(&FileData {
             file: [1, 2, 3].to_vec(),
             thumbnail: None,
-        });
+        })
+        .unwrap();
         let (_, key3) = encrypt_file_data(&FileData {
             file: [1, 2, 3].to_vec(),
             thumbnail: None,
-        });
+        })
+        .unwrap();
         assert_ne!(key1, key2);
         assert_ne!(key2, key3);
         assert_ne!(key1, key3);
@@ -433,7 +449,7 @@ mod test {
         };
 
         // Encrypt
-        let (encrypted, key) = encrypt_file_data(&data);
+        let (encrypted, key) = encrypt_file_data(&data).unwrap();
         assert_ne!(encrypted.file, data.file);
         assert!(encrypted.thumbnail.is_some());
         assert_ne!(encrypted.thumbnail, data.thumbnail);

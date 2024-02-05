@@ -33,7 +33,7 @@ async fn main() {
         let bytes = HEXLOWER_PERMISSIVE
             .decode(blob_key_raw.as_bytes())
             .expect("Invalid blob key");
-        Some(Key::from_slice(&bytes).expect("Invalid blob key bytes"))
+        Some(Key::clone_from_slice(bytes.as_ref()))
     } else {
         None
     };
