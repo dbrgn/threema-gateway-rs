@@ -1,24 +1,79 @@
 //! Encrypt and decrypt messages.
 
-use std::{convert::Into, io::Write, iter::repeat, str::FromStr, sync::OnceLock};
+use std::{convert::Into, fmt::Debug, io::Write, iter::repeat, str::FromStr, sync::OnceLock};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use crypto_box::{aead::Aead, SalsaBox};
 use crypto_secretbox::{
     aead::{OsRng, Payload},
-    AeadCore, KeyInit, Nonce, XSalsa20Poly1305,
+    cipher::generic_array::GenericArray,
+    AeadCore, Key as SecretboxKey, KeyInit, Nonce, XSalsa20Poly1305,
 };
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use rand::Rng;
+use serde::{Serialize, Serializer};
 use serde_json as json;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
-    errors::CryptoError,
+    errors::{self, CryptoError},
     types::{BlobId, FileMessage, MessageType},
-    Key, PublicKey, SecretKey,
+    PublicKey, SecretKey,
 };
 
 pub const NONCE_SIZE: usize = 24;
+const KEY_SIZE: usize = 32;
+
+/// Key type used for nacl secretbox cryptography
+#[derive(PartialEq, Zeroize, ZeroizeOnDrop)]
+pub struct Key(SecretboxKey);
+
+impl AsRef<SecretboxKey> for Key {
+    fn as_ref(&self) -> &SecretboxKey {
+        &self.0
+    }
+}
+
+impl Debug for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write! {f, "Key([…])"}
+    }
+}
+
+impl From<SecretboxKey> for Key {
+    fn from(value: SecretboxKey) -> Self {
+        Self(value)
+    }
+}
+
+impl From<[u8; KEY_SIZE]> for Key {
+    fn from(value: [u8; KEY_SIZE]) -> Self {
+        Self(GenericArray::from(value))
+    }
+}
+
+impl TryFrom<Vec<u8>> for Key {
+    type Error = errors::CryptoError;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        <[u8; KEY_SIZE]>::try_from(value)
+            .map_err(|original| {
+                CryptoError::BadKey(format!(
+                    "Key has wrong size: {} instead of {}",
+                    original.len(),
+                    KEY_SIZE
+                ))
+            })
+            .map(SecretboxKey::from)
+            .map(Self::from)
+    }
+}
+
+impl Serialize for Key {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&HEXLOWER.encode(&self.0))
+    }
+}
 
 fn get_file_nonce() -> &'static Nonce {
     static FILE_NONCE: OnceLock<Nonce> = OnceLock::new();
@@ -195,12 +250,12 @@ pub struct EncryptedFileData {
 /// Return the encrypted bytes and the key.
 pub fn encrypt_file_data(data: &FileData) -> Result<(EncryptedFileData, Key), CryptoError> {
     // Generate a random encryption key
-    let key = XSalsa20Poly1305::generate_key(&mut OsRng);
-    let secretbox = XSalsa20Poly1305::new(&key);
+    let key: Key = XSalsa20Poly1305::generate_key(&mut OsRng).into();
+    let secretbox = XSalsa20Poly1305::new(key.as_ref());
 
     // Encrypt data
     // Note: Since we generate a random key, we can safely re-use constant nonces.
-    let file = XSalsa20Poly1305::new(&key)
+    let file = secretbox
         .encrypt(get_file_nonce(), Payload::from(data.file.as_ref()))
         .map_err(|_| CryptoError::EncryptionFailed)?;
     let thumbnail = data
@@ -221,7 +276,7 @@ pub fn decrypt_file_data(
     data: &EncryptedFileData,
     encryption_key: &Key,
 ) -> Result<FileData, CryptoError> {
-    let secretbox: XSalsa20Poly1305 = XSalsa20Poly1305::new(encryption_key);
+    let secretbox = XSalsa20Poly1305::new(encryption_key.as_ref());
 
     let file = secretbox
         .decrypt(get_file_nonce(), Payload::from(data.file.as_ref()))
@@ -399,7 +454,7 @@ mod test {
         let (encrypted, key) = encrypt_file_data(&data).unwrap();
         let encrypted_thumb = encrypted.thumbnail.expect("Thumbnail missing");
 
-        let secretbox: XSalsa20Poly1305 = XSalsa20Poly1305::new(&key);
+        let secretbox = XSalsa20Poly1305::new(key.as_ref());
 
         // Ensure that encrypted data is different from plaintext data
         assert_ne!(encrypted.file, file_data);

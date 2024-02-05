@@ -84,14 +84,14 @@ mod receive;
 mod types;
 
 pub use crypto_box::{PublicKey, SecretKey};
-pub use crypto_secretbox::{Key, Nonce};
+pub use crypto_secretbox::Nonce;
 
 pub use crate::{
     api::{ApiBuilder, E2eApi, SimpleApi},
     connection::Recipient,
     crypto::{
         decrypt_file_data, encrypt, encrypt_file_data, encrypt_raw, EncryptedFileData,
-        EncryptedMessage, FileData, RecipientKey,
+        EncryptedMessage, FileData, Key, RecipientKey,
     },
     lookup::{Capabilities, LookupCriterion},
     types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType},
