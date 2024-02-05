@@ -81,7 +81,7 @@ async fn main() {
     );
 
     // Send
-    let msg_id = api.send(&to, &msg, false).await;
+    let msg_id = api.send(to, &msg, false).await;
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {}", e),

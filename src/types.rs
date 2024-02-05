@@ -40,9 +40,10 @@ impl From<MessageType> for u8 {
 
 /// The rendering type influences how a file message is displayed on the device
 /// of the recipient.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub enum RenderingType {
     /// Display as default file message
+    #[default]
     File,
     /// Display as media file message (e.g. image or audio message)
     Media,
@@ -63,12 +64,6 @@ impl From<RenderingType> for u8 {
 impl Serialize for RenderingType {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_u8((*self).into())
-    }
-}
-
-impl Default for RenderingType {
-    fn default() -> Self {
-        RenderingType::File
     }
 }
 
