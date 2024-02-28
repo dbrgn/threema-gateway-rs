@@ -106,6 +106,7 @@ pub struct EncryptedMessage {
 }
 
 /// The public key of a recipient.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecipientKey(pub PublicKey);
 
 impl From<PublicKey> for RecipientKey {
