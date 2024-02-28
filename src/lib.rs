@@ -54,7 +54,8 @@
 //! let public_key = api.lookup_pubkey(to).await.unwrap();
 //!
 //! // Encrypt
-//! let encrypted = api.encrypt_text_msg(text, &public_key.into());
+//! let encrypted = api.encrypt_text_msg(text, &public_key.into())
+//!     .expect("Could not encrypt text msg");
 //!
 //! // Send
 //! match api.send(&to, &encrypted, false).await {
@@ -82,17 +83,15 @@ mod lookup;
 mod receive;
 mod types;
 
-pub use sodiumoxide::crypto::{
-    box_::{PublicKey, SecretKey},
-    secretbox::Key,
-};
+pub use crypto_box::{PublicKey, SecretKey};
+pub use crypto_secretbox::Nonce;
 
 pub use crate::{
     api::{ApiBuilder, E2eApi, SimpleApi},
     connection::Recipient,
     crypto::{
         decrypt_file_data, encrypt, encrypt_file_data, encrypt_raw, EncryptedFileData,
-        EncryptedMessage, FileData, RecipientKey,
+        EncryptedMessage, FileData, Key, RecipientKey,
     },
     lookup::{Capabilities, LookupCriterion},
     types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType},

@@ -83,6 +83,10 @@ pub enum CryptoError {
     /// Decryption failed
     #[error("decryption failed")]
     DecryptionFailed,
+
+    /// Encryption failed
+    #[error("encryption failed")]
+    EncryptionFailed,
 }
 
 /// Errors when interacting with the [`ApiBuilder`](../struct.ApiBuilder.html).

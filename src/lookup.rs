@@ -2,9 +2,9 @@
 
 use std::{fmt, str};
 
+use crypto_box::{PublicKey, KEY_SIZE};
 use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
-use sodiumoxide::crypto::box_::PublicKey;
 
 use crate::{connection::map_response_code, errors::ApiError};
 
@@ -141,20 +141,20 @@ pub(crate) async fn lookup_pubkey(
     let pubkey_hex_bytes = res.bytes().await?;
 
     // Decode key
-    let mut pubkey = [0u8; 32];
+    let mut pubkey = [0u8; KEY_SIZE];
     let bytes_decoded = HEXLOWER_PERMISSIVE
         .decode_mut(&pubkey_hex_bytes, &mut pubkey)
         .map_err(|e| {
             warn!("Could not parse public key fetched from API: {:?}", e);
             ApiError::ParseError("Invalid hex bytes for public key".to_string())
         })?;
-    if bytes_decoded != 32 {
+    if bytes_decoded != KEY_SIZE {
         return Err(ApiError::ParseError(format!(
             "Invalid public key: Length must be 32 bytes, but is {} bytes",
             bytes_decoded
         )));
     }
-    Ok(PublicKey(pubkey))
+    Ok(pubkey.into())
 }
 
 /// Look up an ID in the Threema directory.

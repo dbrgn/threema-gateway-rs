@@ -33,7 +33,8 @@ async fn main() {
         let bytes = HEXLOWER_PERMISSIVE
             .decode(blob_key_raw.as_bytes())
             .expect("Invalid blob key");
-        Some(Key::from_slice(&bytes).expect("Invalid blob key bytes"))
+        let key = Key::try_from(bytes).expect("Invalid size of blob key");
+        Some(key)
     } else {
         None
     };

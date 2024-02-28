@@ -61,7 +61,12 @@ async fn main() {
         println!("Could not read file: {}", e);
         process::exit(1);
     });
-    let encrypted_image = api.encrypt_raw(&img_data, &recipient_key);
+    let encrypted_image = api
+        .encrypt_raw(&img_data, &recipient_key)
+        .unwrap_or_else(|_| {
+            println!("Could encrypt raw msg");
+            process::exit(1);
+        });
 
     // Upload image to blob server
     let blob_id = api
@@ -73,15 +78,20 @@ async fn main() {
         });
 
     // Create image message
-    let msg = api.encrypt_image_msg(
-        &blob_id,
-        img_data.len() as u32,
-        &encrypted_image.nonce,
-        &recipient_key,
-    );
+    let msg = api
+        .encrypt_image_msg(
+            &blob_id,
+            img_data.len() as u32,
+            &encrypted_image.nonce,
+            &recipient_key,
+        )
+        .unwrap_or_else(|e| {
+            println!("Could not encrypt image msg: {e}");
+            process::exit(1);
+        });
 
     // Send
-    let msg_id = api.send(&to, &msg, false).await;
+    let msg_id = api.send(to, &msg, false).await;
     match msg_id {
         Ok(id) => println!("Sent. Message id is {}.", id),
         Err(e) => println!("Could not send message: {}", e),

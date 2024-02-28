@@ -223,13 +223,11 @@ pub(crate) async fn blob_download(
 mod tests {
     use super::*;
 
-    use std::iter::repeat;
-
     use crate::{errors::ApiError, MSGAPI_URL};
 
     #[tokio::test]
     async fn test_simple_max_length_ok() {
-        let text: String = repeat("à").take(3500 / 2).collect();
+        let text: String = "à".repeat(3500 / 2);
         let client = Client::new();
         let result = send_simple(
             &client,
@@ -247,7 +245,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_simple_max_length_too_long() {
-        let mut text: String = repeat("à").take(3500 / 2).collect();
+        let mut text: String = "à".repeat(3500 / 2);
         text.push('x');
         let client = Client::new();
         let result = send_simple(

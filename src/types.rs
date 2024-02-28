@@ -40,9 +40,10 @@ impl From<MessageType> for u8 {
 
 /// The rendering type influences how a file message is displayed on the device
 /// of the recipient.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 pub enum RenderingType {
     /// Display as default file message
+    #[default]
     File,
     /// Display as media file message (e.g. image or audio message)
     Media,
@@ -66,12 +67,6 @@ impl Serialize for RenderingType {
     }
 }
 
-impl Default for RenderingType {
-    fn default() -> Self {
-        RenderingType::File
-    }
-}
-
 /// A file message.
 #[derive(Debug, Serialize)]
 pub struct FileMessage {
@@ -88,7 +83,6 @@ pub struct FileMessage {
     thumbnail_media_type: Option<String>,
 
     #[serde(rename = "k")]
-    #[serde(serialize_with = "key_to_hex")]
     blob_encryption_key: Key,
 
     #[serde(rename = "n")]
@@ -397,10 +391,6 @@ impl Serialize for BlobId {
     }
 }
 
-fn key_to_hex<S: Serializer>(val: &Key, serializer: S) -> Result<S::Ok, S::Error> {
-    serializer.serialize_str(&HEXLOWER.encode(&val.0))
-}
-
 #[cfg(test)]
 mod test {
     use std::collections::HashMap;
@@ -425,7 +415,7 @@ mod test {
 
     #[test]
     fn test_serialize_to_string_minimal() {
-        let pk = Key([
+        let key = Key::from([
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
         ]);
@@ -434,7 +424,7 @@ mod test {
             file_media_type: "application/pdf".parse().unwrap(),
             thumbnail_blob_id: None,
             thumbnail_media_type: None,
-            blob_encryption_key: pk,
+            blob_encryption_key: key,
             file_name: None,
             file_size_bytes: 2048,
             description: None,
@@ -465,7 +455,7 @@ mod test {
 
     #[test]
     fn test_serialize_to_string_full() {
-        let pk = Key([
+        let key = Key::from([
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
         ]);
@@ -474,7 +464,7 @@ mod test {
             file_media_type: "application/pdf".parse().unwrap(),
             thumbnail_blob_id: Some(BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap()),
             thumbnail_media_type: Some("image/jpeg".parse().unwrap()),
-            blob_encryption_key: pk,
+            blob_encryption_key: key,
             file_name: Some("secret.pdf".into()),
             file_size_bytes: 2048,
             description: Some("This is a fancy file".into()),
@@ -518,13 +508,14 @@ mod test {
 
     #[test]
     fn test_builder() {
-        let key = Key([
+        let key_bytes = [
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
-        ]);
+        ];
+        let key: Key = key_bytes.into();
         let file_blob_id = BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap();
         let thumb_blob_id = BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap();
-        let msg = FileMessage::builder(file_blob_id.clone(), key.clone(), "image/jpeg", 2048)
+        let msg = FileMessage::builder(file_blob_id.clone(), key, "image/jpeg", 2048)
             .thumbnail(thumb_blob_id.clone(), "image/png")
             .file_name("hello.jpg")
             .description(String::from("An image file"))
@@ -536,7 +527,7 @@ mod test {
         assert_eq!(msg.file_media_type, "image/jpeg");
         assert_eq!(msg.thumbnail_blob_id, Some(thumb_blob_id));
         assert_eq!(msg.thumbnail_media_type, Some("image/png".into()));
-        assert_eq!(msg.blob_encryption_key, key);
+        assert_eq!(&msg.blob_encryption_key.as_ref()[..], key_bytes);
         assert_eq!(msg.file_name, Some("hello.jpg".to_string()));
         assert_eq!(msg.file_size_bytes, 2048);
         assert_eq!(msg.description, Some("An image file".to_string()));

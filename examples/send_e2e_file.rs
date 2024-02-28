@@ -93,7 +93,7 @@ async fn main() {
         file: file_bytes,
         thumbnail: thumbnail_bytes,
     };
-    let (encrypted, key) = encrypt_file_data(&file_data);
+    let (encrypted, key) = etry!(encrypt_file_data(&file_data), "Could not encrypt file");
 
     // Upload files to blob server
     let file_blob_id = etry!(
@@ -126,7 +126,10 @@ async fn main() {
         .rendering_type(rendering_type)
         .build()
         .expect("Could not build FileMessage");
-    let encrypted = api.encrypt_file_msg(&msg, &public_key.into());
+    let encrypted = etry!(
+        api.encrypt_file_msg(&msg, &public_key.into()),
+        "Could not encrypt file msg"
+    );
 
     // Send
     let msg_id = api.send(to, &encrypted, false).await;

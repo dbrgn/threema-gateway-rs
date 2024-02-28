@@ -14,6 +14,13 @@ Possible log types:
 
 ### Unreleased
 
+- [added] Re-export `crypto_secretbox::Nonce`
+- [changed] Replace `sodiumoxide` with `crypto_box` and `crypto_secretbox`
+- [changed] Replace re-exports of `PublicKey`, `SecretKey` and `Key`
+- [changed] Use dedicated `Nonce` type instead of `&[u8; 24]`
+- [changed] Return result in `encrypt_*` functions
+- [changed] Use `hmac` and `sha2` crates for calculating MAC
+
 ### v0.16.0 (2023-09-04)
 
 - [added] Expose encryption functions: `encrypt` and `encrypt_raw` (#59)

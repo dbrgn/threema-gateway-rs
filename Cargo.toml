@@ -24,15 +24,20 @@ receive = ["form_urlencoded", "serde_urlencoded"] # Support for receiving and de
 
 [dependencies]
 byteorder = "1.0"
+crypto_box = "0.9.1"
+crypto_secretbox = "0.1.1"
 data-encoding = "2.1"
 form_urlencoded = { version = "1", optional = true }
+hmac = "0.12.1"
 log = "0.4"
-thiserror = "1"
 reqwest = { version = "0.11", features = ["rustls-tls-native-roots", "multipart"], default-features = false }
+rand = "0.8.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_urlencoded = { version = "0.7", optional = true }
-sodiumoxide = "0.2.0"
+sha2 = "0.10.8"
+thiserror = "1"
+zeroize = { version = "1", features = ["zeroize_derive"], default-features = false }
 
 [dev-dependencies]
 docopt = "1.1.0"
