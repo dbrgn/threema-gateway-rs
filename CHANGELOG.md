@@ -20,6 +20,7 @@ Possible log types:
 - [changed] Use dedicated `Nonce` type instead of `&[u8; 24]`
 - [changed] Return result in `encrypt_*` functions
 - [changed] Use `hmac` and `sha2` crates for calculating MAC
+- [changed] The `RecipientKey` type now implements `Debug` and a few other traits
 
 ### v0.16.0 (2023-09-04)
 
