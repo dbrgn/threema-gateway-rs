@@ -67,9 +67,9 @@ async fn main() {
         .and_then(|builder| builder.into_e2e())
         .unwrap();
 
-    // Fetch public key
+    // Fetch recipient public key
     // Note: In a real application, you should cache the public key
-    let public_key = etry!(api.lookup_pubkey(to).await, "Could not fetch public key");
+    let recipient_key = etry!(api.lookup_pubkey(to).await, "Could not fetch public key");
 
     // Read files
     let mut file = etry!(File::open(filepath), "Could not open file");
@@ -127,7 +127,7 @@ async fn main() {
         .build()
         .expect("Could not build FileMessage");
     let encrypted = etry!(
-        api.encrypt_file_msg(&msg, &public_key.into()),
+        api.encrypt_file_msg(&msg, &recipient_key),
         "Could not encrypt file msg"
     );
 

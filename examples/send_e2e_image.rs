@@ -43,13 +43,12 @@ async fn main() {
         .and_then(|builder| builder.into_e2e())
         .unwrap();
 
-    // Fetch public key
+    // Fetch recipient public key
     // Note: In a real application, you should cache the public key
-    let public_key = api.lookup_pubkey(to).await.unwrap_or_else(|e| {
+    let recipient_key = api.lookup_pubkey(to).await.unwrap_or_else(|e| {
         println!("Could not fetch public key: {}", e);
         process::exit(1);
     });
-    let recipient_key: RecipientKey = public_key.into();
 
     // Encrypt image
     let mut file = File::open(path).unwrap_or_else(|e| {

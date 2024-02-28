@@ -1,5 +1,5 @@
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, RecipientKey};
+use threema_gateway::ApiBuilder;
 
 const USAGE: &str = "
 Usage: lookup_pubkey [options] <our_id> <secret> <their_id>
@@ -19,17 +19,13 @@ async fn main() {
     let their_id = args.get_str("<their_id>");
     let secret = args.get_str("<secret>");
 
-    // Fetch public key
+    // Fetch recipient public key
     let api = ApiBuilder::new(our_id, secret).into_simple();
-    let pubkey = api.lookup_pubkey(their_id).await;
+    let recipient_key = api.lookup_pubkey(their_id).await;
 
     // Show result
-    match pubkey {
-        Ok(pk) => println!(
-            "Public key for {} is {}.",
-            their_id,
-            RecipientKey::from(pk).to_hex_string()
-        ),
+    match recipient_key {
+        Ok(key) => println!("Public key for {} is {}.", their_id, key.to_hex_string()),
         Err(e) => println!("Could not fetch public key: {}", e),
     }
 }

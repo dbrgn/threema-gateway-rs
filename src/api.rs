@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use crypto_box::{PublicKey, SecretKey};
+use crypto_box::SecretKey;
 use crypto_secretbox::Nonce;
 use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
@@ -34,7 +34,7 @@ fn make_reqwest_client() -> Client {
 /// Implement methods available on both the simple and the e2e API objects.
 macro_rules! impl_common_functionality {
     () => {
-        /// Fetch the public key for the specified Threema ID.
+        /// Fetch the recipient public key for the specified Threema ID.
         ///
         /// For the end-to-end encrypted mode, you need the public key of the recipient
         /// in order to encrypt a message. While it's best to obtain this directly from
@@ -44,7 +44,7 @@ macro_rules! impl_common_functionality {
         ///
         /// It is strongly recommended that you cache the public keys to avoid querying
         /// the API for each message.
-        pub async fn lookup_pubkey(&self, id: &str) -> Result<PublicKey, ApiError> {
+        pub async fn lookup_pubkey(&self, id: &str) -> Result<RecipientKey, ApiError> {
             lookup_pubkey(
                 &self.client,
                 self.endpoint.borrow(),
@@ -422,9 +422,9 @@ impl E2eApi {
     pub fn decrypt_incoming_message(
         &self,
         message: &IncomingMessage,
-        public_key: &PublicKey,
+        recipient_key: &RecipientKey,
     ) -> Result<Vec<u8>, CryptoError> {
-        message.decrypt_box(public_key, &self.private_key)
+        message.decrypt_box(&recipient_key.0, &self.private_key)
     }
 }
 
