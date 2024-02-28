@@ -49,12 +49,12 @@
 //!     .and_then(|builder| builder.into_e2e())
 //!     .unwrap();
 //!
-//! // Fetch public key
+//! // Fetch recipient public key
 //! // Note: In a real application, you should cache the public key
-//! let public_key = api.lookup_pubkey(to).await.unwrap();
+//! let recipient_key = api.lookup_pubkey(to).await.unwrap();
 //!
 //! // Encrypt
-//! let encrypted = api.encrypt_text_msg(text, &public_key.into())
+//! let encrypted = api.encrypt_text_msg(text, &recipient_key)
 //!     .expect("Could not encrypt text msg");
 //!
 //! // Send

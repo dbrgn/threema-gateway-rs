@@ -2,11 +2,11 @@
 
 use std::{fmt, str};
 
-use crypto_box::{PublicKey, KEY_SIZE};
+use crypto_box::KEY_SIZE;
 use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
 
-use crate::{connection::map_response_code, errors::ApiError};
+use crate::{connection::map_response_code, errors::ApiError, RecipientKey};
 
 /// Different ways to look up a Threema ID in the directory.
 #[derive(Debug, PartialEq)]
@@ -117,14 +117,14 @@ impl Capabilities {
     }
 }
 
-/// Fetch the public key for the specified Threema ID.
+/// Fetch the recipient public key for the specified Threema ID.
 pub(crate) async fn lookup_pubkey(
     client: &Client,
     endpoint: &str,
     our_id: &str,
     their_id: &str,
     secret: &str,
-) -> Result<PublicKey, ApiError> {
+) -> Result<RecipientKey, ApiError> {
     // Build URL
     let url = format!(
         "{}/pubkeys/{}?from={}&secret={}",

@@ -52,14 +52,14 @@ async fn main() {
     println!("  Sender nickname: {:?}", msg.nickname);
 
     // Fetch sender public key
-    let pubkey = api.lookup_pubkey(&msg.from).await.unwrap_or_else(|e| {
+    let recipient_key = api.lookup_pubkey(&msg.from).await.unwrap_or_else(|e| {
         eprintln!("Could not fetch public key for {}: {}", &msg.from, e);
         std::process::exit(1);
     });
 
     // Decrypt
     let data = api
-        .decrypt_incoming_message(&msg, &pubkey)
+        .decrypt_incoming_message(&msg, &recipient_key)
         .unwrap_or_else(|e| {
             println!("Could not decrypt box: {}", e);
             std::process::exit(1);

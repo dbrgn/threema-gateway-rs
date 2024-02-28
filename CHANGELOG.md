@@ -11,7 +11,6 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
-
 ### Unreleased
 
 - [added] Re-export `crypto_secretbox::Nonce`
@@ -21,6 +20,8 @@ Possible log types:
 - [changed] Return result in `encrypt_*` functions
 - [changed] Use `hmac` and `sha2` crates for calculating MAC
 - [changed] The `RecipientKey` type now implements `Debug` and a few other traits
+- [changed] The `lookup_pubkey` function now returns a `RecipientKey` wrapper around `PublicKey`
+- [changed] The `decrypt_incoming_message` function now accepts a `RecipientKey`, not a `PublicKey`
 
 ### v0.16.0 (2023-09-04)
 
@@ -34,7 +35,7 @@ Possible log types:
 ### v0.15.1 (2021-12-06)
 
 - [added] send_e2e_file example: Allow setting rendering type and caption (#52)
-- [changed] Set timeout of 10s on default HTTP client (#56) 
+- [changed] Set timeout of 10s on default HTTP client (#56)
 - [changed] Add some more logging
 
 ### v0.15.0 (2021-04-02)
@@ -99,7 +100,7 @@ was created for every request, which prevents connection re-use.
 
 ### v0.12.0 (2019-09-19)
 
-- [added] Blob upload: Add support for `persist` flag (#25) 
+- [added] Blob upload: Add support for `persist` flag (#25)
 - [fixed] Fix documentation for BlobId
 
 ### v0.11.0 (2019-09-12)
