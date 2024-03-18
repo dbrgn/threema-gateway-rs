@@ -22,6 +22,7 @@ Possible log types:
 - [changed] The `RecipientKey` type now implements `Debug` and a few other traits
 - [changed] The `lookup_pubkey` function now returns a `RecipientKey` wrapper around `PublicKey`
 - [changed] The `decrypt_incoming_message` function now accepts a `RecipientKey`, not a `PublicKey`
+- [changed] Request errors no longer include the URL, as it may contain sensitive information (#74)
 
 ### v0.16.0 (2023-09-04)
 
