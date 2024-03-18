@@ -13,9 +13,16 @@ Possible log types:
 
 ### Unreleased
 
-- [added] Re-export `crypto_secretbox::Nonce`
-- [changed] Replace `sodiumoxide` with `crypto_box` and `crypto_secretbox`
-- [changed] Replace re-exports of `PublicKey`, `SecretKey` and `Key`
+### v0.17.0 (2024-03-18)
+
+This release replaces the use of the (now deprecated)
+[sodiumoxide](https://github.com/sodiumoxide/sodiumoxide) library with
+pure-Rust implementations by [RustCrypto](https://github.com/RustCrypto). This
+might entail some breaking changes with regards to key and nonce types.
+
+- [changed] Replace `sodiumoxide` with `crypto_box` and `crypto_secretbox` (#72)
+- [changed] Replace re-exports of `PublicKey`, `SecretKey` and `Key`, re-export
+  `crypto_secretbox::Nonce`
 - [changed] Use dedicated `Nonce` type instead of `&[u8; 24]`
 - [changed] Return result in `encrypt_*` functions
 - [changed] Use `hmac` and `sha2` crates for calculating MAC
