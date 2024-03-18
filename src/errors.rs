@@ -50,7 +50,7 @@ pub enum ApiError {
 
     /// Error when sending request (via reqwest)
     #[error("request error: {0}")]
-    RequestError(#[from] ReqwestError),
+    RequestError(#[source] ReqwestError),
 
     /// Error when reading response
     #[error("I/O error: {0}")]
@@ -63,6 +63,13 @@ pub enum ApiError {
     /// Other
     #[error("other: {0}")]
     Other(String),
+}
+
+impl From<ReqwestError> for ApiError {
+    fn from(err: ReqwestError) -> Self {
+        // Strip URL, as it might contain sensitive content (the API secret)
+        Self::RequestError(err.without_url())
+    }
 }
 
 /// Crypto related errors.
