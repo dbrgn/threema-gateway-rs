@@ -126,10 +126,7 @@ pub(crate) async fn send_e2e(
     log::debug!("Sending e2e encrypted message from {} to {}", from, to);
 
     // Prepare POST data
-    let mut params = match additional_params {
-        Some(p) => p,
-        None => HashMap::new(),
-    };
+    let mut params = additional_params.unwrap_or_default();
     params.insert("from".into(), from.into());
     params.insert("to".into(), to.into());
     params.insert("secret".into(), secret.into());
