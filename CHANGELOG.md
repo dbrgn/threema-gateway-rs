@@ -13,6 +13,11 @@ Possible log types:
 
 ### Unreleased
 
+### v0.18.0 (2024-07-13)
+
+- [changed] Upgrade `reqwest` dependency from 0.11 to 0.12, and thus indirectly
+  hyper from 0.x to 1.x
+
 ### v0.17.0 (2024-03-18)
 
 This release replaces the use of the (now deprecated)
