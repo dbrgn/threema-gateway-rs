@@ -75,6 +75,7 @@
 extern crate log;
 
 mod api;
+mod cache;
 mod connection;
 mod crypto;
 pub mod errors;
@@ -88,6 +89,7 @@ pub use crypto_secretbox::Nonce;
 
 pub use crate::{
     api::{ApiBuilder, E2eApi, SimpleApi},
+    cache::PublicKeyCache,
     connection::Recipient,
     crypto::{
         decrypt_file_data, encrypt, encrypt_file_data, encrypt_raw, EncryptedFileData,
