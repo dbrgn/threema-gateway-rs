@@ -10,11 +10,12 @@ use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
 
 use crate::{
+    cache::PublicKeyCache,
     connection::{blob_download, blob_upload, send_e2e, send_simple, Recipient},
     crypto::{
         encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw, EncryptedMessage, RecipientKey,
     },
-    errors::{ApiBuilderError, ApiError, CryptoError},
+    errors::{ApiBuilderError, ApiError, ApiOrCacheError, CryptoError},
     lookup::{
         lookup_capabilities, lookup_credits, lookup_id, lookup_pubkey, Capabilities,
         LookupCriterion,
@@ -42,8 +43,9 @@ macro_rules! impl_common_functionality {
         /// and therefore you can also look up the key associated with a given ID from
         /// the server.
         ///
-        /// It is strongly recommended that you cache the public keys to avoid querying
-        /// the API for each message.
+        /// *Note:* It is strongly recommended that you cache the public keys to avoid
+        /// querying the API for each message. To simplify this, the
+        /// `lookup_pubkey_with_cache` method can be used instead.
         pub async fn lookup_pubkey(&self, id: &str) -> Result<RecipientKey, ApiError> {
             lookup_pubkey(
                 &self.client,
@@ -53,6 +55,33 @@ macro_rules! impl_common_functionality {
                 &self.secret,
             )
             .await
+        }
+
+        /// Fetch the recipient public key for the specified Threema ID and store it
+        /// in the [`PublicKeyCache`].
+        ///
+        /// For the end-to-end encrypted mode, you need the public key of the recipient
+        /// in order to encrypt a message. While it's best to obtain this directly from
+        /// the recipient (extract it from the QR code), this may not be convenient,
+        /// and therefore you can also look up the key associated with a given ID from
+        /// the server.
+        pub async fn lookup_pubkey_with_cache<C>(
+            &self,
+            id: &str,
+            public_key_cache: &C,
+        ) -> Result<RecipientKey, ApiOrCacheError<C::Error>>
+        where
+            C: PublicKeyCache,
+        {
+            let pubkey = self
+                .lookup_pubkey(id)
+                .await
+                .map_err(ApiOrCacheError::ApiError)?;
+            public_key_cache
+                .store(id, &pubkey)
+                .await
+                .map_err(ApiOrCacheError::CacheError)?;
+            Ok(pubkey)
         }
 
         /// Look up a Threema ID in the directory.

@@ -13,6 +13,9 @@ Possible log types:
 
 ### Unreleased
 
+- [added] Add support for generic public key caching:`lookup_pubkey_with_cache`
+  API method and PublicKeyCache` trait (#77)
+
 ### v0.18.0 (2024-07-13)
 
 - [changed] Upgrade `reqwest` dependency from 0.11 to 0.12, and thus indirectly

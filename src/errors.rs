@@ -72,6 +72,14 @@ impl From<ReqwestError> for ApiError {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum ApiOrCacheError<C: std::error::Error> {
+    #[error("api error: {0}")]
+    ApiError(ApiError),
+    #[error("cache error: {0}")]
+    CacheError(C),
+}
+
 /// Crypto related errors.
 #[derive(Debug, PartialEq, Clone, Error)]
 pub enum CryptoError {
