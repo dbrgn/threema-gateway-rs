@@ -27,6 +27,7 @@ use crate::{
 fn make_reqwest_client() -> Client {
     Client::builder()
         .timeout(Duration::from_secs(10))
+        .user_agent(crate::SDK_USER_AGENT)
         .build()
         .expect("Could not build client")
 }
