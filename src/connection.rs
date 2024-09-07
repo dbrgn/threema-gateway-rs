@@ -5,7 +5,7 @@ use std::{borrow::Cow, collections::HashMap, str::FromStr};
 use data_encoding::HEXLOWER;
 use reqwest::{multipart, Client, StatusCode};
 
-use crate::{errors::ApiError, types::BlobId};
+use crate::{errors::ApiError, types::BlobId, SDK_HEADER, SDK_USER_AGENT};
 
 /// Map HTTP response status code to an ApiError if it isn't "200".
 ///
@@ -99,9 +99,10 @@ pub(crate) async fn send_simple(
     // Send request
     log::trace!("Sending HTTP request");
     let res = client
-        .post(&format!("{}/send_simple", endpoint))
+        .post(format!("{}/send_simple", endpoint))
         .form(&params)
         .header("accept", "application/json")
+        .header(SDK_HEADER, SDK_USER_AGENT)
         .send()
         .await?;
     log::trace!("Received HTTP response");
@@ -139,9 +140,10 @@ pub(crate) async fn send_e2e(
     // Send request
     log::trace!("Sending HTTP request");
     let res = client
-        .post(&format!("{}/send_e2e", endpoint))
+        .post(format!("{}/send_e2e", endpoint))
         .form(&params)
         .header("accept", "application/json")
+        .header(SDK_HEADER, SDK_USER_AGENT)
         .send()
         .await?;
     log::trace!("Received HTTP response");
@@ -186,6 +188,7 @@ pub(crate) async fn blob_upload(
         .post(&url)
         .multipart(form)
         .header("accept", "text/plain")
+        .header(SDK_HEADER, SDK_USER_AGENT)
         .send()
         .await?;
     map_response_code(res.status(), Some(ApiError::BadBlob))?;
@@ -209,7 +212,11 @@ pub(crate) async fn blob_download(
     );
 
     // Send request
-    let res = client.get(&url).send().await?;
+    let res = client
+        .get(&url)
+        .header(SDK_HEADER, SDK_USER_AGENT)
+        .send()
+        .await?;
     map_response_code(res.status(), Some(ApiError::BadBlob))?;
 
     // Read response bytes

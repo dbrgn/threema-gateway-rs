@@ -6,7 +6,9 @@ use crypto_box::KEY_SIZE;
 use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
 
-use crate::{connection::map_response_code, errors::ApiError, RecipientKey};
+use crate::{
+    connection::map_response_code, errors::ApiError, RecipientKey, SDK_HEADER, SDK_USER_AGENT,
+};
 
 /// Different ways to look up a Threema ID in the directory.
 #[derive(Debug, PartialEq)]
@@ -134,7 +136,11 @@ pub(crate) async fn lookup_pubkey(
     debug!("Looking up public key for {}", their_id);
 
     // Send request
-    let res = client.get(&url).send().await?;
+    let res = client
+        .get(&url)
+        .header(SDK_HEADER, SDK_USER_AGENT)
+        .send()
+        .await?;
     map_response_code(res.status(), None)?;
 
     // Read response body
@@ -177,7 +183,11 @@ pub(crate) async fn lookup_id(
     debug!("Looking up id key for {}", criterion);
 
     // Send request
-    let res = client.get(&url).send().await?;
+    let res = client
+        .get(&url)
+        .header(SDK_HEADER, SDK_USER_AGENT)
+        .send()
+        .await?;
     map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read and return response body
@@ -196,7 +206,11 @@ pub(crate) async fn lookup_credits(
     debug!("Looking up remaining credits");
 
     // Send request
-    let res = client.get(&url).send().await?;
+    let res = client
+        .get(&url)
+        .header(SDK_HEADER, SDK_USER_AGENT)
+        .send()
+        .await?;
     map_response_code(res.status(), None)?;
 
     // Read, parse and return response body
@@ -226,7 +240,11 @@ pub(crate) async fn lookup_capabilities(
     debug!("Looking up capabilities for {}", their_id);
 
     // Send request
-    let res = client.get(&url).send().await?;
+    let res = client
+        .get(&url)
+        .header(SDK_HEADER, SDK_USER_AGENT)
+        .send()
+        .await?;
     map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read response body
