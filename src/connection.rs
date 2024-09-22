@@ -99,7 +99,7 @@ pub(crate) async fn send_simple(
     // Send request
     log::trace!("Sending HTTP request");
     let res = client
-        .post(&format!("{}/send_simple", endpoint))
+        .post(format!("{}/send_simple", endpoint))
         .form(&params)
         .header("accept", "application/json")
         .send()
@@ -139,7 +139,7 @@ pub(crate) async fn send_e2e(
     // Send request
     log::trace!("Sending HTTP request");
     let res = client
-        .post(&format!("{}/send_e2e", endpoint))
+        .post(format!("{}/send_e2e", endpoint))
         .form(&params)
         .header("accept", "application/json")
         .send()
