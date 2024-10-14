@@ -104,6 +104,10 @@ pub use crate::receive::IncomingMessage;
 
 const MSGAPI_URL: &str = "https://msgapi.threema.ch";
 
+// Custom header for identifying the type of SDK used
+pub(crate) const SDK_HEADER: &str = "x-threema-gateway-sdk";
+pub(crate) const SDK_USER_AGENT: &str = concat!("threema-gateway-rs/", env!("CARGO_PKG_VERSION"));
+
 #[cfg(test)]
 mod tests {
     #[test]
