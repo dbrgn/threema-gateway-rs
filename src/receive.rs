@@ -82,12 +82,21 @@ impl IncomingMessage {
         let values: HashMap<Cow<str>, Cow<str>> = form_urlencoded::parse(bytes).collect();
 
         // Decode MAC
-        let mac_hex = values
+        let mac_hex_bytes = values
             .get("mac")
-            .ok_or_else(|| ApiError::ParseError("Missing request body field: mac".to_string()))?;
+            .ok_or_else(|| ApiError::ParseError("Missing request body field: mac".to_string()))?
+            .as_bytes();
+
+        if mac_hex_bytes.len() != 32 * 2 {
+            return Err(ApiError::ParseError(format!(
+                "Invalid MAC: Encoded length must be 64 hex characters, but is {} characters",
+                mac_hex_bytes.len(),
+            )));
+        }
+
         let mut mac = [0u8; 32];
         let bytes_decoded = HEXLOWER_PERMISSIVE
-            .decode_mut(mac_hex.as_bytes(), &mut mac)
+            .decode_mut(mac_hex_bytes, &mut mac)
             .map_err(|_| ApiError::ParseError("Invalid hex bytes for MAC".to_string()))?;
         if bytes_decoded != 32 {
             return Err(ApiError::ParseError(format!(
