@@ -82,12 +82,26 @@ impl IncomingMessage {
         let values: HashMap<Cow<str>, Cow<str>> = form_urlencoded::parse(bytes).collect();
 
         // Decode MAC
-        let mac_hex = values
+        let mac_hex_bytes = values
             .get("mac")
-            .ok_or_else(|| ApiError::ParseError("Missing request body field: mac".to_string()))?;
+            .ok_or_else(|| ApiError::ParseError("Missing request body field: mac".to_string()))?
+            .as_bytes();
+
+        match HEXLOWER_PERMISSIVE.decode_len(mac_hex_bytes.len()) {
+            Ok(length) => {
+                if length != 32 {
+                    return Err(ApiError::ParseError(format!(
+                        "Invalid MAC: Length must be 32 bytes, but is {} bytes",
+                        mac_hex_bytes.len(),
+                    )));
+                }
+            }
+            Err(_) => return Err(ApiError::ParseError("Invalid hex bytes for MAC".to_owned())),
+        };
+
         let mut mac = [0u8; 32];
         let bytes_decoded = HEXLOWER_PERMISSIVE
-            .decode_mut(mac_hex.as_bytes(), &mut mac)
+            .decode_mut(mac_hex_bytes, &mut mac)
             .map_err(|_| ApiError::ParseError("Invalid hex bytes for MAC".to_string()))?;
         if bytes_decoded != 32 {
             return Err(ApiError::ParseError(format!(
