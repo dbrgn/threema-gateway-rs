@@ -6,7 +6,7 @@ use crypto_box::KEY_SIZE;
 use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
 
-use crate::{connection::map_response_code, errors::ApiError, RecipientKey};
+use crate::{RecipientKey, connection::map_response_code, errors::ApiError};
 
 /// Different ways to look up a Threema ID in the directory.
 #[derive(Debug, PartialEq)]
@@ -30,10 +30,10 @@ pub enum LookupCriterion {
 impl fmt::Display for LookupCriterion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            LookupCriterion::Phone(ref n) => write!(f, "phone {}", n),
-            LookupCriterion::PhoneHash(ref nh) => write!(f, "phone hash {}", nh),
-            LookupCriterion::Email(ref e) => write!(f, "email {}", e),
-            LookupCriterion::EmailHash(ref eh) => write!(f, "email hash {}", eh),
+            LookupCriterion::Phone(n) => write!(f, "phone {}", n),
+            LookupCriterion::PhoneHash(nh) => write!(f, "phone hash {}", nh),
+            LookupCriterion::Email(e) => write!(f, "email {}", e),
+            LookupCriterion::EmailHash(eh) => write!(f, "email hash {}", eh),
         }
     }
 }
@@ -167,10 +167,10 @@ pub(crate) async fn lookup_id(
 ) -> Result<String, ApiError> {
     // Build URL
     let url_base = match criterion {
-        LookupCriterion::Phone(ref val) => format!("{}/lookup/phone/{}", endpoint, val),
-        LookupCriterion::PhoneHash(ref val) => format!("{}/lookup/phone_hash/{}", endpoint, val),
-        LookupCriterion::Email(ref val) => format!("{}/lookup/email/{}", endpoint, val),
-        LookupCriterion::EmailHash(ref val) => format!("{}/lookup/email_hash/{}", endpoint, val),
+        LookupCriterion::Phone(val) => format!("{}/lookup/phone/{}", endpoint, val),
+        LookupCriterion::PhoneHash(val) => format!("{}/lookup/phone_hash/{}", endpoint, val),
+        LookupCriterion::Email(val) => format!("{}/lookup/email/{}", endpoint, val),
+        LookupCriterion::EmailHash(val) => format!("{}/lookup/email_hash/{}", endpoint, val),
     };
     let url = format!("{}?from={}&secret={}", url_base, our_id, secret);
 

@@ -3,7 +3,7 @@
 use std::{borrow::Cow, collections::HashMap, str::FromStr};
 
 use data_encoding::HEXLOWER;
-use reqwest::{multipart, Client, StatusCode};
+use reqwest::{Client, StatusCode, multipart};
 
 use crate::{errors::ApiError, types::BlobId};
 
@@ -220,7 +220,7 @@ pub(crate) async fn blob_download(
 mod tests {
     use super::*;
 
-    use crate::{errors::ApiError, MSGAPI_URL};
+    use crate::{MSGAPI_URL, errors::ApiError};
 
     #[tokio::test]
     async fn test_simple_max_length_ok() {
