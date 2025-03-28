@@ -17,8 +17,8 @@ use crate::{
     },
     errors::{ApiBuilderError, ApiError, ApiOrCacheError, CryptoError},
     lookup::{
-        lookup_capabilities, lookup_credits, lookup_id, lookup_pubkey, Capabilities,
-        LookupCriterion,
+        lookup_capabilities, lookup_credits, lookup_id, lookup_pubkey, lookup_pubkeys_bulk,
+        Capabilities, LookupCriterion,
     },
     receive::IncomingMessage,
     types::{BlobId, FileMessage, MessageType},
@@ -52,6 +52,21 @@ macro_rules! impl_common_functionality {
                 self.endpoint.borrow(),
                 &self.id,
                 id,
+                &self.secret,
+            )
+            .await
+        }
+
+        /// Lookup public keys in bulk
+        pub async fn lookup_pubkeys_bulk(
+            &self,
+            ids: &[String],
+        ) -> Result<HashMap<String, RecipientKey>, ApiError> {
+            lookup_pubkeys_bulk(
+                &self.client,
+                self.endpoint.borrow(),
+                &self.id,
+                ids,
                 &self.secret,
             )
             .await

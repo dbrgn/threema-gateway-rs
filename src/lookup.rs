@@ -1,10 +1,11 @@
 //! ID and public key lookups.
 
-use std::{fmt, str};
+use std::{collections::HashMap, fmt, str};
 
 use crypto_box::KEY_SIZE;
 use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
+use serde::Deserialize;
 
 use crate::{connection::map_response_code, errors::ApiError, RecipientKey};
 
@@ -155,6 +156,44 @@ pub(crate) async fn lookup_pubkey(
         )));
     }
     Ok(pubkey.into())
+}
+
+#[derive(Deserialize)]
+struct PubKeys {
+    identity: String,
+    #[serde(rename(deserialize = "publicKey"))]
+    public_key: RecipientKey,
+}
+
+/// Fetch the recipient public key for the specified Threema ID.
+pub(crate) async fn lookup_pubkeys_bulk(
+    client: &Client,
+    endpoint: &str,
+    our_id: &str,
+    their_ids: &[String],
+    secret: &str,
+) -> Result<HashMap<String, RecipientKey>, ApiError> {
+    // Build URL
+    let url = format!(
+        "{}/pubkeys/bulk?from={}&secret={}",
+        endpoint, our_id, secret
+    );
+
+    debug!("Looking up public key for {} Threema IDs", their_ids.len());
+
+    // Send request
+    let mut json = HashMap::new();
+    json.insert("identities", their_ids.to_vec());
+    let res = client.post(&url).json(&json).send().await?;
+    map_response_code(res.status(), None)?;
+
+    // Read response body
+    let pub_keys: Vec<PubKeys> = res.json().await?;
+
+    Ok(pub_keys
+        .into_iter()
+        .map(|k| (k.identity, k.public_key))
+        .collect())
 }
 
 /// Look up an ID in the Threema directory.
