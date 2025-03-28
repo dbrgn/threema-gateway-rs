@@ -16,7 +16,7 @@ include = [
     "LICENSE-MIT",
     "LICENSE-APACHE",
 ]
-edition = "2021"
+edition = "2024"
 
 [features]
 default = ["receive"]
