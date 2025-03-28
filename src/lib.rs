@@ -92,8 +92,8 @@ pub use crate::{
     cache::PublicKeyCache,
     connection::Recipient,
     crypto::{
-        decrypt_file_data, encrypt, encrypt_file_data, encrypt_raw, EncryptedFileData,
-        EncryptedMessage, FileData, Key, RecipientKey,
+        EncryptedFileData, EncryptedMessage, FileData, Key, RecipientKey, decrypt_file_data,
+        encrypt, encrypt_file_data, encrypt_raw,
     },
     lookup::{Capabilities, LookupCriterion},
     types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType},

@@ -3,11 +3,11 @@
 use std::{convert::Into, fmt::Debug, io::Write, iter::repeat, str::FromStr, sync::OnceLock};
 
 use byteorder::{LittleEndian, WriteBytesExt};
-use crypto_box::{aead::Aead, SalsaBox};
+use crypto_box::{SalsaBox, aead::Aead};
 use crypto_secretbox::{
+    AeadCore, Key as SecretboxKey, KeyInit, Nonce, XSalsa20Poly1305,
     aead::{OsRng, Payload},
     cipher::generic_array::GenericArray,
-    AeadCore, Key as SecretboxKey, KeyInit, Nonce, XSalsa20Poly1305,
 };
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use rand::Rng;
@@ -16,9 +16,9 @@ use serde_json as json;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
+    PublicKey, SecretKey,
     errors::{self, CryptoError},
     types::{BlobId, FileMessage, MessageType},
-    PublicKey, SecretKey,
 };
 
 pub const NONCE_SIZE: usize = 24;
@@ -363,9 +363,11 @@ mod test {
 
         // Validate and remove padding
         let padding_bytes = decrypted[decrypted.len() - 1] as usize;
-        assert!(decrypted[decrypted.len() - padding_bytes..decrypted.len()]
-            .iter()
-            .all(|b| *b == padding_bytes as u8));
+        assert!(
+            decrypted[decrypted.len() - padding_bytes..decrypted.len()]
+                .iter()
+                .all(|b| *b == padding_bytes as u8)
+        );
         let data: &[u8] = &decrypted[0..decrypted.len() - padding_bytes];
 
         // Validate message type

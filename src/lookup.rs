@@ -6,7 +6,7 @@ use crypto_box::KEY_SIZE;
 use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
 
-use crate::{connection::map_response_code, errors::ApiError, RecipientKey};
+use crate::{RecipientKey, connection::map_response_code, errors::ApiError};
 
 /// Different ways to look up a Threema ID in the directory.
 #[derive(Debug, PartialEq)]

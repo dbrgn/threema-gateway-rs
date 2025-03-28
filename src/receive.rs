@@ -2,8 +2,8 @@
 
 use std::{borrow::Cow, collections::HashMap};
 
-use crypto_box::{aead::Aead, PublicKey, SalsaBox, SecretKey};
-use crypto_secretbox::{aead::Payload, Nonce};
+use crypto_box::{PublicKey, SalsaBox, SecretKey, aead::Aead};
+use crypto_secretbox::{Nonce, aead::Payload};
 use data_encoding::HEXLOWER_PERMISSIVE;
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Deserializer};
