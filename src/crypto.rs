@@ -95,8 +95,8 @@ fn get_thumb_nonce() -> &'static Nonce {
 
 /// Return a random number in the range `[1, 255]`.
 fn random_padding_amount() -> u8 {
-    let mut rng = rand::thread_rng();
-    rng.gen_range(1..=255)
+    let mut rng = rand::rng();
+    rng.random_range(1..=255)
 }
 
 /// An encrypted message. Contains both the ciphertext and the nonce.
