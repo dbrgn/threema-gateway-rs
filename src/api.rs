@@ -11,14 +11,17 @@ use reqwest::Client;
 
 use crate::{
     cache::PublicKeyCache,
-    connection::{blob_download, blob_upload, send_e2e, send_simple, Recipient},
+    connection::{
+        blob_download, blob_upload, send_e2e, send_e2e_bulk, send_simple, E2EBulkResponse,
+        E2EMessage, Recipient,
+    },
     crypto::{
         encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw, EncryptedMessage, RecipientKey,
     },
     errors::{ApiBuilderError, ApiError, ApiOrCacheError, CryptoError},
     lookup::{
-        lookup_capabilities, lookup_credits, lookup_id, lookup_pubkey, Capabilities,
-        LookupCriterion,
+        lookup_capabilities, lookup_credits, lookup_id, lookup_ids_bulk, lookup_pubkey,
+        lookup_pubkeys_bulk, BulkId, Capabilities, LookupCriterion,
     },
     receive::IncomingMessage,
     types::{BlobId, FileMessage, MessageType},
@@ -52,6 +55,21 @@ macro_rules! impl_common_functionality {
                 self.endpoint.borrow(),
                 &self.id,
                 id,
+                &self.secret,
+            )
+            .await
+        }
+
+        /// Lookup public keys in bulk
+        pub async fn lookup_pubkeys_bulk(
+            &self,
+            ids: &[String],
+        ) -> Result<HashMap<String, RecipientKey>, ApiError> {
+            lookup_pubkeys_bulk(
+                &self.client,
+                self.endpoint.borrow(),
+                &self.id,
+                ids,
                 &self.secret,
             )
             .await
@@ -95,6 +113,21 @@ macro_rules! impl_common_functionality {
                 &self.client,
                 self.endpoint.borrow(),
                 criterion,
+                &self.id,
+                &self.secret,
+            )
+            .await
+        }
+
+        /// Look up ids in bulk
+        pub async fn lookup_ids_bulk(
+            &self,
+            criteria: &[LookupCriterion],
+        ) -> Result<Vec<BulkId>, ApiError> {
+            lookup_ids_bulk(
+                &self.client,
+                self.endpoint.borrow(),
+                criteria,
                 &self.id,
                 &self.secret,
             )
@@ -304,6 +337,23 @@ impl E2eApi {
             &message.ciphertext,
             delivery_receipts,
             None,
+        )
+        .await
+    }
+
+    /// Cost: 1 credit.
+    pub async fn send_bulk(
+        &self,
+        same_message_id: bool,
+        messages: &[E2EMessage],
+    ) -> Result<Vec<E2EBulkResponse>, ApiError> {
+        send_e2e_bulk(
+            &self.client,
+            self.endpoint.borrow(),
+            &self.id,
+            &self.secret,
+            same_message_id,
+            messages,
         )
         .await
     }

@@ -11,7 +11,7 @@ use crypto_secretbox::{
 };
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use rand::Rng;
-use serde::{Serialize, Serializer};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json as json;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -108,6 +108,16 @@ pub struct EncryptedMessage {
 /// The public key of a recipient.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecipientKey(pub PublicKey);
+
+impl<'de> Deserialize<'de> for RecipientKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        FromStr::from_str(&s).map_err(de::Error::custom)
+    }
+}
 
 impl From<PublicKey> for RecipientKey {
     /// Create a `RecipientKey` from a `PublicKey` instance.
