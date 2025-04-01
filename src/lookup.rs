@@ -163,14 +163,14 @@ pub(crate) async fn lookup_pubkey(
 ) -> Result<RecipientKey, ApiError> {
     // Build URL
     let url = format!(
-        "{}/pubkeys/{}?from={}&secret={}",
-        endpoint, their_id, our_id, secret
+        "{}/pubkeys/{}",
+        endpoint, their_id
     );
 
     debug!("Looking up public key for {}", their_id);
 
     // Send request
-    let res = client.get(&url).send().await?;
+    let res = client.get(&url).query(&[("from", our_id),("secret", secret)]).send().await?;
     map_response_code(res.status(), None)?;
 
     // Read response body
@@ -210,8 +210,8 @@ pub(crate) async fn lookup_pubkeys_bulk(
 ) -> Result<HashMap<String, RecipientKey>, ApiError> {
     // Build URL
     let url = format!(
-        "{}/pubkeys/bulk?from={}&secret={}",
-        endpoint, our_id, secret
+        "{}/pubkeys/bulk",
+        endpoint
     );
 
     debug!("Looking up public key for {} Threema IDs", their_ids.len());
@@ -219,7 +219,7 @@ pub(crate) async fn lookup_pubkeys_bulk(
     // Send request
     let mut json = HashMap::new();
     json.insert("identities", their_ids.to_vec());
-    let res = client.post(&url).json(&json).send().await?;
+    let res = client.post(&url).query(&[("from", our_id),("secret", secret)]).json(&json).send().await?;
     map_response_code(res.status(), None)?;
 
     // Read response body
@@ -240,18 +240,17 @@ pub(crate) async fn lookup_id(
     secret: &str,
 ) -> Result<String, ApiError> {
     // Build URL
-    let url_base = match criterion {
+    let url= match criterion {
         LookupCriterion::Phone(ref val) => format!("{}/lookup/phone/{}", endpoint, val),
         LookupCriterion::PhoneHash(ref val) => format!("{}/lookup/phone_hash/{}", endpoint, val),
         LookupCriterion::Email(ref val) => format!("{}/lookup/email/{}", endpoint, val),
         LookupCriterion::EmailHash(ref val) => format!("{}/lookup/email_hash/{}", endpoint, val),
     };
-    let url = format!("{}?from={}&secret={}", url_base, our_id, secret);
 
     debug!("Looking up id key for {}", criterion);
 
     // Send request
-    let res = client.get(&url).send().await?;
+    let res = client.get(&url).query(&[("from", our_id),("secret", secret)]).send().await?;
     map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read and return response body
@@ -298,7 +297,7 @@ pub(crate) async fn lookup_ids_bulk(
             return Err(ApiError::MessageTooLong);
         }
     }
-    let url = format!("{}/lookup/bulk?from={}&secret={}", endpoint, our_id, secret);
+    let url = format!("{}/lookup/bulk", endpoint);
 
     debug!(
         "Looking up id key for {} phones and {} emails",
@@ -307,7 +306,7 @@ pub(crate) async fn lookup_ids_bulk(
     );
 
     // Send request
-    let res = client.post(&url).json(&ids).send().await?;
+    let res = client.post(&url).query(&[("from", our_id),("secret", secret)]).json(&ids).send().await?;
     map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read and return response body
@@ -321,12 +320,12 @@ pub(crate) async fn lookup_credits(
     our_id: &str,
     secret: &str,
 ) -> Result<i64, ApiError> {
-    let url = format!("{}/credits?from={}&secret={}", endpoint, our_id, secret);
+    let url = format!("{}/credits", endpoint);
 
     debug!("Looking up remaining credits");
 
     // Send request
-    let res = client.get(&url).send().await?;
+    let res = client.get(&url).query(&[("from", our_id),("secret", secret)]).send().await?;
     map_response_code(res.status(), None)?;
 
     // Read, parse and return response body
@@ -349,14 +348,14 @@ pub(crate) async fn lookup_capabilities(
 ) -> Result<Capabilities, ApiError> {
     // Build URL
     let url = format!(
-        "{}/capabilities/{}?from={}&secret={}",
-        endpoint, their_id, our_id, secret
+        "{}/capabilities/{}",
+        endpoint, their_id
     );
 
     debug!("Looking up capabilities for {}", their_id);
 
     // Send request
-    let res = client.get(&url).send().await?;
+    let res = client.get(&url).query(&[("from", our_id),("secret", secret)]).send().await?;
     map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read response body

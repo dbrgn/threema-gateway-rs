@@ -227,11 +227,8 @@ pub(crate) async fn send_e2e_bulk(
     // Send request
     log::trace!("Sending HTTP request");
     let res = client
-        .post(format!(
-            "{}/send_e2e_bulk?from={}&secret={}",
-            endpoint, from, secret
-        ))
-        // .form(&params)
+        .post(format!("{}/send_e2e_bulk", endpoint))
+        .query(&params)
         .json(&messages)
         .header("accept", "application/json")
         .send()
