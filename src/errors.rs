@@ -52,6 +52,10 @@ pub enum ApiError {
     #[error("request error: {0}")]
     RequestError(#[source] ReqwestError),
 
+    /// Error when building request URL (via reqwest)
+    #[error("request error: {0}")]
+    RequestParseError(#[from] url::ParseError),
+
     /// Error when reading response
     #[error("I/O error: {0}")]
     IoError(#[from] IoError),

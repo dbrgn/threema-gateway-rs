@@ -161,16 +161,12 @@ pub(crate) async fn lookup_pubkey(
     their_id: &str,
     secret: &str,
 ) -> Result<RecipientKey, ApiError> {
-    // Build URL
-    let url = format!(
-        "{}/pubkeys/{}",
-        endpoint, their_id
-    );
+    let url = reqwest::Url::parse(endpoint)?.join("pubkeys/")?.join(their_id)?;
 
     debug!("Looking up public key for {}", their_id);
 
     // Send request
-    let res = client.get(&url).query(&[("from", our_id),("secret", secret)]).send().await?;
+    let res = client.get(url).query(&[("from", our_id),("secret", secret)]).send().await?;
     map_response_code(res.status(), None)?;
 
     // Read response body
@@ -241,10 +237,10 @@ pub(crate) async fn lookup_id(
 ) -> Result<String, ApiError> {
     // Build URL
     let url = match criterion {
-        LookupCriterion::Phone(ref val) => format!("{}/lookup/phone/{}", endpoint, val),
-        LookupCriterion::PhoneHash(ref val) => format!("{}/lookup/phone_hash/{}", endpoint, val),
-        LookupCriterion::Email(ref val) => format!("{}/lookup/email/{}", endpoint, val),
-        LookupCriterion::EmailHash(ref val) => format!("{}/lookup/email_hash/{}", endpoint, val),
+        LookupCriterion::Phone(val) => format!("{}/lookup/phone/{}", endpoint, val),
+        LookupCriterion::PhoneHash(val) => format!("{}/lookup/phone_hash/{}", endpoint, val),
+        LookupCriterion::Email(val) => format!("{}/lookup/email/{}", endpoint, val),
+        LookupCriterion::EmailHash(val) => format!("{}/lookup/email_hash/{}", endpoint, val),
     };
 
     debug!("Looking up id key for {}", criterion);
@@ -289,9 +285,9 @@ pub(crate) async fn lookup_ids_bulk(
     for criterion in criteria {
         match criterion {
             LookupCriterion::Phone(_) => ids.phone_hashes.push(criterion.hash()?),
-            LookupCriterion::PhoneHash(ref val) => ids.phone_hashes.push(val.to_owned()),
+            LookupCriterion::PhoneHash(val) => ids.phone_hashes.push(val.to_owned()),
             LookupCriterion::Email(_) => ids.email_hashes.push(criterion.hash()?),
-            LookupCriterion::EmailHash(ref val) => ids.email_hashes.push(val.to_owned()),
+            LookupCriterion::EmailHash(val) => ids.email_hashes.push(val.to_owned()),
         }
         if ids.phone_hashes.len() + ids.email_hashes.len() > 1000 {
             return Err(ApiError::MessageTooLong);
@@ -346,16 +342,12 @@ pub(crate) async fn lookup_capabilities(
     their_id: &str,
     secret: &str,
 ) -> Result<Capabilities, ApiError> {
-    // Build URL
-    let url = format!(
-        "{}/capabilities/{}",
-        endpoint, their_id
-    );
+    let url = reqwest::Url::parse(endpoint)?.join("capabilities/")?.join(their_id)?;
 
     debug!("Looking up capabilities for {}", their_id);
 
     // Send request
-    let res = client.get(&url).query(&[("from", our_id),("secret", secret)]).send().await?;
+    let res = client.get(url).query(&[("from", our_id),("secret", secret)]).send().await?;
     map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read response body

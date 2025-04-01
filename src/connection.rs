@@ -3,10 +3,10 @@
 use std::{borrow::Cow, collections::HashMap, str::FromStr};
 
 use data_encoding::{BASE64, HEXLOWER};
-use reqwest::{multipart, Client, StatusCode};
+use reqwest::{Client, StatusCode, multipart};
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::ApiError, types::BlobId, EncryptedMessage};
+use crate::{EncryptedMessage, errors::ApiError, types::BlobId};
 
 /// Map HTTP response status code to an ApiError if it isn't "200".
 ///
@@ -251,9 +251,10 @@ pub(crate) async fn blob_upload(
     additional_params: Option<HashMap<String, String>>,
 ) -> Result<BlobId, ApiError> {
     // Build URL
-    let mut url = format!("{}/upload_blob?from={}&secret={}", endpoint, from, secret);
+    let url = format!("{}/upload_blob", endpoint);
+    let mut params = vec![("from", from), ("secret", secret)];
     if persist {
-        url.push_str("&persist=1");
+        params.push(("persist", "1"));
     }
 
     // Build multipart/form-data request body
@@ -273,6 +274,7 @@ pub(crate) async fn blob_upload(
     // Send request
     let res = client
         .post(&url)
+        .query(params.as_slice())
         .multipart(form)
         .header("accept", "text/plain")
         .send()
@@ -291,14 +293,16 @@ pub(crate) async fn blob_download(
     secret: &str,
     blob_id: &BlobId,
 ) -> Result<Vec<u8>, ApiError> {
-    // Build URL
-    let url = format!(
-        "{}/blobs/{}?from={}&secret={}",
-        endpoint, blob_id, from, secret
-    );
+    let url = reqwest::Url::parse(endpoint)?
+        .join("blobs/")?
+        .join(&blob_id.to_string())?;
 
     // Send request
-    let res = client.get(&url).send().await?;
+    let res = client
+        .get(url)
+        .query(&[("from", from), ("secret", secret)])
+        .send()
+        .await?;
     map_response_code(res.status(), Some(ApiError::BadBlob))?;
 
     // Read response bytes
