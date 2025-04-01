@@ -10,13 +10,14 @@ use data_encoding::HEXLOWER_PERMISSIVE;
 use reqwest::Client;
 
 use crate::{
+    MSGAPI_URL,
     cache::PublicKeyCache,
     connection::{
         blob_download, blob_upload, send_e2e, send_e2e_bulk, send_simple, E2EBulkResponse,
         E2EMessage, Recipient,
     },
     crypto::{
-        encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw, EncryptedMessage, RecipientKey,
+        EncryptedMessage, RecipientKey, encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw,
     },
     errors::{ApiBuilderError, ApiError, ApiOrCacheError, CryptoError},
     lookup::{
@@ -25,7 +26,6 @@ use crate::{
     },
     receive::IncomingMessage,
     types::{BlobId, FileMessage, MessageType},
-    MSGAPI_URL,
 };
 
 fn make_reqwest_client() -> Client {

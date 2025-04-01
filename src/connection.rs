@@ -309,7 +309,7 @@ pub(crate) async fn blob_download(
 mod tests {
     use super::*;
 
-    use crate::{errors::ApiError, MSGAPI_URL};
+    use crate::{MSGAPI_URL, errors::ApiError};
 
     #[tokio::test]
     async fn test_simple_max_length_ok() {

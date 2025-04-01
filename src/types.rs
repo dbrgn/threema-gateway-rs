@@ -4,8 +4,8 @@ use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use serde::{Serialize, Serializer};
 
 use crate::{
-    errors::{ApiError, FileMessageBuilderError},
     Key,
+    errors::{ApiError, FileMessageBuilderError},
 };
 
 /// A message type.

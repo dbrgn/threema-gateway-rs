@@ -9,7 +9,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 
-use crate::{connection::map_response_code, errors::ApiError, RecipientKey};
+use crate::{RecipientKey, connection::map_response_code, errors::ApiError};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -66,10 +66,10 @@ impl LookupCriterion {
 impl fmt::Display for LookupCriterion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            LookupCriterion::Phone(ref n) => write!(f, "phone {}", n),
-            LookupCriterion::PhoneHash(ref nh) => write!(f, "phone hash {}", nh),
-            LookupCriterion::Email(ref e) => write!(f, "email {}", e),
-            LookupCriterion::EmailHash(ref eh) => write!(f, "email hash {}", eh),
+            LookupCriterion::Phone(n) => write!(f, "phone {}", n),
+            LookupCriterion::PhoneHash(nh) => write!(f, "phone hash {}", nh),
+            LookupCriterion::Email(e) => write!(f, "email {}", e),
+            LookupCriterion::EmailHash(eh) => write!(f, "email hash {}", eh),
         }
     }
 }
@@ -240,7 +240,7 @@ pub(crate) async fn lookup_id(
     secret: &str,
 ) -> Result<String, ApiError> {
     // Build URL
-    let url= match criterion {
+    let url = match criterion {
         LookupCriterion::Phone(ref val) => format!("{}/lookup/phone/{}", endpoint, val),
         LookupCriterion::PhoneHash(ref val) => format!("{}/lookup/phone_hash/{}", endpoint, val),
         LookupCriterion::Email(ref val) => format!("{}/lookup/email/{}", endpoint, val),
