@@ -33,6 +33,12 @@ pub enum LookupCriterion {
 }
 
 impl LookupCriterion {
+
+    /// Return the hashed version of the lookup criterion as `String`.
+    ///
+    /// If the lookup criterion already contains a hash, return a copy
+    /// of it. Otherwise, apply HMAC-SHA256 and return the resulting
+    /// hash as hex string.
     fn hash(&self) -> Result<String, ApiError> {
         let email_key = b"\x30\xa5\x50\x0f\xed\x97\x01\xfa\x6d\xef\xdb\x61\x08\x41\x90\x0f\xeb\xb8\xe4\x30\x88\x1f\x7a\xd8\x16\x82\x62\x64\xec\x09\xba\xd7";
         let phone_key = 
@@ -196,7 +202,7 @@ struct IdentityPublicKey {
     public_key: RecipientKey,
 }
 
-/// Fetch the recipient public key for the specified Threema ID.
+/// Fetch the recipient public key for multiple Threema IDs.
 pub(crate) async fn lookup_pubkeys_bulk(
     client: &Client,
     endpoint: &str,
