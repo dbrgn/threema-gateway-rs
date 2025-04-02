@@ -190,7 +190,7 @@ pub(crate) async fn lookup_pubkey(
 }
 
 #[derive(Deserialize)]
-struct PubKeys {
+struct IdentityPublicKey {
     identity: String,
     #[serde(rename(deserialize = "publicKey"))]
     public_key: RecipientKey,
@@ -219,7 +219,7 @@ pub(crate) async fn lookup_pubkeys_bulk(
     map_response_code(res.status(), None)?;
 
     // Read response body
-    let pub_keys: Vec<PubKeys> = res.json().await?;
+    let pub_keys: Vec<IdentityPublicKey> = res.json().await?;
 
     Ok(pub_keys
         .into_iter()
