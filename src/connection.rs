@@ -171,7 +171,7 @@ pub struct E2eMessage {
 }
 
 #[derive(Serialize)]
-#[serde(rename = "camelCase")]
+#[serde(rename_all = "camelCase")]
 struct JsonE2eMessage {
     to: String,
     nonce: String,
@@ -185,7 +185,7 @@ struct JsonE2eMessage {
 
 /// Response to an E2E bulk message sending request.
 #[derive(Deserialize)]
-#[serde(rename = "camelCase")]
+#[serde(rename_all = "camelCase")]
 pub struct BulkE2eResponse {
     pub message_id: Option<String>,
     pub error_code: Option<i32>,
