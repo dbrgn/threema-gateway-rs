@@ -1,6 +1,6 @@
 //! Send and receive messages.
 
-use std::{borrow::Cow, collections::HashMap, str::FromStr};
+use std::{borrow::Cow, collections::HashMap, ops::Not, str::FromStr};
 
 use data_encoding::{BASE64, HEXLOWER};
 use reqwest::{Client, StatusCode, multipart};
@@ -216,12 +216,8 @@ pub(crate) async fn send_e2e_bulk(
     let messages: Vec<JsonE2eMessage> = messages
         .iter()
         .map(|m| {
-            let no_delivery_receipts = if m.delivery_receipts {
-                None
-            } else {
-                Some(true)
-            };
-            let no_push = if m.push { None } else { Some(true) };
+            let no_delivery_receipts = m.delivery_receipts.not().then_some(true);
+            let no_push = m.push.not().then_some(true);
             JsonE2eMessage {
                 to: m.to.to_string(),
                 nonce: BASE64.encode(&m.msg.nonce),
