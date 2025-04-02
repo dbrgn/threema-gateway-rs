@@ -34,6 +34,8 @@ pub(crate) fn map_response_code(
         StatusCode::NOT_FOUND => Err(ApiError::IdNotFound),
         // 413
         StatusCode::PAYLOAD_TOO_LARGE => Err(ApiError::MessageTooLong),
+        // 429
+        StatusCode::TOO_MANY_REQUESTS => Err(ApiError::TooManyRequests),
         // 500
         StatusCode::INTERNAL_SERVER_ERROR => Err(ApiError::ServerError),
         e => Err(ApiError::Other(format!("Bad response status code: {}", e))),
@@ -189,7 +191,7 @@ pub struct BulkE2eResponse {
     pub error_code: Option<i32>,
 }
 
-/// Send an encrypted E2E message to the specified recipient.
+/// Send multiple encrypted E2E messages.
 pub(crate) async fn send_e2e_bulk(
     client: &Client,
     endpoint: &str,
@@ -205,11 +207,11 @@ pub(crate) async fn send_e2e_bulk(
     );
 
     // Prepare POST data
-    let mut params: HashMap<String, String> = HashMap::new();
-    params.insert("from".into(), from.into());
-    params.insert("secret".into(), secret.into());
+    let mut params: HashMap<&str, String> = HashMap::new();
+    params.insert("from", from.into());
+    params.insert("secret", secret.into());
     if same_message_id {
-        params.insert("sameMessageId".into(), "1".to_string());
+        params.insert("sameMessageId", "1".to_string());
     }
     let messages: Vec<JsonE2eMessage> = messages
         .iter()
@@ -240,7 +242,7 @@ pub(crate) async fn send_e2e_bulk(
         .send()
         .await?;
     log::trace!("Received HTTP response");
-    map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient))?;
+    map_response_code(res.status(), None)?;
 
     // Read and return response body
     Ok(res.json().await?)
