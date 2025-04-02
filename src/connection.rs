@@ -54,14 +54,17 @@ pub enum Recipient<'a> {
 }
 
 impl<'a> Recipient<'a> {
+    /// construct a Recipient identity variant
     pub fn new_id<T: Into<Cow<'a, str>>>(id: T) -> Self {
         Recipient::Id(id.into())
     }
 
+    /// construct a Phone variant
     pub fn new_phone<T: Into<Cow<'a, str>>>(phone: T) -> Self {
         Recipient::Phone(phone.into())
     }
 
+    /// Construct a Email variant
     pub fn new_email<T: Into<Cow<'a, str>>>(email: T) -> Self {
         Recipient::Email(email.into())
     }

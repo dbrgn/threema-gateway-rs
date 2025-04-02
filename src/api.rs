@@ -546,10 +546,15 @@ impl E2eApi {
 /// ```
 #[derive(Debug)]
 pub struct ApiBuilder {
+    /// Threema ID on the msgapi
     pub id: String,
+    /// Secret given by msgapi
     pub secret: String,
+    /// The private key you used to create the Threema ID
     pub private_key: Option<SecretKey>,
+    /// URL to the msgapi endpoint
     pub endpoint: Cow<'static, str>,
+    /// A `reqwest::Client` instance
     pub client: Option<Client>,
 }
 

@@ -11,7 +11,7 @@ use crypto_secretbox::{
 };
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use rand::Rng;
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use serde_json as json;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
@@ -100,6 +100,7 @@ fn random_padding_amount() -> u8 {
 }
 
 /// An encrypted message. Contains both the ciphertext and the nonce.
+#[allow(missing_docs)]
 pub struct EncryptedMessage {
     pub ciphertext: Vec<u8>,
     pub nonce: Nonce,
@@ -241,7 +242,9 @@ pub fn encrypt_file_msg(
 /// returned by [`decrypt_file_data`].
 #[derive(Clone)]
 pub struct FileData {
+    /// the unencrypted data of the file
     pub file: Vec<u8>,
+    /// optional unencrypted thumbnail, for e.g. a photo or video
     pub thumbnail: Option<Vec<u8>>,
 }
 
@@ -251,7 +254,9 @@ pub struct FileData {
 /// returned by [`encrypt_file_data`].
 #[derive(Clone)]
 pub struct EncryptedFileData {
+    /// the encrypted data of the file
     pub file: Vec<u8>,
+    /// optional encrypted thumbnail, for e.g. a photo or video
     pub thumbnail: Option<Vec<u8>>,
 }
 
