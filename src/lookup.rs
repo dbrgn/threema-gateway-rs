@@ -47,7 +47,7 @@ impl LookupCriterion {
         let s = match self {
             Self::Phone(val) => {
                 let mut hmac_state = HmacSha256::new_from_slice(phone_key)
-                    .map_err(|_| ApiError::Other("Invalid api_secret".to_string()))?;
+                    .expect("Failed to initialize HmacSha256 with phone key");
                 if !val.chars().all(|c | c.is_ascii_digit()) {
                     return Err(ApiError::Other("Bad phone number format".to_string()))
                 }
@@ -58,7 +58,7 @@ impl LookupCriterion {
             Self::PhoneHash(val) => val.to_owned(),
             Self::Email(val) => {
                 let mut hmac_state = HmacSha256::new_from_slice(email_key)
-                    .map_err(|_| ApiError::Other("Invalid api_secret".to_string()))?;
+                    .expect("Failed to initialize HmacSha256 with email key");
                 hmac_state.update(val.to_lowercase().trim().as_bytes());
                 let hash = hmac_state.finalize().into_bytes();
                 HEXLOWER.encode(&hash)
