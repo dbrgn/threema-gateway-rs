@@ -13,7 +13,7 @@ use crate::{
     MSGAPI_URL,
     cache::PublicKeyCache,
     connection::{
-        BulkE2eResponse, E2eMessage, Recipient, blob_download, blob_upload, send_e2e,
+        BulkE2eMessage, BulkE2eResponse, Recipient, blob_download, blob_upload, send_e2e,
         send_e2e_bulk, send_simple,
     },
     crypto::{
@@ -353,7 +353,7 @@ impl E2eApi {
     pub async fn send_bulk(
         &self,
         same_message_id: bool,
-        messages: &[E2eMessage],
+        messages: &[BulkE2eMessage],
     ) -> Result<Vec<BulkE2eResponse>, ApiError> {
         send_e2e_bulk(
             &self.client,

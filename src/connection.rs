@@ -157,11 +157,11 @@ pub(crate) async fn send_e2e(
 /// An end-to-end encrypted message for a specific recipient.
 ///
 /// Used in the context of bulk sending.
-pub struct E2eMessage {
+pub struct BulkE2eMessage {
     /// Recipient Threema ID
     pub to: String,
     /// Encrypted message to send to the recipient above
-    pub msg: EncryptedMessage,
+    pub message: EncryptedMessage,
     /// When set to `false`, the recipient is requested not to send delivery receipts for this message.
     pub delivery_receipts: bool,
     /// When set to `false`, no push notification is triggered towards recipient.
@@ -198,7 +198,7 @@ pub(crate) async fn send_e2e_bulk(
     from: &str,
     secret: &str,
     same_message_id: bool,
-    messages: &[E2eMessage],
+    messages: &[BulkE2eMessage],
 ) -> Result<Vec<BulkE2eResponse>, ApiError> {
     log::debug!(
         "Sending e2e encrypted messages from {} to {} recipients",
@@ -220,8 +220,8 @@ pub(crate) async fn send_e2e_bulk(
             let no_push = m.push.not().then_some(true);
             JsonE2eMessage {
                 to: m.to.to_string(),
-                nonce: BASE64.encode(&m.msg.nonce),
-                r#box: BASE64.encode(&m.msg.ciphertext),
+                nonce: BASE64.encode(&m.message.nonce),
+                r#box: BASE64.encode(&m.message.ciphertext),
                 no_delivery_receipts,
                 no_push,
                 group: Some(m.group),
