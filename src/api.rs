@@ -13,16 +13,16 @@ use crate::{
     MSGAPI_URL,
     cache::PublicKeyCache,
     connection::{
-        blob_download, blob_upload, send_e2e, send_e2e_bulk, send_simple, E2EBulkResponse,
-        E2EMessage, Recipient,
+        E2EBulkResponse, E2EMessage, Recipient, blob_download, blob_upload, send_e2e,
+        send_e2e_bulk, send_simple,
     },
     crypto::{
         EncryptedMessage, RecipientKey, encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw,
     },
     errors::{ApiBuilderError, ApiError, ApiOrCacheError, CryptoError},
     lookup::{
-        lookup_capabilities, lookup_credits, lookup_id, lookup_ids_bulk, lookup_pubkey,
-        lookup_pubkeys_bulk, BulkId, Capabilities, LookupCriterion,
+        BulkId, Capabilities, LookupCriterion, lookup_capabilities, lookup_credits, lookup_id,
+        lookup_ids_bulk, lookup_pubkey, lookup_pubkeys_bulk,
     },
     receive::IncomingMessage,
     types::{BlobId, FileMessage, MessageType},
@@ -30,7 +30,7 @@ use crate::{
 
 fn make_reqwest_client() -> Client {
     Client::builder()
-        .timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(120))
         .build()
         .expect("Could not build client")
 }
