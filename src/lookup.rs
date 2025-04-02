@@ -260,22 +260,19 @@ pub(crate) async fn lookup_id(
 }
 
 #[derive(Serialize, Default)]
-struct LookupId {
-    #[serde(rename(serialize = "phoneHashes"))]
+#[serde(rename_all = "camelCase")]
+struct BulkIdLookupRequest {
     phone_hashes: Vec<String>,
-    #[serde(rename(serialize = "emailHashes"))]
     email_hashes: Vec<String>,
 }
 
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BulkId {
     pub identity: String,
-    #[serde(rename(deserialize = "publicKey"))]
     pub public_key: RecipientKey,
-    #[serde(rename(deserialize = "phoneHash"))]
     pub phone_hash: Option<String>,
-    #[serde(rename(deserialize = "emailHash"))]
     pub email_hash: Option<String>,
 }
 
@@ -287,7 +284,7 @@ pub(crate) async fn lookup_ids_bulk(
     our_id: &str,
     secret: &str,
 ) -> Result<Vec<BulkId>, ApiError> {
-    let mut ids = LookupId::default();
+    let mut ids = BulkIdLookupRequest::default();
     for criterion in criteria {
         match criterion {
             LookupCriterion::Phone(_) => ids.phone_hashes.push(criterion.hash()?),
