@@ -303,7 +303,7 @@ pub(crate) async fn lookup_ids_bulk(
     let url = format!("{}/lookup/bulk", endpoint);
 
     debug!(
-        "Looking up id key for {} phones and {} emails",
+        "Looking up public keys for {} phone hashes and {} email hashes",
         ids.phone_hashes.len(),
         ids.email_hashes.len()
     );

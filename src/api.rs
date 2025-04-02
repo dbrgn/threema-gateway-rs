@@ -13,7 +13,7 @@ use crate::{
     MSGAPI_URL,
     cache::PublicKeyCache,
     connection::{
-        E2EBulkResponse, E2EMessage, Recipient, blob_download, blob_upload, send_e2e,
+        E2EBulkResponse, E2eMessage, Recipient, blob_download, blob_upload, send_e2e,
         send_e2e_bulk, send_simple,
     },
     crypto::{
@@ -119,7 +119,11 @@ macro_rules! impl_common_functionality {
             .await
         }
 
-        /// Look up ids in bulk
+        /// Look up multiple IDs in the Threema directory.
+        ///
+        /// Note: The use of this endpoint is restricted and requires manual
+        /// approval. Please contact the Threema support team directly if you
+        /// would like to use this feature.
         pub async fn lookup_ids_bulk(
             &self,
             criteria: &[LookupCriterion],
@@ -341,11 +345,15 @@ impl E2eApi {
         .await
     }
 
-    /// Cost: 1 credit.
+    /// Send multiple encrypted E2E messages.
+    ///
+    /// If `same_message_id` is set to `true`, then all messages sent will share the same message ID. This is a feature that is only relevant for group messaging. If unsure, set this to `false`.
+    ///
+    /// Cost: 1 credit per message.
     pub async fn send_bulk(
         &self,
         same_message_id: bool,
-        messages: &[E2EMessage],
+        messages: &[E2eMessage],
     ) -> Result<Vec<E2EBulkResponse>, ApiError> {
         send_e2e_bulk(
             &self.client,
