@@ -218,13 +218,14 @@ pub(crate) async fn send_e2e_bulk(
         .map(|m| {
             let no_delivery_receipts = m.delivery_receipts.not().then_some(true);
             let no_push = m.push.not().then_some(true);
+            let group = m.group.not().then_some(true);
             JsonE2eMessage {
-                to: m.to.to_string(),
+                to: m.to.clone(),
                 nonce: BASE64.encode(&m.message.nonce),
                 r#box: BASE64.encode(&m.message.ciphertext),
                 no_delivery_receipts,
                 no_push,
-                group: Some(m.group),
+                group,
             }
         })
         .collect();
