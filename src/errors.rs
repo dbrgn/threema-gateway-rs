@@ -48,6 +48,10 @@ pub enum ApiError {
     #[error("invalid MAC")]
     InvalidMac,
 
+    /// Too many requests, rate limit surpassed
+    #[error("too many requests")]
+    TooManyRequests,
+
     /// Error when sending request (via reqwest)
     #[error("request error: {0}")]
     RequestError(#[source] ReqwestError),

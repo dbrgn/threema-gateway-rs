@@ -169,25 +169,23 @@ pub struct E2eMessage {
 }
 
 #[derive(Serialize)]
-struct JsonE2EMessage {
+#[serde(rename = "camelCase")]
+struct JsonE2eMessage {
     to: String,
     nonce: String,
-    #[serde(rename(serialize = "box"))]
-    ciphertext: String,
+    r#box: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename(serialize = "noDeliveryReceipts"))]
     no_delivery_receipts: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename(serialize = "noPush"))]
     no_push: Option<bool>,
     group: Option<bool>,
 }
 
+/// Response to an E2E bulk message sending request.
 #[derive(Deserialize)]
-pub struct E2EBulkResponse {
-    #[serde(rename(deserialize = "messageId"))]
+#[serde(rename = "camelCase")]
+pub struct BulkE2eResponse {
     pub message_id: Option<String>,
-    #[serde(rename(deserialize = "errorCode"))]
     pub error_code: Option<i32>,
 }
 
@@ -199,7 +197,7 @@ pub(crate) async fn send_e2e_bulk(
     secret: &str,
     same_message_id: bool,
     messages: &[E2eMessage],
-) -> Result<Vec<E2EBulkResponse>, ApiError> {
+) -> Result<Vec<BulkE2eResponse>, ApiError> {
     log::debug!(
         "Sending e2e encrypted messages from {} to {} recipients",
         from,
@@ -213,7 +211,7 @@ pub(crate) async fn send_e2e_bulk(
     if same_message_id {
         params.insert("sameMessageId".into(), "1".to_string());
     }
-    let messages: Vec<JsonE2EMessage> = messages
+    let messages: Vec<JsonE2eMessage> = messages
         .iter()
         .map(|m| {
             let no_delivery_receipts = if m.delivery_receipts {
@@ -222,10 +220,10 @@ pub(crate) async fn send_e2e_bulk(
                 Some(true)
             };
             let no_push = if m.push { None } else { Some(true) };
-            JsonE2EMessage {
+            JsonE2eMessage {
                 to: m.to.to_string(),
                 nonce: BASE64.encode(&m.msg.nonce),
-                ciphertext: BASE64.encode(&m.msg.ciphertext),
+                r#box: BASE64.encode(&m.msg.ciphertext),
                 no_delivery_receipts,
                 no_push,
                 group: Some(m.group),
