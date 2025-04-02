@@ -196,9 +196,9 @@ pub(crate) async fn lookup_pubkey(
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct IdentityPublicKey {
     identity: String,
-    #[serde(rename(deserialize = "publicKey"))]
     public_key: RecipientKey,
 }
 
@@ -269,21 +269,25 @@ struct BulkIdLookupRequest {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct BulkId {
+pub struct BulkIdentityPublicKey {
     pub identity: String,
     pub public_key: RecipientKey,
     pub phone_hash: Option<String>,
     pub email_hash: Option<String>,
 }
 
-/// Look up an ID in the Threema directory.
+/// Look up multiple IDs in the Threema directory.
+///
+/// Note: The use of this endpoint is restricted and requires manual
+/// approval. Please contact the Threema support team directly if you
+/// would like to use this feature.
 pub(crate) async fn lookup_ids_bulk(
     client: &Client,
     endpoint: &str,
     criteria: &[LookupCriterion],
     our_id: &str,
     secret: &str,
-) -> Result<Vec<BulkId>, ApiError> {
+) -> Result<Vec<BulkIdentityPublicKey>, ApiError> {
     let mut ids = BulkIdLookupRequest::default();
     for criterion in criteria {
         match criterion {

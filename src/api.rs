@@ -21,8 +21,8 @@ use crate::{
     },
     errors::{ApiBuilderError, ApiError, ApiOrCacheError, CryptoError},
     lookup::{
-        BulkId, Capabilities, LookupCriterion, lookup_capabilities, lookup_credits, lookup_id,
-        lookup_ids_bulk, lookup_pubkey, lookup_pubkeys_bulk,
+        BulkIdentityPublicKey, Capabilities, LookupCriterion, lookup_capabilities, lookup_credits,
+        lookup_id, lookup_ids_bulk, lookup_pubkey, lookup_pubkeys_bulk,
     },
     receive::IncomingMessage,
     types::{BlobId, FileMessage, MessageType},
@@ -123,7 +123,7 @@ macro_rules! impl_common_functionality {
         pub async fn lookup_ids_bulk(
             &self,
             criteria: &[LookupCriterion],
-        ) -> Result<Vec<BulkId>, ApiError> {
+        ) -> Result<Vec<BulkIdentityPublicKey>, ApiError> {
             lookup_ids_bulk(
                 &self.client,
                 self.endpoint.borrow(),
