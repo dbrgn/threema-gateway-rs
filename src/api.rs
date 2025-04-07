@@ -12,14 +12,17 @@ use reqwest::Client;
 use crate::{
     MSGAPI_URL,
     cache::PublicKeyCache,
-    connection::{Recipient, blob_download, blob_upload, send_e2e, send_simple},
+    connection::{
+        BulkE2eMessage, BulkE2eResponse, Recipient, blob_download, blob_upload, send_e2e,
+        send_e2e_bulk, send_simple,
+    },
     crypto::{
         EncryptedMessage, RecipientKey, encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw,
     },
     errors::{ApiBuilderError, ApiError, ApiOrCacheError, CryptoError},
     lookup::{
-        Capabilities, LookupCriterion, lookup_capabilities, lookup_credits, lookup_id,
-        lookup_pubkey,
+        BulkIdentityPublicKey, Capabilities, LookupCriterion, lookup_capabilities, lookup_credits,
+        lookup_id, lookup_ids_bulk, lookup_pubkey, lookup_pubkeys_bulk,
     },
     receive::IncomingMessage,
     types::{BlobId, FileMessage, MessageType},
@@ -27,7 +30,7 @@ use crate::{
 
 fn make_reqwest_client() -> Client {
     Client::builder()
-        .timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(120))
         .build()
         .expect("Could not build client")
 }
@@ -52,6 +55,21 @@ macro_rules! impl_common_functionality {
                 self.endpoint.borrow(),
                 &self.id,
                 id,
+                &self.secret,
+            )
+            .await
+        }
+
+        /// Lookup public keys in bulk
+        pub async fn lookup_pubkeys_bulk(
+            &self,
+            ids: &[String],
+        ) -> Result<HashMap<String, RecipientKey>, ApiError> {
+            lookup_pubkeys_bulk(
+                &self.client,
+                self.endpoint.borrow(),
+                &self.id,
+                ids,
                 &self.secret,
             )
             .await
@@ -95,6 +113,25 @@ macro_rules! impl_common_functionality {
                 &self.client,
                 self.endpoint.borrow(),
                 criterion,
+                &self.id,
+                &self.secret,
+            )
+            .await
+        }
+
+        /// Look up multiple IDs in the Threema directory.
+        ///
+        /// Note: The use of this endpoint is restricted and requires manual
+        /// approval. Please contact the Threema support team directly if you
+        /// would like to use this feature.
+        pub async fn lookup_ids_bulk(
+            &self,
+            criteria: &[LookupCriterion],
+        ) -> Result<Vec<BulkIdentityPublicKey>, ApiError> {
+            lookup_ids_bulk(
+                &self.client,
+                self.endpoint.borrow(),
+                criteria,
                 &self.id,
                 &self.secret,
             )
@@ -308,6 +345,27 @@ impl E2eApi {
         .await
     }
 
+    /// Send multiple encrypted E2E messages.
+    ///
+    /// If `same_message_id` is set to `true`, then all messages sent will share the same message ID. This is a feature that is only relevant for group messaging. If unsure, set this to `false`.
+    ///
+    /// Cost: 1 credit per message.
+    pub async fn send_bulk(
+        &self,
+        same_message_id: bool,
+        messages: &[BulkE2eMessage],
+    ) -> Result<Vec<BulkE2eResponse>, ApiError> {
+        send_e2e_bulk(
+            &self.client,
+            self.endpoint.borrow(),
+            &self.id,
+            &self.secret,
+            same_message_id,
+            messages,
+        )
+        .await
+    }
+
     /// Used for testing purposes. Not intended to be called by end users.
     #[doc(hidden)]
     pub async fn send_with_params(
@@ -488,10 +546,15 @@ impl E2eApi {
 /// ```
 #[derive(Debug)]
 pub struct ApiBuilder {
+    /// Threema ID on the msgapi
     pub id: String,
+    /// Secret given by msgapi
     pub secret: String,
+    /// The private key you used to create the Threema ID
     pub private_key: Option<SecretKey>,
+    /// URL to the msgapi endpoint
     pub endpoint: Cow<'static, str>,
+    /// A `reqwest::Client` instance
     pub client: Option<Client>,
 }
 

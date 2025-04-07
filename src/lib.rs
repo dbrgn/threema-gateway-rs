@@ -84,6 +84,7 @@ mod lookup;
 mod receive;
 mod types;
 
+pub use connection::BulkE2eMessage;
 pub use crypto_box::{PublicKey, SecretKey};
 pub use crypto_secretbox::Nonce;
 

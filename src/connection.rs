@@ -1,11 +1,12 @@
 //! Send and receive messages.
 
-use std::{borrow::Cow, collections::HashMap, str::FromStr};
+use std::{borrow::Cow, collections::HashMap, ops::Not, str::FromStr};
 
-use data_encoding::HEXLOWER;
+use data_encoding::{BASE64, HEXLOWER};
 use reqwest::{Client, StatusCode, multipart};
+use serde::{Deserialize, Serialize};
 
-use crate::{errors::ApiError, types::BlobId};
+use crate::{EncryptedMessage, errors::ApiError, types::BlobId};
 
 /// Map HTTP response status code to an ApiError if it isn't "200".
 ///
@@ -33,6 +34,8 @@ pub(crate) fn map_response_code(
         StatusCode::NOT_FOUND => Err(ApiError::IdNotFound),
         // 413
         StatusCode::PAYLOAD_TOO_LARGE => Err(ApiError::MessageTooLong),
+        // 429
+        StatusCode::TOO_MANY_REQUESTS => Err(ApiError::TooManyRequests),
         // 500
         StatusCode::INTERNAL_SERVER_ERROR => Err(ApiError::ServerError),
         e => Err(ApiError::Other(format!("Bad response status code: {}", e))),
@@ -51,14 +54,17 @@ pub enum Recipient<'a> {
 }
 
 impl<'a> Recipient<'a> {
+    /// construct a Recipient identity variant
     pub fn new_id<T: Into<Cow<'a, str>>>(id: T) -> Self {
         Recipient::Id(id.into())
     }
 
+    /// construct a Phone variant
     pub fn new_phone<T: Into<Cow<'a, str>>>(phone: T) -> Self {
         Recipient::Phone(phone.into())
     }
 
+    /// Construct a Email variant
     pub fn new_email<T: Into<Cow<'a, str>>>(email: T) -> Self {
         Recipient::Email(email.into())
     }
@@ -151,6 +157,97 @@ pub(crate) async fn send_e2e(
     Ok(res.text().await?)
 }
 
+/// An end-to-end encrypted message for a specific recipient.
+///
+/// Used in the context of bulk sending.
+pub struct BulkE2eMessage {
+    /// Recipient Threema ID
+    pub to: String,
+    /// Encrypted message to send to the recipient above
+    pub message: EncryptedMessage,
+    /// When set to `false`, the recipient is requested not to send delivery receipts for this message.
+    pub delivery_receipts: bool,
+    /// When set to `false`, no push notification is triggered towards recipient.
+    pub push: bool,
+    /// When set to `true`, this message is marked as group message.
+    pub group: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct JsonE2eMessage {
+    to: String,
+    nonce: String,
+    r#box: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    no_delivery_receipts: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    no_push: Option<bool>,
+    group: Option<bool>,
+}
+
+/// Response to an E2E bulk message sending request.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BulkE2eResponse {
+    pub message_id: Option<String>,
+    pub error_code: Option<i32>,
+}
+
+/// Send multiple encrypted E2E messages.
+pub(crate) async fn send_e2e_bulk(
+    client: &Client,
+    endpoint: &str,
+    from: &str,
+    secret: &str,
+    same_message_id: bool,
+    messages: &[BulkE2eMessage],
+) -> Result<Vec<BulkE2eResponse>, ApiError> {
+    log::debug!(
+        "Sending e2e encrypted messages from {} to {} recipients",
+        from,
+        messages.len()
+    );
+
+    // Prepare POST data
+    let mut params: HashMap<&str, String> = HashMap::new();
+    params.insert("from", from.into());
+    params.insert("secret", secret.into());
+    if same_message_id {
+        params.insert("sameMessageId", "1".to_string());
+    }
+    let messages: Vec<JsonE2eMessage> = messages
+        .iter()
+        .map(|m| {
+            let no_delivery_receipts = m.delivery_receipts.not().then_some(true);
+            let no_push = m.push.not().then_some(true);
+            let group = m.group.not().then_some(true);
+            JsonE2eMessage {
+                to: m.to.clone(),
+                nonce: BASE64.encode(&m.message.nonce),
+                r#box: BASE64.encode(&m.message.ciphertext),
+                no_delivery_receipts,
+                no_push,
+                group,
+            }
+        })
+        .collect();
+    // Send request
+    log::trace!("Sending HTTP request");
+    let res = client
+        .post(format!("{}/send_e2e_bulk", endpoint))
+        .query(&params)
+        .json(&messages)
+        .header("accept", "application/json")
+        .send()
+        .await?;
+    log::trace!("Received HTTP response");
+    map_response_code(res.status(), None)?;
+
+    // Read and return response body
+    Ok(res.json().await?)
+}
+
 /// Upload a blob to the blob server.
 pub(crate) async fn blob_upload(
     client: &Client,
@@ -162,9 +259,10 @@ pub(crate) async fn blob_upload(
     additional_params: Option<HashMap<String, String>>,
 ) -> Result<BlobId, ApiError> {
     // Build URL
-    let mut url = format!("{}/upload_blob?from={}&secret={}", endpoint, from, secret);
+    let url = format!("{}/upload_blob", endpoint);
+    let mut params = vec![("from", from), ("secret", secret)];
     if persist {
-        url.push_str("&persist=1");
+        params.push(("persist", "1"));
     }
 
     // Build multipart/form-data request body
@@ -184,6 +282,7 @@ pub(crate) async fn blob_upload(
     // Send request
     let res = client
         .post(&url)
+        .query(params.as_slice())
         .multipart(form)
         .header("accept", "text/plain")
         .send()
@@ -202,14 +301,16 @@ pub(crate) async fn blob_download(
     secret: &str,
     blob_id: &BlobId,
 ) -> Result<Vec<u8>, ApiError> {
-    // Build URL
-    let url = format!(
-        "{}/blobs/{}?from={}&secret={}",
-        endpoint, blob_id, from, secret
-    );
+    let url = reqwest::Url::parse(endpoint)?
+        .join("blobs/")?
+        .join(&blob_id.to_string())?;
 
     // Send request
-    let res = client.get(&url).send().await?;
+    let res = client
+        .get(url)
+        .query(&[("from", from), ("secret", secret)])
+        .send()
+        .await?;
     map_response_code(res.status(), Some(ApiError::BadBlob))?;
 
     // Read response bytes

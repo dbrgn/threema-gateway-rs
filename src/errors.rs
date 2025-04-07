@@ -48,9 +48,17 @@ pub enum ApiError {
     #[error("invalid MAC")]
     InvalidMac,
 
+    /// Too many requests, rate limit surpassed
+    #[error("too many requests")]
+    TooManyRequests,
+
     /// Error when sending request (via reqwest)
     #[error("request error: {0}")]
     RequestError(#[source] ReqwestError),
+
+    /// Error when building request URL (via reqwest)
+    #[error("request URL parse error: {0}")]
+    RequestUrlParseError(#[from] url::ParseError),
 
     /// Error when reading response
     #[error("I/O error: {0}")]
@@ -73,6 +81,7 @@ impl From<ReqwestError> for ApiError {
 }
 
 #[derive(Debug, Error)]
+#[allow(missing_docs)]
 pub enum ApiOrCacheError<C: std::error::Error> {
     #[error("api error: {0}")]
     ApiError(ApiError),
