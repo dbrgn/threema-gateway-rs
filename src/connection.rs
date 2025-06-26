@@ -3,8 +3,8 @@
 use std::{borrow::Cow, collections::HashMap, ops::Not, str::FromStr};
 
 use data_encoding::{BASE64, HEXLOWER};
-use reqwest::{Client, StatusCode, multipart};
-use serde::{Deserialize, Serialize};
+use reqwest::{Client, multipart};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{EncryptedMessage, SDK_HEADER, SDK_USER_AGENT, errors::ApiError, types::BlobId};
 
@@ -12,33 +12,42 @@ use crate::{EncryptedMessage, SDK_HEADER, SDK_USER_AGENT, errors::ApiError, type
 ///
 /// Optionally, you can pass in the meaning of a 400 response code.
 pub(crate) fn map_response_code(
-    status: StatusCode,
+    status_code: u16,
     bad_request_meaning: Option<ApiError>,
 ) -> Result<(), ApiError> {
-    match status {
-        // 200
-        StatusCode::OK => Ok(()),
-        // 400
-        StatusCode::BAD_REQUEST => match bad_request_meaning {
-            Some(error) => Err(error),
-            None => Err(ApiError::Other(format!(
-                "Bad response status code: {}",
-                StatusCode::BAD_REQUEST
-            ))),
+    match status_code {
+        200 => Ok(()),
+        other => Err(map_response_error_code(other, bad_request_meaning)),
+    }
+}
+
+/// Map HTTP response error code to an [`ApiError`].
+///
+/// Optionally, you can pass in the meaning of a 400 response code.
+pub(crate) fn map_response_error_code(
+    status_code: u16,
+    bad_request_meaning: Option<ApiError>,
+) -> ApiError {
+    match status_code {
+        // Bad request
+        400 => match bad_request_meaning {
+            Some(error) => error,
+            None => ApiError::Other("Bad request (HTTP 400)".to_string()),
         },
-        // 401
-        StatusCode::UNAUTHORIZED => Err(ApiError::BadCredentials),
-        // 402
-        StatusCode::PAYMENT_REQUIRED => Err(ApiError::NoCredits),
-        // 404
-        StatusCode::NOT_FOUND => Err(ApiError::IdNotFound),
-        // 413
-        StatusCode::PAYLOAD_TOO_LARGE => Err(ApiError::MessageTooLong),
-        // 429
-        StatusCode::TOO_MANY_REQUESTS => Err(ApiError::RateLimitReached),
-        // 500
-        StatusCode::INTERNAL_SERVER_ERROR => Err(ApiError::ServerError),
-        e => Err(ApiError::Other(format!("Bad response status code: {}", e))),
+        // Unauthorized
+        401 => ApiError::BadCredentials,
+        // Payment Required
+        402 => ApiError::NoCredits,
+        // Not Found
+        404 => ApiError::IdNotFound,
+        // Payload Too Large
+        413 => ApiError::MessageTooLong,
+        // Too Many Requests
+        429 => ApiError::RateLimitReached,
+        // Internal Server Error
+        500 => ApiError::ServerError,
+        // Unexpected code
+        e => ApiError::Other(format!("Response status code: {}", e)),
     }
 }
 
@@ -112,7 +121,7 @@ pub(crate) async fn send_simple(
         .send()
         .await?;
     log::trace!("Received HTTP response");
-    map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient))?;
+    map_response_code(res.status().as_u16(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
     Ok(res.text().await?)
@@ -153,7 +162,7 @@ pub(crate) async fn send_e2e(
         .send()
         .await?;
     log::trace!("Received HTTP response");
-    map_response_code(res.status(), Some(ApiError::BadSenderOrRecipient))?;
+    map_response_code(res.status().as_u16(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
     Ok(res.text().await?)
@@ -196,6 +205,15 @@ struct JsonE2eMessage {
     group: Option<bool>,
 }
 
+/// Custom deserializer for error codes that converts u16 to ApiError
+fn deserialize_error_code<'de, D>(deserializer: D) -> Result<ApiError, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let code = u16::deserialize(deserializer)?;
+    Ok(map_response_error_code(code, None))
+}
+
 /// Response to an E2E bulk message sending request.
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -208,9 +226,9 @@ pub enum BulkE2eMessageSendStatus {
     },
     /// Error response with error code
     Error {
-        /// The error code
-        #[serde(rename = "errorCode")]
-        error_code: i32,
+        /// The error
+        #[serde(rename = "errorCode", deserialize_with = "deserialize_error_code")]
+        error: ApiError,
     },
 }
 
@@ -233,11 +251,11 @@ impl BulkE2eMessageSendStatus {
         }
     }
 
-    /// Returns the error code if the message failed to send.
-    pub fn error_code(&self) -> Option<i32> {
+    /// Returns the error if the message failed to send.
+    pub fn error(&self) -> Option<&ApiError> {
         match self {
             BulkE2eMessageSendStatus::Success { .. } => None,
-            BulkE2eMessageSendStatus::Error { error_code } => Some(*error_code),
+            BulkE2eMessageSendStatus::Error { error } => Some(error),
         }
     }
 }
@@ -291,7 +309,7 @@ pub(crate) async fn send_e2e_bulk(
         .send()
         .await?;
     log::trace!("Received HTTP response");
-    map_response_code(res.status(), None)?;
+    map_response_code(res.status().as_u16(), None)?;
 
     // Read and return response body
     Ok(res.json().await?)
@@ -337,7 +355,7 @@ pub(crate) async fn blob_upload(
         .header(SDK_HEADER, SDK_USER_AGENT)
         .send()
         .await?;
-    map_response_code(res.status(), Some(ApiError::BadBlob))?;
+    map_response_code(res.status().as_u16(), Some(ApiError::BadBlob))?;
 
     // Read response body containing blob ID
     BlobId::from_str(res.text().await?.trim())
@@ -362,7 +380,7 @@ pub(crate) async fn blob_download(
         .query(&[("from", from), ("secret", secret)])
         .send()
         .await?;
-    map_response_code(res.status(), Some(ApiError::BadBlob))?;
+    map_response_code(res.status().as_u16(), Some(ApiError::BadBlob))?;
 
     // Read response bytes
     Ok(res.bytes().await?.to_vec())
@@ -428,8 +446,8 @@ mod tests {
         let error_json = r#"{"errorCode": 404}"#;
         let error_status: BulkE2eMessageSendStatus = serde_json::from_str(error_json).unwrap();
         match error_status {
-            BulkE2eMessageSendStatus::Error { error_code } => {
-                assert_eq!(error_code, 404);
+            BulkE2eMessageSendStatus::Error { error } => {
+                assert!(matches!(error, ApiError::IdNotFound));
             }
             _ => panic!("Expected Error variant"),
         }
@@ -450,8 +468,8 @@ mod tests {
         let error_with_extra: BulkE2eMessageSendStatus =
             serde_json::from_str(error_with_extra_json).unwrap();
         match error_with_extra {
-            BulkE2eMessageSendStatus::Error { error_code } => {
-                assert_eq!(error_code, 500);
+            BulkE2eMessageSendStatus::Error { error } => {
+                assert!(matches!(error, ApiError::ServerError));
             }
             _ => panic!("Expected Error variant"),
         }
@@ -476,7 +494,7 @@ mod tests {
         assert!(success_status.is_success());
         assert!(!success_status.is_error());
         assert_eq!(success_status.message_id(), Some("test123"));
-        assert_eq!(success_status.error_code(), None);
+        assert!(success_status.error().is_none());
 
         // Test error status convenience methods
         let error_json = r#"{"errorCode": 404}"#;
@@ -484,6 +502,39 @@ mod tests {
         assert!(!error_status.is_success());
         assert!(error_status.is_error());
         assert_eq!(error_status.message_id(), None);
-        assert_eq!(error_status.error_code(), Some(404));
+        assert!(matches!(error_status.error(), Some(ApiError::IdNotFound)));
+    }
+
+    #[test]
+    fn test_bulk_e2e_error_code_mapping() {
+        // Test 400 -> ApiError::Other (bad request)
+        let error_400_json = r#"{"errorCode": 400}"#;
+        let error_400: BulkE2eMessageSendStatus = serde_json::from_str(error_400_json).unwrap();
+        match error_400 {
+            BulkE2eMessageSendStatus::Error { error } => {
+                assert!(matches!(error, ApiError::Other(_)));
+            }
+            _ => panic!("Expected Error variant"),
+        }
+
+        // Test 402 -> ApiError::NoCredits
+        let error_402_json = r#"{"errorCode": 402}"#;
+        let error_402: BulkE2eMessageSendStatus = serde_json::from_str(error_402_json).unwrap();
+        match error_402 {
+            BulkE2eMessageSendStatus::Error { error } => {
+                assert!(matches!(error, ApiError::NoCredits));
+            }
+            _ => panic!("Expected Error variant"),
+        }
+
+        // Test unknown error code -> ApiError::Other
+        let error_999_json = r#"{"errorCode": 999}"#;
+        let error_999: BulkE2eMessageSendStatus = serde_json::from_str(error_999_json).unwrap();
+        match error_999 {
+            BulkE2eMessageSendStatus::Error { error } => {
+                assert!(matches!(error, ApiError::Other(_)));
+            }
+            _ => panic!("Expected Error variant"),
+        }
     }
 }

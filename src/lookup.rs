@@ -180,7 +180,7 @@ pub(crate) async fn lookup_pubkey(
         .query(&[("from", our_id), ("secret", secret)])
         .send()
         .await?;
-    map_response_code(res.status(), None)?;
+    map_response_code(res.status().as_u16(), None)?;
 
     // Read response body
     let pubkey_hex_bytes = res.bytes().await?;
@@ -232,7 +232,7 @@ pub(crate) async fn lookup_pubkeys_bulk(
         .json(&json)
         .send()
         .await?;
-    map_response_code(res.status(), None)?;
+    map_response_code(res.status().as_u16(), None)?;
 
     // Read response body
     let pub_keys: Vec<IdentityPublicKey> = res.json().await?;
@@ -268,7 +268,7 @@ pub(crate) async fn lookup_id(
         .query(&[("from", our_id), ("secret", secret)])
         .send()
         .await?;
-    map_response_code(res.status(), Some(ApiError::BadHashLength))?;
+    map_response_code(res.status().as_u16(), Some(ApiError::BadHashLength))?;
 
     // Read and return response body
     Ok(res.text().await?)
@@ -335,7 +335,7 @@ pub(crate) async fn lookup_ids_bulk(
         .json(&ids)
         .send()
         .await?;
-    map_response_code(res.status(), Some(ApiError::BadHashLength))?;
+    map_response_code(res.status().as_u16(), Some(ApiError::BadHashLength))?;
 
     // Read and return response body
     Ok(res.json().await?)
@@ -359,7 +359,7 @@ pub(crate) async fn lookup_credits(
         .query(&[("from", our_id), ("secret", secret)])
         .send()
         .await?;
-    map_response_code(res.status(), None)?;
+    map_response_code(res.status().as_u16(), None)?;
 
     // Read, parse and return response body
     let body = res.text().await?;
@@ -392,7 +392,7 @@ pub(crate) async fn lookup_capabilities(
         .query(&[("from", our_id), ("secret", secret)])
         .send()
         .await?;
-    map_response_code(res.status(), Some(ApiError::BadHashLength))?;
+    map_response_code(res.status().as_u16(), Some(ApiError::BadHashLength))?;
 
     // Read response body
     let body = res.text().await?;
