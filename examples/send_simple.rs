@@ -1,3 +1,5 @@
+//! Example: Send simple text message without E2EE
+
 use std::borrow::Cow;
 
 use docopt::Docopt;

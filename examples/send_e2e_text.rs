@@ -1,3 +1,5 @@
+//! Example: Send E2EE text
+
 use std::process;
 
 use docopt::Docopt;

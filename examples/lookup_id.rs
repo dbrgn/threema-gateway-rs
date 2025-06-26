@@ -1,3 +1,5 @@
+//! Example: Lookup ID
+
 use std::process;
 
 use docopt::Docopt;

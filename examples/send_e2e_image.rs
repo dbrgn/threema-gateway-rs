@@ -1,3 +1,5 @@
+//! Example: Send E2EE image
+
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;

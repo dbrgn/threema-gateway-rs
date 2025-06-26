@@ -1,3 +1,5 @@
+//! Example: Download blob
+
 use std::process;
 
 use data_encoding::HEXLOWER_PERMISSIVE;
