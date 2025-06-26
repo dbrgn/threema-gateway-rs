@@ -33,7 +33,6 @@ pub enum LookupCriterion {
 }
 
 impl LookupCriterion {
-
     /// Return the hashed version of the lookup criterion as `String`.
     ///
     /// If the lookup criterion already contains a hash, return a copy
@@ -41,15 +40,14 @@ impl LookupCriterion {
     /// hash as hex string.
     fn hash(&self) -> Result<String, ApiError> {
         let email_key = b"\x30\xa5\x50\x0f\xed\x97\x01\xfa\x6d\xef\xdb\x61\x08\x41\x90\x0f\xeb\xb8\xe4\x30\x88\x1f\x7a\xd8\x16\x82\x62\x64\xec\x09\xba\xd7";
-        let phone_key = 
-        b"\x85\xad\xf8\x22\x69\x53\xf3\xd9\x6c\xfd\x5d\x09\xbf\x29\x55\x5e\xb9\x55\xfc\xd8\xaa\x5e\xc4\xf9\xfc\xd8\x69\xe2\x58\x37\x07\x23";
+        let phone_key = b"\x85\xad\xf8\x22\x69\x53\xf3\xd9\x6c\xfd\x5d\x09\xbf\x29\x55\x5e\xb9\x55\xfc\xd8\xaa\x5e\xc4\xf9\xfc\xd8\x69\xe2\x58\x37\x07\x23";
 
         let s = match self {
             Self::Phone(val) => {
                 let mut hmac_state = HmacSha256::new_from_slice(phone_key)
                     .expect("Failed to initialize HmacSha256 with phone key");
-                if !val.chars().all(|c | c.is_ascii_digit()) {
-                    return Err(ApiError::Other("Bad phone number format".to_string()))
+                if !val.chars().all(|c| c.is_ascii_digit()) {
+                    return Err(ApiError::Other("Bad phone number format".to_string()));
                 }
                 hmac_state.update(val.as_bytes());
                 let hash = hmac_state.finalize().into_bytes();
@@ -66,7 +64,7 @@ impl LookupCriterion {
             Self::EmailHash(val) => val.to_owned(),
         };
         Ok(s)
-    } 
+    }
 }
 
 impl fmt::Display for LookupCriterion {
@@ -167,12 +165,18 @@ pub(crate) async fn lookup_pubkey(
     their_id: &str,
     secret: &str,
 ) -> Result<RecipientKey, ApiError> {
-    let url = reqwest::Url::parse(endpoint)?.join("pubkeys/")?.join(their_id)?;
+    let url = reqwest::Url::parse(endpoint)?
+        .join("pubkeys/")?
+        .join(their_id)?;
 
     debug!("Looking up public key for {}", their_id);
 
     // Send request
-    let res = client.get(url).query(&[("from", our_id),("secret", secret)]).send().await?;
+    let res = client
+        .get(url)
+        .query(&[("from", our_id), ("secret", secret)])
+        .send()
+        .await?;
     map_response_code(res.status(), None)?;
 
     // Read response body
@@ -207,21 +211,23 @@ pub(crate) async fn lookup_pubkeys_bulk(
     client: &Client,
     endpoint: &str,
     our_id: &str,
-    their_ids: &[String],
+    their_ids: &[&str],
     secret: &str,
 ) -> Result<HashMap<String, RecipientKey>, ApiError> {
     // Build URL
-    let url = format!(
-        "{}/pubkeys/bulk",
-        endpoint
-    );
+    let url = format!("{}/pubkeys/bulk", endpoint);
 
     debug!("Looking up public key for {} Threema IDs", their_ids.len());
 
     // Send request
     let mut json = HashMap::new();
     json.insert("identities", their_ids.to_vec());
-    let res = client.post(&url).query(&[("from", our_id),("secret", secret)]).json(&json).send().await?;
+    let res = client
+        .post(&url)
+        .query(&[("from", our_id), ("secret", secret)])
+        .json(&json)
+        .send()
+        .await?;
     map_response_code(res.status(), None)?;
 
     // Read response body
@@ -252,7 +258,11 @@ pub(crate) async fn lookup_id(
     debug!("Looking up id key for {}", criterion);
 
     // Send request
-    let res = client.get(&url).query(&[("from", our_id),("secret", secret)]).send().await?;
+    let res = client
+        .get(&url)
+        .query(&[("from", our_id), ("secret", secret)])
+        .send()
+        .await?;
     map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read and return response body
@@ -265,7 +275,6 @@ struct BulkIdLookupRequest {
     phone_hashes: Vec<String>,
     email_hashes: Vec<String>,
 }
-
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -284,7 +293,7 @@ pub struct BulkIdentityPublicKey {
 pub(crate) async fn lookup_ids_bulk(
     client: &Client,
     endpoint: &str,
-    criteria: &[LookupCriterion],
+    criteria: &[&LookupCriterion],
     our_id: &str,
     secret: &str,
 ) -> Result<Vec<BulkIdentityPublicKey>, ApiError> {
@@ -309,7 +318,12 @@ pub(crate) async fn lookup_ids_bulk(
     );
 
     // Send request
-    let res = client.post(&url).query(&[("from", our_id),("secret", secret)]).json(&ids).send().await?;
+    let res = client
+        .post(&url)
+        .query(&[("from", our_id), ("secret", secret)])
+        .json(&ids)
+        .send()
+        .await?;
     map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read and return response body
@@ -328,7 +342,11 @@ pub(crate) async fn lookup_credits(
     debug!("Looking up remaining credits");
 
     // Send request
-    let res = client.get(&url).query(&[("from", our_id),("secret", secret)]).send().await?;
+    let res = client
+        .get(&url)
+        .query(&[("from", our_id), ("secret", secret)])
+        .send()
+        .await?;
     map_response_code(res.status(), None)?;
 
     // Read, parse and return response body
@@ -349,12 +367,18 @@ pub(crate) async fn lookup_capabilities(
     their_id: &str,
     secret: &str,
 ) -> Result<Capabilities, ApiError> {
-    let url = reqwest::Url::parse(endpoint)?.join("capabilities/")?.join(their_id)?;
+    let url = reqwest::Url::parse(endpoint)?
+        .join("capabilities/")?
+        .join(their_id)?;
 
     debug!("Looking up capabilities for {}", their_id);
 
     // Send request
-    let res = client.get(url).query(&[("from", our_id),("secret", secret)]).send().await?;
+    let res = client
+        .get(url)
+        .query(&[("from", our_id), ("secret", secret)])
+        .send()
+        .await?;
     map_response_code(res.status(), Some(ApiError::BadHashLength))?;
 
     // Read response body

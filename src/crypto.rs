@@ -242,9 +242,9 @@ pub fn encrypt_file_msg(
 /// returned by [`decrypt_file_data`].
 #[derive(Clone)]
 pub struct FileData {
-    /// the unencrypted data of the file
+    /// The unencrypted data of the file
     pub file: Vec<u8>,
-    /// optional unencrypted thumbnail, for e.g. a photo or video
+    /// Optional unencrypted thumbnail, for e.g. a photo or video
     pub thumbnail: Option<Vec<u8>>,
 }
 
@@ -254,9 +254,9 @@ pub struct FileData {
 /// returned by [`encrypt_file_data`].
 #[derive(Clone)]
 pub struct EncryptedFileData {
-    /// the encrypted data of the file
+    /// The encrypted data of the file
     pub file: Vec<u8>,
-    /// optional encrypted thumbnail, for e.g. a photo or video
+    /// Optional encrypted thumbnail, for e.g. a photo or video
     pub thumbnail: Option<Vec<u8>>,
 }
 
