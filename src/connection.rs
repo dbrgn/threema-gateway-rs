@@ -198,12 +198,48 @@ struct JsonE2eMessage {
 
 /// Response to an E2E bulk message sending request.
 #[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BulkE2eResponse {
-    /// The message ID of the sent message
-    pub message_id: Option<String>,
-    /// The message ID of the sent message
-    pub error_code: Option<i32>,
+#[serde(untagged)]
+pub enum BulkE2eMessageSendStatus {
+    /// Successful response with message ID
+    Success {
+        /// The message ID of the sent message
+        #[serde(rename = "messageId")]
+        message_id: String,
+    },
+    /// Error response with error code
+    Error {
+        /// The error code
+        #[serde(rename = "errorCode")]
+        error_code: i32,
+    },
+}
+
+impl BulkE2eMessageSendStatus {
+    /// Returns `true` if sending this message was successful.
+    pub fn is_success(&self) -> bool {
+        matches!(self, BulkE2eMessageSendStatus::Success { .. })
+    }
+
+    /// Returns `true` if sending this message failed.
+    pub fn is_error(&self) -> bool {
+        matches!(self, BulkE2eMessageSendStatus::Error { .. })
+    }
+
+    /// Returns the message ID if the message was sent successfully, or `None` if it failed.
+    pub fn message_id(&self) -> Option<&str> {
+        match self {
+            BulkE2eMessageSendStatus::Success { message_id } => Some(message_id),
+            BulkE2eMessageSendStatus::Error { .. } => None,
+        }
+    }
+
+    /// Returns the error code if the message failed to send.
+    pub fn error_code(&self) -> Option<i32> {
+        match self {
+            BulkE2eMessageSendStatus::Success { .. } => None,
+            BulkE2eMessageSendStatus::Error { error_code } => Some(*error_code),
+        }
+    }
 }
 
 /// Send multiple encrypted E2E messages.
@@ -214,7 +250,7 @@ pub(crate) async fn send_e2e_bulk(
     secret: &str,
     messages: &[&BulkE2eMessage],
     same_message_id: bool,
-) -> Result<Vec<BulkE2eResponse>, ApiError> {
+) -> Result<Vec<BulkE2eMessageSendStatus>, ApiError> {
     log::debug!(
         "Sending e2e encrypted messages from {} to {} recipients",
         from,
@@ -374,5 +410,80 @@ mod tests {
             Err(ApiError::MessageTooLong) => (),
             _ => panic!(),
         }
+    }
+
+    #[test]
+    fn test_bulk_e2e_send_status_json_parsing() {
+        // Test success status with messageId
+        let success_json = r#"{"messageId": "abc123def456"}"#;
+        let success_status: BulkE2eMessageSendStatus = serde_json::from_str(success_json).unwrap();
+        match success_status {
+            BulkE2eMessageSendStatus::Success { message_id } => {
+                assert_eq!(message_id, "abc123def456");
+            }
+            _ => panic!("Expected Success variant"),
+        }
+
+        // Test error status with errorCode
+        let error_json = r#"{"errorCode": 404}"#;
+        let error_status: BulkE2eMessageSendStatus = serde_json::from_str(error_json).unwrap();
+        match error_status {
+            BulkE2eMessageSendStatus::Error { error_code } => {
+                assert_eq!(error_code, 404);
+            }
+            _ => panic!("Expected Error variant"),
+        }
+
+        // Test success status with extra fields (should still work)
+        let success_with_extra_json = r#"{"messageId": "xyz789", "extraField": "ignored"}"#;
+        let success_with_extra: BulkE2eMessageSendStatus =
+            serde_json::from_str(success_with_extra_json).unwrap();
+        match success_with_extra {
+            BulkE2eMessageSendStatus::Success { message_id } => {
+                assert_eq!(message_id, "xyz789");
+            }
+            _ => panic!("Expected Success variant"),
+        }
+
+        // Test error status with extra fields (should still work)
+        let error_with_extra_json = r#"{"errorCode": 500, "description": "Internal server error"}"#;
+        let error_with_extra: BulkE2eMessageSendStatus =
+            serde_json::from_str(error_with_extra_json).unwrap();
+        match error_with_extra {
+            BulkE2eMessageSendStatus::Error { error_code } => {
+                assert_eq!(error_code, 500);
+            }
+            _ => panic!("Expected Error variant"),
+        }
+
+        // Test that invalid JSON fails gracefully
+        let invalid_json = r#"{"invalidField": "value"}"#;
+        let invalid_result: Result<BulkE2eMessageSendStatus, _> =
+            serde_json::from_str(invalid_json);
+        assert!(invalid_result.is_err(), "Should fail to parse invalid JSON");
+
+        // Test that empty JSON fails gracefully
+        let empty_json = r#"{}"#;
+        let empty_result: Result<BulkE2eMessageSendStatus, _> = serde_json::from_str(empty_json);
+        assert!(empty_result.is_err(), "Should fail to parse empty JSON");
+    }
+
+    #[test]
+    fn test_bulk_e2e_status_convenience_methods() {
+        // Test success status convenience methods
+        let success_json = r#"{"messageId": "test123"}"#;
+        let success_status: BulkE2eMessageSendStatus = serde_json::from_str(success_json).unwrap();
+        assert!(success_status.is_success());
+        assert!(!success_status.is_error());
+        assert_eq!(success_status.message_id(), Some("test123"));
+        assert_eq!(success_status.error_code(), None);
+
+        // Test error status convenience methods
+        let error_json = r#"{"errorCode": 404}"#;
+        let error_status: BulkE2eMessageSendStatus = serde_json::from_str(error_json).unwrap();
+        assert!(!error_status.is_success());
+        assert!(error_status.is_error());
+        assert_eq!(error_status.message_id(), None);
+        assert_eq!(error_status.error_code(), Some(404));
     }
 }
