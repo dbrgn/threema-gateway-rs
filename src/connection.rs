@@ -35,7 +35,7 @@ pub(crate) fn map_response_code(
         // 413
         StatusCode::PAYLOAD_TOO_LARGE => Err(ApiError::MessageTooLong),
         // 429
-        StatusCode::TOO_MANY_REQUESTS => Err(ApiError::TooManyRequests),
+        StatusCode::TOO_MANY_REQUESTS => Err(ApiError::RateLimitReached),
         // 500
         StatusCode::INTERNAL_SERVER_ERROR => Err(ApiError::ServerError),
         e => Err(ApiError::Other(format!("Bad response status code: {}", e))),
@@ -54,17 +54,17 @@ pub enum Recipient<'a> {
 }
 
 impl<'a> Recipient<'a> {
-    /// construct a Recipient identity variant
+    /// Create a `Recipient` from an identity.
     pub fn new_id<T: Into<Cow<'a, str>>>(id: T) -> Self {
         Recipient::Id(id.into())
     }
 
-    /// construct a Phone variant
+    /// Create a `Recipient` from a phone number.
     pub fn new_phone<T: Into<Cow<'a, str>>>(phone: T) -> Self {
         Recipient::Phone(phone.into())
     }
 
-    /// Construct a Email variant
+    /// Create a `Recipient` from an e-mail address.
     pub fn new_email<T: Into<Cow<'a, str>>>(email: T) -> Self {
         Recipient::Email(email.into())
     }
@@ -167,12 +167,20 @@ pub struct BulkE2eMessage {
     pub to: String,
     /// Encrypted message to send to the recipient above
     pub message: EncryptedMessage,
-    /// When set to `false`, the recipient is requested not to send delivery receipts for this message.
+    /// When set to `false`, the recipient is requested not to send delivery
+    /// receipts for this message.
+    ///
+    /// If you're unsure what value to use, set the flag to `true`.
     pub delivery_receipts: bool,
     /// When set to `false`, no push notification is triggered towards recipient.
+    ///
+    /// If you're unsure what value to use, set the flag to `true`.
     pub push: bool,
     /// When set to `true`, this message is marked as group message.
-    pub group: bool,
+    ///
+    /// In most cases, and unless you know what you're doing, this should be
+    /// set to `false`.
+    pub is_group_message: bool,
 }
 
 #[derive(Serialize)]
@@ -192,7 +200,9 @@ struct JsonE2eMessage {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BulkE2eResponse {
+    /// The message ID of the sent message
     pub message_id: Option<String>,
+    /// The message ID of the sent message
     pub error_code: Option<i32>,
 }
 
@@ -202,8 +212,8 @@ pub(crate) async fn send_e2e_bulk(
     endpoint: &str,
     from: &str,
     secret: &str,
+    messages: &[&BulkE2eMessage],
     same_message_id: bool,
-    messages: &[BulkE2eMessage],
 ) -> Result<Vec<BulkE2eResponse>, ApiError> {
     log::debug!(
         "Sending e2e encrypted messages from {} to {} recipients",
@@ -223,7 +233,7 @@ pub(crate) async fn send_e2e_bulk(
         .map(|m| {
             let no_delivery_receipts = m.delivery_receipts.not().then_some(true);
             let no_push = m.push.not().then_some(true);
-            let group = m.group.not().then_some(true);
+            let group = m.is_group_message.not().then_some(true);
             JsonE2eMessage {
                 to: m.to.clone(),
                 nonce: BASE64.encode(&m.message.nonce),
@@ -285,7 +295,7 @@ pub(crate) async fn blob_upload(
     // Send request
     let res = client
         .post(&url)
-        .query(params.as_slice())
+        .query(&params)
         .multipart(form)
         .header("accept", "text/plain")
         .header(SDK_HEADER, SDK_USER_AGENT)

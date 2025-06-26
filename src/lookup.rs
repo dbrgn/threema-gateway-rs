@@ -214,7 +214,7 @@ pub(crate) async fn lookup_pubkeys_bulk(
     client: &Client,
     endpoint: &str,
     our_id: &str,
-    their_ids: &[String],
+    their_ids: &[&str],
     secret: &str,
 ) -> Result<HashMap<String, RecipientKey>, ApiError> {
     // Build URL
@@ -303,7 +303,7 @@ pub struct BulkIdentityPublicKey {
 pub(crate) async fn lookup_ids_bulk(
     client: &Client,
     endpoint: &str,
-    criteria: &[LookupCriterion],
+    criteria: &[&LookupCriterion],
     our_id: &str,
     secret: &str,
 ) -> Result<Vec<BulkIdentityPublicKey>, ApiError> {

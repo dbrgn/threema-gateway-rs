@@ -61,21 +61,6 @@ macro_rules! impl_common_functionality {
             .await
         }
 
-        /// Lookup public keys in bulk
-        pub async fn lookup_pubkeys_bulk(
-            &self,
-            ids: &[String],
-        ) -> Result<HashMap<String, RecipientKey>, ApiError> {
-            lookup_pubkeys_bulk(
-                &self.client,
-                self.endpoint.borrow(),
-                &self.id,
-                ids,
-                &self.secret,
-            )
-            .await
-        }
-
         /// Fetch the recipient public key for the specified Threema ID and store it
         /// in the [`PublicKeyCache`].
         ///
@@ -103,6 +88,24 @@ macro_rules! impl_common_functionality {
             Ok(pubkey)
         }
 
+        /// Lookup multiple public keys at once.
+        ///
+        /// This is like `lookup_pubkey`, but you can look up public keys for
+        /// multiple IDs in a single request.
+        pub async fn lookup_pubkeys_bulk(
+            &self,
+            ids: &[&str],
+        ) -> Result<HashMap<String, RecipientKey>, ApiError> {
+            lookup_pubkeys_bulk(
+                &self.client,
+                self.endpoint.borrow(),
+                &self.id,
+                ids,
+                &self.secret,
+            )
+            .await
+        }
+
         /// Look up a Threema ID in the directory.
         ///
         /// An ID can be looked up either by a phone number or an e-mail
@@ -120,14 +123,17 @@ macro_rules! impl_common_functionality {
             .await
         }
 
-        /// Look up multiple IDs in the Threema directory.
+        /// Look up multiple IDs at once.
         ///
-        /// Note: The use of this endpoint is restricted and requires manual
+        /// This is like `lookup_id`, but you can look up multiple IDs in a
+        /// single request.
+        ///
+        /// *Note:* The use of this endpoint is restricted and requires manual
         /// approval. Please contact the Threema support team directly if you
         /// would like to use this feature.
         pub async fn lookup_ids_bulk(
             &self,
-            criteria: &[LookupCriterion],
+            criteria: &[&LookupCriterion],
         ) -> Result<Vec<BulkIdentityPublicKey>, ApiError> {
             lookup_ids_bulk(
                 &self.client,
@@ -323,7 +329,7 @@ impl E2eApi {
     /// If `delivery_receipts` is set to `false`, then the recipient's device will
     /// be instructed not to send any delivery receipts. This can be useful for
     /// one-way communication where the delivery receipt will be discarded. If
-    /// you're unsure what value to use, set the flag to `false`.
+    /// you're unsure what value to use, set the flag to `true`.
     ///
     /// Cost: 1 credit.
     pub async fn send(
@@ -348,21 +354,27 @@ impl E2eApi {
 
     /// Send multiple encrypted E2E messages.
     ///
-    /// If `same_message_id` is set to `true`, then all messages sent will share the same message ID. This is a feature that is only relevant for group messaging. If unsure, set this to `false`.
+    /// If `same_message_id` is set to `true`, then all messages sent will
+    /// share the same message ID. This is a feature that is only relevant for
+    /// group messaging. If unsure, set this to `false`.
+    ///
+    /// *Note:* This endpoint is rate-limited. You may send a maximum of 1000
+    /// messages in a single bulk request and will get an
+    /// [`ApiError::RateLimitReached`] when the rate limit is exceeded.
     ///
     /// Cost: 1 credit per message.
     pub async fn send_bulk(
         &self,
+        messages: &[&BulkE2eMessage],
         same_message_id: bool,
-        messages: &[BulkE2eMessage],
     ) -> Result<Vec<BulkE2eResponse>, ApiError> {
         send_e2e_bulk(
             &self.client,
             self.endpoint.borrow(),
             &self.id,
             &self.secret,
-            same_message_id,
             messages,
+            same_message_id,
         )
         .await
     }
@@ -546,16 +558,12 @@ impl E2eApi {
 ///                              .unwrap();
 /// ```
 #[derive(Debug)]
+#[allow(missing_docs)]
 pub struct ApiBuilder {
-    /// Threema ID on the msgapi
     pub id: String,
-    /// Secret given by msgapi
     pub secret: String,
-    /// The private key you used to create the Threema ID
     pub private_key: Option<SecretKey>,
-    /// URL to the msgapi endpoint
     pub endpoint: Cow<'static, str>,
-    /// A `reqwest::Client` instance
     pub client: Option<Client>,
 }
 
