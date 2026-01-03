@@ -57,15 +57,20 @@
   "customizations": {
     "vscode": {
       "settings": {
+        // General
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.formatOnSave": true,
+        // Extensions
         "rewrap.wrappingColumn": 110,
+        // JSON
         "[jsonc]": {
           "json.format.keepLines": true
         },
+        // Rust
         "[rust]": {
           "editor.defaultFormatter": "rust-lang.rust-analyzer"
-        }
+        },
+        "rust-analyzer.check.command": "clippy"
       },
       "extensions": [
         // General
