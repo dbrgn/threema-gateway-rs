@@ -1,4 +1,5 @@
 //! Example: Lookup public key
+#![allow(clippy::print_stdout, clippy::unimplemented, reason = "Example code")]
 
 use docopt::Docopt;
 use threema_gateway::{ApiBuilder, PublicKeyCache};
@@ -14,7 +15,7 @@ Options:
 async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
-        .unwrap_or_else(|e| e.exit());
+        .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
     let our_id = args.get_str("<our_id>");
@@ -28,13 +29,13 @@ async fn main() {
         let cache = SimulatedCache;
         api.lookup_pubkey_with_cache(their_id, &cache)
             .await
-            .unwrap_or_else(|e| {
-                println!("Could not fetch public key: {e}");
+            .unwrap_or_else(|error| {
+                println!("Could not fetch public key: {error}");
                 std::process::exit(1);
             })
     } else {
-        api.lookup_pubkey(their_id).await.unwrap_or_else(|e| {
-            println!("Could not fetch and cache public key: {e}");
+        api.lookup_pubkey(their_id).await.unwrap_or_else(|error| {
+            println!("Could not fetch and cache public key: {error}");
             std::process::exit(1);
         })
     };

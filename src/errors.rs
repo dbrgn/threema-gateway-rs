@@ -82,7 +82,7 @@ impl From<ReqwestError> for ApiError {
 
 /// Either an [`ApiError`] or a cache error.
 #[derive(Debug, Error)]
-pub enum ApiOrCacheError<C: std::error::Error> {
+pub enum ApiOrCacheError<C: core::error::Error> {
     /// API error, see contained [`ApiError`] value
     #[error("api error: {0}")]
     ApiError(ApiError),

@@ -1,1 +1,4 @@
 msrv = "1.90.0"
+allow-indexing-slicing-in-tests = true
+allow-panic-in-tests = true
+allow-unwrap-in-tests = true

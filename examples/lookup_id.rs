@@ -1,4 +1,5 @@
 //! Example: Lookup ID
+#![allow(clippy::print_stdout, clippy::panic, reason = "Example code")]
 
 use std::process;
 
@@ -19,19 +20,19 @@ Options:
 async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
-        .unwrap_or_else(|e| e.exit());
+        .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
     let from = args.get_str("<from>");
     let secret = args.get_str("<secret>");
     let criterion = if args.get_bool("by_phone") {
-        LookupCriterion::Phone(args.get_str("<phone>").to_string())
+        LookupCriterion::Phone(args.get_str("<phone>").to_owned())
     } else if args.get_bool("by_phone_hash") {
-        LookupCriterion::PhoneHash(args.get_str("<phone-hash>").to_string())
+        LookupCriterion::PhoneHash(args.get_str("<phone-hash>").to_owned())
     } else if args.get_bool("by_email") {
-        LookupCriterion::Email(args.get_str("<email>").to_string())
+        LookupCriterion::Email(args.get_str("<email>").to_owned())
     } else if args.get_bool("by_email_hash") {
-        LookupCriterion::EmailHash(args.get_str("<email-hash>").to_string())
+        LookupCriterion::EmailHash(args.get_str("<email-hash>").to_owned())
     } else {
         panic!("Invalid command");
     };
@@ -49,8 +50,8 @@ async fn main() {
     // Look up ID
     let api = ApiBuilder::new(from, secret).into_simple();
     match api.lookup_id(&criterion).await {
-        Err(e) => {
-            println!("Could not look up id: {e}");
+        Err(error) => {
+            println!("Could not look up id: {error}");
             process::exit(1);
         }
         Ok(id) => println!("The id is {id}"),

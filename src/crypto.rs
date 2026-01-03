@@ -1,16 +1,18 @@
 //! Encrypt and decrypt messages.
 
-use std::{convert::Into, fmt::Debug, io::Write, iter::repeat_n, str::FromStr, sync::OnceLock};
+use std::{
+    convert::Into as _, fmt::Debug, io::Write as _, iter::repeat_n, str::FromStr, sync::OnceLock,
+};
 
-use byteorder::{LittleEndian, WriteBytesExt};
-use crypto_box::{SalsaBox, aead::Aead};
+use byteorder::{LittleEndian, WriteBytesExt as _};
+use crypto_box::{SalsaBox, aead::Aead as _};
 use crypto_secretbox::{
-    AeadCore, Key as SecretboxKey, KeyInit, Nonce, XSalsa20Poly1305,
+    AeadCore as _, Key as SecretboxKey, KeyInit as _, Nonce, XSalsa20Poly1305,
     aead::{OsRng, Payload},
     cipher::generic_array::GenericArray,
 };
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
-use rand::Rng;
+use rand::Rng as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use serde_json as json;
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -35,7 +37,7 @@ impl AsRef<SecretboxKey> for Key {
 }
 
 impl Debug for Key {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write! {f, "Key([…])"}
     }
 }
@@ -116,8 +118,8 @@ impl<'de> Deserialize<'de> for RecipientKey {
     where
         D: Deserializer<'de>,
     {
-        let s = String::deserialize(deserializer)?;
-        FromStr::from_str(&s).map_err(de::Error::custom)
+        let deserialized = String::deserialize(deserializer)?;
+        FromStr::from_str(&deserialized).map_err(de::Error::custom)
     }
 }
 
@@ -161,9 +163,11 @@ impl FromStr for RecipientKey {
 
     /// Create a `RecipientKey` from a hex encoded string slice.
     fn from_str(val: &str) -> Result<Self, Self::Err> {
-        let bytes = HEXLOWER_PERMISSIVE.decode(val.as_bytes()).map_err(|e| {
-            CryptoError::BadKey(format!("Could not decode public key hex string: {e}"))
-        })?;
+        let bytes = HEXLOWER_PERMISSIVE
+            .decode(val.as_bytes())
+            .map_err(|error| {
+                CryptoError::BadKey(format!("Could not decode public key hex string: {error}"))
+            })?;
         RecipientKey::from_bytes(bytes.as_slice())
     }
 }
@@ -234,7 +238,7 @@ pub(crate) fn encrypt_file_msg(
     public_key: &PublicKey,
     private_key: &SecretKey,
 ) -> Result<EncryptedMessage, CryptoError> {
-    let data = json::to_string(msg).unwrap();
+    let data = json::to_string(msg).expect("Serialization failed"); // Should be infallible
     let msgtype = MessageType::File;
     encrypt(data.as_bytes(), msgtype, public_key, private_key)
 }
@@ -312,8 +316,13 @@ pub fn decrypt_file_data(
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::default_numeric_fallback,
+    clippy::cast_possible_truncation,
+    reason = "Tests"
+)]
 mod test {
-    use std::str::FromStr;
+    use std::str::FromStr as _;
 
     use crate::{
         api::ApiBuilder,
@@ -324,7 +333,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_randombytes_uniform() {
+    fn randombytes_uniform() {
         for _ in 0..500 {
             let random = random_padding_amount();
             assert!(random >= 1);
@@ -333,17 +342,16 @@ mod test {
 
     #[test]
     /// Make sure that not all random numbers are the same.
-    fn test_randombytes_uniform_not_stuck() {
-        let random_numbers = (1..100)
-            .map(|_| random_padding_amount())
+    fn randombytes_uniform_not_stuck() {
+        let random_numbers = std::iter::repeat_with(random_padding_amount)
+            .take(99)
             .collect::<Vec<u8>>();
         let first = random_numbers[0];
-        assert!(!random_numbers.iter().all(|n| *n == first));
+        assert!(!random_numbers.iter().all(|number| *number == first));
     }
 
     #[test]
-    #[allow(clippy::cast_possible_truncation)]
-    fn test_encrypt_image_msg() {
+    fn encrypt_image_msg() {
         // Set up keys
         let own_sec = SecretKey::from([
             113, 146, 154, 1, 241, 143, 18, 181, 240, 174, 72, 16, 247, 83, 161, 29, 215, 123, 130,
@@ -385,7 +393,7 @@ mod test {
         assert!(
             decrypted[decrypted.len() - padding_bytes..decrypted.len()]
                 .iter()
-                .all(|b| *b == padding_bytes as u8)
+                .all(|byte| *byte == padding_bytes as u8)
         );
         let data: &[u8] = &decrypted[0..decrypted.len() - padding_bytes];
 
@@ -395,24 +403,24 @@ mod test {
         assert_eq!(data.len(), 44 + 1);
         assert_eq!(&data[1..17], &blob_id.0);
         assert_eq!(&data[17..21], &[2, 1, 0, 0]);
-        assert_eq!(&data[21..45], &blob_nonce[..]);
+        assert_eq!(&data[21..45], &*blob_nonce);
     }
 
     #[test]
-    fn test_recipient_key_from_publickey() {
+    fn recipient_key_from_publickey() {
         let bytes = [0; 32];
         let key = PublicKey::from_slice(&bytes).unwrap();
         let _: RecipientKey = key.into();
     }
 
     #[test]
-    fn test_recipient_key_from_arr() {
+    fn recipient_key_from_arr() {
         let bytes = [0; 32];
         let _: RecipientKey = bytes.into();
     }
 
     #[test]
-    fn test_recipient_key_from_bytes() {
+    fn recipient_key_from_bytes() {
         let bytes = [0; 32];
         let recipient = RecipientKey::from_bytes(&bytes);
         assert!(recipient.is_ok());
@@ -423,7 +431,7 @@ mod test {
     }
 
     #[test]
-    fn test_recipient_key_from_str() {
+    fn recipient_key_from_str() {
         let encoded = "5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0";
         let recipient = RecipientKey::from_str(encoded);
         assert!(recipient.is_ok());
@@ -442,7 +450,7 @@ mod test {
     }
 
     #[test]
-    fn test_recipient_key_as_bytes() {
+    fn recipient_key_as_bytes() {
         let bytes = [0; 32];
         let recipient = RecipientKey::from_bytes(&bytes).unwrap();
         let bytes_ref = recipient.as_bytes();
@@ -452,7 +460,7 @@ mod test {
     }
 
     #[test]
-    fn test_recipient_key_as_string() {
+    fn recipient_key_as_string() {
         let mut bytes = [0; 32];
         bytes[0] = 0xff;
         bytes[31] = 0xee;
@@ -464,7 +472,7 @@ mod test {
     }
 
     #[test]
-    fn test_encrypt_file_data() {
+    fn encrypt_file_data_works() {
         let file_data = [1, 2, 3, 4];
         let thumb_data = [5, 6, 7];
         let data = FileData {
@@ -494,7 +502,7 @@ mod test {
     }
 
     #[test]
-    fn test_encrypt_file_data_random_key() {
+    fn encrypt_file_data_random_key() {
         // Ensure that a different key is generated each time
         let (_, key1) = encrypt_file_data(&FileData {
             file: [1, 2, 3].to_vec(),
@@ -517,7 +525,7 @@ mod test {
     }
 
     #[test]
-    fn test_decrypt_file_data() {
+    fn decrypt_file_data_works() {
         let file_data = [1, 2, 3, 4];
         let thumb_data = [5, 6, 7];
         let data = FileData {

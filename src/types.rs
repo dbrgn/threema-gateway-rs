@@ -138,10 +138,10 @@ impl FileMetadata {
 
 impl FileMessage {
     /// Shortcut for [`FileMessageBuilder::new`](struct.FileMessageBuilder.html#method.new).
-    pub fn builder(
+    pub fn builder<M: Into<String>>(
         file_blob_id: BlobId,
         blob_encryption_key: Key,
-        media_type: impl Into<String>,
+        media_type: M,
         file_size_bytes: u32,
     ) -> FileMessageBuilder {
         FileMessageBuilder::new(
@@ -183,10 +183,10 @@ impl FileMessageBuilder {
     /// implications.
     ///
     /// [`FileMessage`]: struct.FileMessage.html
-    pub fn new(
+    pub fn new<M: Into<String>>(
         file_blob_id: BlobId,
         blob_encryption_key: Key,
-        media_type: impl Into<String>,
+        media_type: M,
         file_size_bytes: u32,
     ) -> Self {
         FileMessageBuilder {
@@ -209,7 +209,9 @@ impl FileMessageBuilder {
         if self.metadata.is_none() {
             self.metadata = Some(FileMetadata::default());
         }
-        self.metadata.as_mut().unwrap() // Cannot fail, since we assign metadata above
+        self.metadata
+            .as_mut()
+            .expect("Cannot fail, since we assign metadata above")
     }
 
     /// Set a thumbnail.
@@ -218,7 +220,7 @@ impl FileMessageBuilder {
     /// thumbnail data along with the file data (as described in
     /// [`FileMessageBuilder::new`]).
     #[must_use]
-    pub fn thumbnail(self, blob_id: BlobId, media_type: impl Into<String>) -> Self {
+    pub fn thumbnail<M: Into<String>>(self, blob_id: BlobId, media_type: M) -> Self {
         self.thumbnail_opt(Some((blob_id, media_type)))
     }
 
@@ -228,7 +230,7 @@ impl FileMessageBuilder {
     /// thumbnail data along with the file data (as described in
     /// [`FileMessageBuilder::new`]).
     #[must_use]
-    pub fn thumbnail_opt(mut self, blob: Option<(BlobId, impl Into<String>)>) -> Self {
+    pub fn thumbnail_opt<M: Into<String>>(mut self, blob: Option<(BlobId, M)>) -> Self {
         if let Some((blob_id, media_type)) = blob {
             self.thumbnail_blob_id = Some(blob_id);
             self.thumbnail_media_type = Some(media_type.into());
@@ -244,7 +246,7 @@ impl FileMessageBuilder {
     /// Note that the file name will not be shown in the clients if the
     /// rendering type is not set to [`RenderingType::File`].
     #[must_use]
-    pub fn file_name(self, file_name: impl Into<String>) -> Self {
+    pub fn file_name<F: Into<String>>(self, file_name: F) -> Self {
         self.file_name_opt(Some(file_name))
     }
 
@@ -253,20 +255,20 @@ impl FileMessageBuilder {
     /// Note that the file name will not be shown in the clients if the
     /// rendering type is not set to [`RenderingType::File`].
     #[must_use]
-    pub fn file_name_opt(mut self, file_name: Option<impl Into<String>>) -> Self {
+    pub fn file_name_opt<F: Into<String>>(mut self, file_name: Option<F>) -> Self {
         self.file_name = file_name.map(Into::into);
         self
     }
 
     /// Set the file description / caption.
     #[must_use]
-    pub fn description(self, description: impl Into<String>) -> Self {
+    pub fn description<D: Into<String>>(self, description: D) -> Self {
         self.description_opt(Some(description))
     }
 
     /// Set the file description / caption from an Option.
     #[must_use]
-    pub fn description_opt(mut self, description: Option<impl Into<String>>) -> Self {
+    pub fn description_opt<D: Into<String>>(mut self, description: Option<D>) -> Self {
         self.description = description.map(Into::into);
         self
     }
@@ -383,7 +385,7 @@ impl FromStr for BlobId {
             return Err(ApiError::BadBlobId);
         }
         let mut arr = [0; 16];
-        arr[..].clone_from_slice(&bytes[..bytes.len()]);
+        arr[..].clone_from_slice(bytes.get(..bytes.len()).expect("Bad slice"));
         Ok(BlobId(arr))
     }
 }
@@ -401,6 +403,7 @@ impl Serialize for BlobId {
 }
 
 #[cfg(test)]
+#[expect(clippy::default_numeric_fallback, reason = "Tests")]
 mod test {
     use std::collections::HashMap;
 
@@ -409,7 +412,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_blob_id_from_str() {
+    fn blob_id_from_str() {
         assert!(BlobId::from_str("0123456789abcdef0123456789abcdef").is_ok());
         assert!(BlobId::from_str("0123456789abcdef0123456789abcdeF").is_ok());
         assert!(BlobId::from_str("0123456789abcdef0123456789abcde").is_err());
@@ -423,7 +426,7 @@ mod test {
     }
 
     #[test]
-    fn test_serialize_to_string_minimal() {
+    fn serialize_to_string_minimal() {
         let key = Key::from([
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
@@ -463,7 +466,7 @@ mod test {
     }
 
     #[test]
-    fn test_serialize_to_string_full() {
+    fn serialize_to_string_full() {
         let key = Key::from([
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
@@ -516,7 +519,7 @@ mod test {
     }
 
     #[test]
-    fn test_builder() {
+    fn builder_works() {
         let key_bytes = [
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
@@ -536,10 +539,10 @@ mod test {
         assert_eq!(msg.file_media_type, "image/jpeg");
         assert_eq!(msg.thumbnail_blob_id, Some(thumb_blob_id));
         assert_eq!(msg.thumbnail_media_type, Some("image/png".into()));
-        assert_eq!(&msg.blob_encryption_key.as_ref()[..], key_bytes);
-        assert_eq!(msg.file_name, Some("hello.jpg".to_string()));
+        assert_eq!(&**msg.blob_encryption_key.as_ref(), key_bytes);
+        assert_eq!(msg.file_name, Some("hello.jpg".to_owned()));
         assert_eq!(msg.file_size_bytes, 2048);
-        assert_eq!(msg.description, Some("An image file".to_string()));
+        assert_eq!(msg.description, Some("An image file".to_owned()));
         assert_eq!(msg.rendering_type, RenderingType::Media);
         assert_eq!(msg.legacy_rendering_type, 1);
     }

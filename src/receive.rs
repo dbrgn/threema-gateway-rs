@@ -2,10 +2,10 @@
 
 use std::{borrow::Cow, collections::HashMap};
 
-use crypto_box::{PublicKey, SalsaBox, SecretKey, aead::Aead};
+use crypto_box::{PublicKey, SalsaBox, SecretKey, aead::Aead as _};
 use crypto_secretbox::{Nonce, aead::Payload};
 use data_encoding::HEXLOWER_PERMISSIVE;
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, Mac as _};
 use serde::{Deserialize, Deserializer};
 use sha2::Sha256;
 
@@ -71,8 +71,8 @@ impl IncomingMessage {
     ///
     /// **Note:** You should probably not use this directly, but instead use
     /// [`E2eApi::decode_incoming_message`](crate::E2eApi::decode_incoming_message)!
-    pub fn from_urlencoded_bytes(
-        bytes: impl AsRef<[u8]>,
+    pub fn from_urlencoded_bytes<B: AsRef<[u8]>>(
+        bytes: B,
         api_secret: &str,
     ) -> Result<Self, ApiError> {
         let bytes = bytes.as_ref();
@@ -84,7 +84,7 @@ impl IncomingMessage {
         // Decode MAC
         let mac_hex_bytes = values
             .get("mac")
-            .ok_or_else(|| ApiError::ParseError("Missing request body field: mac".to_string()))?
+            .ok_or_else(|| ApiError::ParseError("Missing request body field: mac".to_owned()))?
             .as_bytes();
 
         if mac_hex_bytes.len() != 32 * 2 {
@@ -94,10 +94,10 @@ impl IncomingMessage {
             )));
         }
 
-        let mut mac = [0u8; 32];
+        let mut mac = [0_u8; 32];
         let bytes_decoded = HEXLOWER_PERMISSIVE
             .decode_mut(mac_hex_bytes, &mut mac)
-            .map_err(|_| ApiError::ParseError("Invalid hex bytes for MAC".to_string()))?;
+            .map_err(|_| ApiError::ParseError("Invalid hex bytes for MAC".to_owned()))?;
         if bytes_decoded != 32 {
             return Err(ApiError::ParseError(format!(
                 "Invalid MAC: Length must be 32 bytes, but is {bytes_decoded} bytes"
@@ -106,7 +106,7 @@ impl IncomingMessage {
 
         // Validate MAC
         let mut hmac_state = HmacSha256::new_from_slice(api_secret.as_bytes())
-            .map_err(|_| ApiError::Other("Invalid api_secret".to_string()))?;
+            .map_err(|_| ApiError::Other("Invalid api_secret".to_owned()))?;
         for field in &["from", "to", "messageId", "date", "nonce", "box"] {
             hmac_state.update(
                 values
@@ -124,7 +124,7 @@ impl IncomingMessage {
 
         // MAC is valid, we can now deserialize
         serde_urlencoded::from_bytes(bytes)
-            .map_err(|e| ApiError::ParseError(format!("Could not parse message: {e}")))
+            .map_err(|error| ApiError::ParseError(format!("Could not parse message: {error}")))
     }
 
     /// Decrypt the box using the specified keys and remove padding.
@@ -144,7 +144,7 @@ impl IncomingMessage {
     ) -> Result<Vec<u8>, CryptoError> {
         // Decode nonce
         let nonce_bytes =
-            <[u8; NONCE_SIZE]>::try_from(&self.nonce[..]).map_err(|_| CryptoError::BadNonce)?;
+            <[u8; NONCE_SIZE]>::try_from(&*self.nonce).map_err(|_| CryptoError::BadNonce)?;
         let nonce: Nonce = Nonce::from(nonce_bytes);
 
         // Decrypt bytes
@@ -158,7 +158,7 @@ impl IncomingMessage {
         if padding_amount >= decrypted.len() {
             return Err(CryptoError::BadPadding);
         }
-        decrypted.resize(decrypted.len() - padding_amount, 0);
+        decrypted.resize(decrypted.len().saturating_sub(padding_amount), 0);
 
         Ok(decrypted)
     }
@@ -197,7 +197,7 @@ mod tests {
     mod decrypt_box {
         use crypto_secretbox::aead::OsRng;
 
-        use crypto_box::aead::AeadCore;
+        use crypto_box::aead::AeadCore as _;
 
         use super::*;
 

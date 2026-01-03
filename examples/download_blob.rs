@@ -1,4 +1,10 @@
 //! Example: Download blob
+#![allow(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    clippy::unwrap_used,
+    reason = "Example code"
+)]
 
 use std::process;
 
@@ -17,7 +23,7 @@ Options:
 async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
-        .unwrap_or_else(|e| e.exit());
+        .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
     let our_id = args.get_str("<our-id>");
@@ -25,8 +31,8 @@ async fn main() {
     let private_key = args.get_str("<private-key>");
     let blob_id: BlobId = match args.get_str("<blob-id>").parse() {
         Ok(val) => val,
-        Err(e) => {
-            eprintln!("Could not decode blob ID from hex: {e}");
+        Err(error) => {
+            eprintln!("Could not decode blob ID from hex: {error}");
             process::exit(1);
         }
     };
@@ -50,8 +56,8 @@ async fn main() {
     // Download blob
     println!("Downloading blob with ID {blob_id}...");
     let bytes = match api.blob_download(&blob_id).await {
-        Err(e) => {
-            eprintln!("Could not download blob: {e}");
+        Err(error) => {
+            eprintln!("Could not download blob: {error}");
             process::exit(1);
         }
         Ok(bytes) => {
