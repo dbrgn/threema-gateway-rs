@@ -1,0 +1,78 @@
+{
+  "name": "threema-gateway-rs Devcontainer",
+
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+
+  // Container runtime options
+  "runArgs": [
+    // Basic security: Limited capabilities
+    "--cap-drop=ALL",
+    "--cap-add=CHOWN",
+    "--cap-add=SETGID",
+  ],
+
+  // Run as non-root user
+  "remoteUser": "dev",
+
+  // Automatically update container user UID/GID to match host user
+  "updateRemoteUserUID": true,
+
+  // Set working directory (devcontainer mounts workspace here)
+  "workspaceMount": "source=${localWorkspaceFolder},target=/code,type=bind,consistency=cached",
+  "workspaceFolder": "/code",
+
+  // Commands run after creating devcontainer
+  "initializeCommand": {
+    "create-opencode-config-dir": "mkdir -p ${HOME}/.config/opencode",
+    "create-opencode-auth-file": "mkdir -p ${HOME}/.local/share/opencode && touch ${HOME}/.local/share/opencode/auth.json",
+  },
+
+  // Mounts
+  "mounts": [
+    // OpenCode config (shared across projects)
+    "source=${localEnv:HOME}/.config/opencode,target=/home/dev/.config/opencode,type=bind,consistency=cached",
+    // OpenCode data storage (project-specific named volume for sessions, messages, etc.)
+    "source=devcontainer--${localWorkspaceFolderBasename}--opencode-data,target=/home/dev/.local/share/opencode,type=volume",
+    // OpenCode credentials (shared from host, overlays on top of the volume)
+    "source=${localEnv:HOME}/.local/share/opencode/auth.json,target=/home/dev/.local/share/opencode/auth.json,type=bind,consistency=cached"
+  ],
+
+  // Features to install
+  "features": {
+    "./features/opencode": {
+      "version": "latest",
+      "binaryType": "glibc"
+    },
+  },
+
+  // Forward ports
+  "forwardPorts": [],
+
+  // After first start
+  "postStartCommand": "",
+
+  // Customizations
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "rewrap.wrappingColumn": 110,
+        "[jsonc]": {
+          "json.format.keepLines": true
+        },
+      },
+      "extensions": [
+        // General
+        "dnut.rewrap-revived",
+        "esbenp.prettier-vscode",
+        // Rust
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+      ]
+    }
+  },
+
+}
