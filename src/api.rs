@@ -583,6 +583,7 @@ impl ApiBuilder {
     /// Set a custom API endpoint.
     ///
     /// The API endpoint should be a HTTPS URL without trailing slash.
+    #[must_use]
     pub fn with_custom_endpoint<E: Into<Cow<'static, str>>>(mut self, endpoint: E) -> Self {
         let endpoint = endpoint.into();
         debug!("Using custom endpoint: {}", endpoint);

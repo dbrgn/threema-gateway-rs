@@ -217,6 +217,7 @@ impl FileMessageBuilder {
     /// Before calling this function, you need to encrypt and upload the
     /// thumbnail data along with the file data (as described in
     /// [`FileMessageBuilder::new`]).
+    #[must_use]
     pub fn thumbnail(self, blob_id: BlobId, media_type: impl Into<String>) -> Self {
         self.thumbnail_opt(Some((blob_id, media_type)))
     }
@@ -226,16 +227,14 @@ impl FileMessageBuilder {
     /// Before calling this function, you need to encrypt and upload the
     /// thumbnail data along with the file data (as described in
     /// [`FileMessageBuilder::new`]).
+    #[must_use]
     pub fn thumbnail_opt(mut self, blob: Option<(BlobId, impl Into<String>)>) -> Self {
-        match blob {
-            Some((blob_id, media_type)) => {
-                self.thumbnail_blob_id = Some(blob_id);
-                self.thumbnail_media_type = Some(media_type.into());
-            }
-            None => {
-                self.thumbnail_blob_id = None;
-                self.thumbnail_media_type = None;
-            }
+        if let Some((blob_id, media_type)) = blob {
+            self.thumbnail_blob_id = Some(blob_id);
+            self.thumbnail_media_type = Some(media_type.into());
+        } else {
+            self.thumbnail_blob_id = None;
+            self.thumbnail_media_type = None;
         }
         self
     }
@@ -243,7 +242,8 @@ impl FileMessageBuilder {
     /// Set the file name.
     ///
     /// Note that the file name will not be shown in the clients if the
-    /// rendering type is not set to `File`.
+    /// rendering type is not set to [`RenderingType::File`].
+    #[must_use]
     pub fn file_name(self, file_name: impl Into<String>) -> Self {
         self.file_name_opt(Some(file_name))
     }
@@ -251,18 +251,21 @@ impl FileMessageBuilder {
     /// Set the file name from an Option.
     ///
     /// Note that the file name will not be shown in the clients if the
-    /// rendering type is not set to `File`.
+    /// rendering type is not set to [`RenderingType::File`].
+    #[must_use]
     pub fn file_name_opt(mut self, file_name: Option<impl Into<String>>) -> Self {
         self.file_name = file_name.map(Into::into);
         self
     }
 
     /// Set the file description / caption.
+    #[must_use]
     pub fn description(self, description: impl Into<String>) -> Self {
         self.description_opt(Some(description))
     }
 
     /// Set the file description / caption from an Option.
+    #[must_use]
     pub fn description_opt(mut self, description: Option<impl Into<String>>) -> Self {
         self.description = description.map(Into::into);
         self
@@ -270,7 +273,8 @@ impl FileMessageBuilder {
 
     /// Set the rendering type.
     ///
-    /// See [`RenderingType`](enum.RenderingType.html) docs for more information.
+    /// See [`RenderingType`] docs for more information.
+    #[must_use]
     pub fn rendering_type(mut self, rendering_type: RenderingType) -> Self {
         self.rendering_type = rendering_type;
         self
@@ -278,7 +282,8 @@ impl FileMessageBuilder {
 
     /// Mark this file message as animated.
     ///
-    /// May only be used for files with rendering type `Media` or `Sticker`.
+    /// May only be used for files with rendering type [`RenderingType::Media`] or [`RenderingType::Sticker`].
+    #[must_use]
     pub fn animated(mut self, animated: bool) -> Self {
         self.ensure_metadata().animated = Some(animated);
         self
@@ -286,7 +291,8 @@ impl FileMessageBuilder {
 
     /// Set the dimensions of this file message.
     ///
-    /// May only be used for files with rendering type `Media` or `Sticker`.
+    /// May only be used for files with rendering type [`RenderingType::Media`] or [`RenderingType::Sticker`].
+    #[must_use]
     pub fn dimensions(mut self, height: u32, width: u32) -> Self {
         let metadata = self.ensure_metadata();
         metadata.height = Some(height);
@@ -296,15 +302,14 @@ impl FileMessageBuilder {
 
     /// Set the duration (in seconds) of this file message.
     ///
-    /// May only be used for audio/video files with rendering type `Media`.
+    /// May only be used for audio/video files with rendering type [`RenderingType::Media`].
+    #[must_use]
     pub fn duration(mut self, seconds: f32) -> Self {
         self.ensure_metadata().duration_seconds = Some(seconds);
         self
     }
 
     /// Create a [`FileMessage`] from this builder.
-    ///
-    /// [`FileMessage`]: struct.FileMessage.html
     pub fn build(self) -> Result<FileMessage, FileMessageBuilderError> {
         // Validate some metadata combinations
         if let Some(metadata) = &self.metadata {
@@ -331,7 +336,7 @@ impl FileMessageBuilder {
             if self.rendering_type == RenderingType::Media {
                 warn!("Created FileMessage with rendering type Media but without metadata");
             }
-        };
+        }
 
         Ok(FileMessage {
             file_blob_id: self.file_blob_id,
@@ -359,7 +364,8 @@ impl FileMessageBuilder {
 pub struct BlobId(pub [u8; 16]);
 
 impl BlobId {
-    /// Create a new BlobId.
+    /// Create a new [`BlobId`].
+    #[must_use]
     pub fn new(id: [u8; 16]) -> Self {
         BlobId(id)
     }
@@ -368,7 +374,7 @@ impl BlobId {
 impl FromStr for BlobId {
     type Err = ApiError;
 
-    /// Create a new BlobId from a 32 character hexadecimal String.
+    /// Create a new [`BlobId`] from a 32 character hexadecimal String.
     fn from_str(id: &str) -> Result<Self, Self::Err> {
         let bytes = HEXLOWER_PERMISSIVE
             .decode(id.as_bytes())

@@ -80,3 +80,13 @@ unused_qualifications = "warn"
 missing_crate_level_docs = "warn"
 private_doc_tests = "warn"
 unescaped_backticks = "warn"
+
+[lints.clippy]
+# Pedantic
+pedantic = "warn"
+collapsible_if = { level = "allow", priority = 1 }
+collapsible_else_if = { level = "allow", priority = 1 }
+missing_errors_doc = { level = "allow", priority = 1 }
+similar_names = { level = "allow", priority = 1 }
+too_many_lines = { level = "allow", priority = 1 }
+unnecessary_debug_formatting = { level = "allow", priority = 1 }

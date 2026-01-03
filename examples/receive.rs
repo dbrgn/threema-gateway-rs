@@ -42,7 +42,7 @@ async fn main() {
     let msg = api
         .decode_incoming_message(request_body)
         .unwrap_or_else(|e| {
-            eprintln!("Could not decode incoming message: {}", e);
+            eprintln!("Could not decode incoming message: {e}");
             std::process::exit(1);
         });
 
@@ -63,10 +63,10 @@ async fn main() {
     let data = api
         .decrypt_incoming_message(&msg, &recipient_key)
         .unwrap_or_else(|e| {
-            println!("Could not decrypt box: {}", e);
+            println!("Could not decrypt box: {e}");
             std::process::exit(1);
         });
 
     // Show result
-    println!("Decrypted box: {:?}", data);
+    println!("Decrypted box: {data:?}");
 }

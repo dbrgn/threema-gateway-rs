@@ -46,7 +46,7 @@ async fn main() {
         "media" => RenderingType::Media,
         "sticker" => RenderingType::Sticker,
         other => {
-            eprintln!("Invalid rendering type: {}", other);
+            eprintln!("Invalid rendering type: {other}");
             process::exit(1);
         }
     };
@@ -58,7 +58,7 @@ async fn main() {
     // Verify thumbnail file type
     if let Some(t) = thumbpath {
         if t.extension() != Some(OsStr::new("jpg")) {
-            eprintln!("Thumbnail at {:?} must end with .jpg", t);
+            eprintln!("Thumbnail at {t:?} must end with .jpg");
             process::exit(1);
         }
     }
@@ -66,7 +66,7 @@ async fn main() {
     // Create E2eApi instance
     let api = ApiBuilder::new(from, secret)
         .with_private_key_str(private_key)
-        .and_then(|builder| builder.into_e2e())
+        .and_then(ApiBuilder::into_e2e)
         .unwrap();
 
     // Fetch recipient public key
@@ -120,7 +120,8 @@ async fn main() {
         .first_or_octet_stream()
         .to_string();
     let file_name = filepath.file_name().and_then(OsStr::to_str);
-    let file_size_bytes = file_data.file.len() as u32;
+    let file_size_bytes =
+        u32::try_from(file_data.file.len()).expect("File data length does not fit in u32");
     let msg = FileMessage::builder(file_blob_id, key, file_media_type, file_size_bytes)
         .thumbnail_opt(thumb_blob_id)
         .file_name_opt(file_name)
@@ -136,7 +137,7 @@ async fn main() {
     // Send
     let msg_id = api.send(to, &encrypted, false).await;
     match msg_id {
-        Ok(id) => println!("Sent. Message id is {}.", id),
-        Err(e) => println!("Could not send message: {}", e),
+        Ok(id) => println!("Sent. Message id is {id}."),
+        Err(e) => println!("Could not send message: {e}"),
     }
 }

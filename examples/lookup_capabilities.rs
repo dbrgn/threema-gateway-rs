@@ -27,7 +27,7 @@ async fn main() {
 
     // Show result
     match pubkey {
-        Ok(cap) => println!("Capabilities for {}: {}", their_id, cap),
-        Err(e) => println!("Could not lookup capabilities: {}", e),
+        Ok(cap) => println!("Capabilities for {their_id}: {cap}"),
+        Err(e) => println!("Could not lookup capabilities: {e}"),
     }
 }

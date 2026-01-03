@@ -56,7 +56,6 @@ impl LookupCriterion {
                 let hash = hmac_state.finalize().into_bytes();
                 HEXLOWER.encode(&hash)
             }
-            Self::PhoneHash(val) => val.to_owned(),
             Self::Email(val) => {
                 let mut hmac_state = HmacSha256::new_from_slice(email_key)
                     .expect("Failed to initialize HmacSha256 with email key");
@@ -64,7 +63,7 @@ impl LookupCriterion {
                 let hash = hmac_state.finalize().into_bytes();
                 HEXLOWER.encode(&hash)
             }
-            Self::EmailHash(val) => val.to_owned(),
+            Self::PhoneHash(val) | Self::EmailHash(val) => val.to_owned(),
         };
         Ok(s)
     }
@@ -73,16 +72,17 @@ impl LookupCriterion {
 impl fmt::Display for LookupCriterion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            LookupCriterion::Phone(n) => write!(f, "phone {}", n),
-            LookupCriterion::PhoneHash(nh) => write!(f, "phone hash {}", nh),
-            LookupCriterion::Email(e) => write!(f, "email {}", e),
-            LookupCriterion::EmailHash(eh) => write!(f, "email hash {}", eh),
+            LookupCriterion::Phone(n) => write!(f, "phone {n}"),
+            LookupCriterion::PhoneHash(nh) => write!(f, "phone hash {nh}"),
+            LookupCriterion::Email(e) => write!(f, "email {e}"),
+            LookupCriterion::EmailHash(eh) => write!(f, "email hash {eh}"),
         }
     }
 }
 
 /// A struct containing flags according to the capabilities of a Threema ID.
 #[derive(Debug, PartialEq)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Capabilities {
     /// Whether the ID can receive text messages.
     pub text: bool,
@@ -124,7 +124,7 @@ impl str::FromStr for Capabilities {
                 "file" => capabilities.file = true,
                 _ if !capability.is_empty() => capabilities.other.push(capability),
                 _ => { /* skip empty entries */ }
-            };
+            }
         }
         Ok(capabilities)
     }
@@ -137,10 +137,10 @@ impl fmt::Display for Capabilities {
             "{{ text: {}, image: {}, video: {}, audio: {}, file: {}",
             self.text, self.image, self.video, self.audio, self.file
         )?;
-        if !self.other.is_empty() {
-            write!(f, ", other: {} }}", self.other.join(","))?;
-        } else {
+        if self.other.is_empty() {
             write!(f, " }}")?;
+        } else {
+            write!(f, ", other: {} }}", self.other.join(","))?;
         }
         Ok(())
     }
@@ -148,6 +148,7 @@ impl fmt::Display for Capabilities {
 
 impl Capabilities {
     /// Return whether the specified capability is present.
+    #[must_use]
     pub fn can(&self, capability: &str) -> bool {
         match capability {
             "text" => self.text,
@@ -196,8 +197,7 @@ pub(crate) async fn lookup_pubkey(
         })?;
     if bytes_decoded != KEY_SIZE {
         return Err(ApiError::ParseError(format!(
-            "Invalid public key: Length must be 32 bytes, but is {} bytes",
-            bytes_decoded
+            "Invalid public key: Length must be 32 bytes, but is {bytes_decoded} bytes"
         )));
     }
     Ok(pubkey.into())
@@ -219,7 +219,7 @@ pub(crate) async fn lookup_pubkeys_bulk(
     secret: &str,
 ) -> Result<HashMap<String, RecipientKey>, ApiError> {
     // Build URL
-    let url = format!("{}/pubkeys/bulk", endpoint);
+    let url = format!("{endpoint}/pubkeys/bulk");
 
     debug!("Looking up public key for {} Threema IDs", their_ids.len());
 
@@ -254,10 +254,10 @@ pub(crate) async fn lookup_id(
 ) -> Result<String, ApiError> {
     // Build URL
     let url = match criterion {
-        LookupCriterion::Phone(val) => format!("{}/lookup/phone/{}", endpoint, val),
-        LookupCriterion::PhoneHash(val) => format!("{}/lookup/phone_hash/{}", endpoint, val),
-        LookupCriterion::Email(val) => format!("{}/lookup/email/{}", endpoint, val),
-        LookupCriterion::EmailHash(val) => format!("{}/lookup/email_hash/{}", endpoint, val),
+        LookupCriterion::Phone(val) => format!("{endpoint}/lookup/phone/{val}"),
+        LookupCriterion::PhoneHash(val) => format!("{endpoint}/lookup/phone_hash/{val}"),
+        LookupCriterion::Email(val) => format!("{endpoint}/lookup/email/{val}"),
+        LookupCriterion::EmailHash(val) => format!("{endpoint}/lookup/email_hash/{val}"),
     };
 
     debug!("Looking up id key for {}", criterion);
@@ -320,7 +320,7 @@ pub(crate) async fn lookup_ids_bulk(
             return Err(ApiError::MessageTooLong);
         }
     }
-    let url = format!("{}/lookup/bulk", endpoint);
+    let url = format!("{endpoint}/lookup/bulk");
 
     debug!(
         "Looking up public keys for {} phone hashes and {} email hashes",
@@ -349,7 +349,7 @@ pub(crate) async fn lookup_credits(
     our_id: &str,
     secret: &str,
 ) -> Result<i64, ApiError> {
-    let url = format!("{}/credits", endpoint);
+    let url = format!("{endpoint}/credits");
 
     debug!("Looking up remaining credits");
 
@@ -365,10 +365,7 @@ pub(crate) async fn lookup_credits(
     // Read, parse and return response body
     let body = res.text().await?;
     body.trim().parse::<i64>().map_err(|_| {
-        ApiError::ParseError(format!(
-            "Could not parse response body as i64: \"{}\"",
-            body
-        ))
+        ApiError::ParseError(format!("Could not parse response body as i64: \"{body}\""))
     })
 }
 

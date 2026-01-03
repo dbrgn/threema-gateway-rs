@@ -28,9 +28,9 @@ async fn main() {
     let api = ApiBuilder::new(from, secret).into_simple();
     match api.lookup_credits().await {
         Err(e) => {
-            println!("Could not look up credits: {}", e);
+            println!("Could not look up credits: {e}");
             process::exit(1);
         }
-        Ok(credits) => println!("You have {} credits remaining", credits),
+        Ok(credits) => println!("You have {credits} credits remaining"),
     }
 }

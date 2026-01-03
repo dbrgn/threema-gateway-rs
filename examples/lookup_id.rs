@@ -50,9 +50,9 @@ async fn main() {
     let api = ApiBuilder::new(from, secret).into_simple();
     match api.lookup_id(&criterion).await {
         Err(e) => {
-            println!("Could not look up id: {}", e);
+            println!("Could not look up id: {e}");
             process::exit(1);
         }
-        Ok(id) => println!("The id is {}", id),
+        Ok(id) => println!("The id is {id}"),
     }
 }

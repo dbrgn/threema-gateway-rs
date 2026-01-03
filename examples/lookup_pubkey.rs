@@ -29,12 +29,12 @@ async fn main() {
         api.lookup_pubkey_with_cache(their_id, &cache)
             .await
             .unwrap_or_else(|e| {
-                println!("Could not fetch public key: {}", e);
+                println!("Could not fetch public key: {e}");
                 std::process::exit(1);
             })
     } else {
         api.lookup_pubkey(their_id).await.unwrap_or_else(|e| {
-            println!("Could not fetch and cache public key: {}", e);
+            println!("Could not fetch and cache public key: {e}");
             std::process::exit(1);
         })
     };

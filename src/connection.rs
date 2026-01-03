@@ -9,7 +9,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{EncryptedMessage, SDK_HEADER, SDK_USER_AGENT, errors::ApiError, types::BlobId};
 
-/// Map HTTP response status code to an ApiError if it isn't "200".
+/// Map HTTP response status code to an [`ApiError`] if it isn't "200".
 ///
 /// Optionally, you can pass in the meaning of a 400 response code.
 pub(crate) fn map_response_code(
@@ -48,7 +48,7 @@ pub(crate) fn map_response_error_code(
         // Internal Server Error
         500 => ApiError::ServerError,
         // Unexpected code
-        e => ApiError::Other(format!("Response status code: {}", e)),
+        e => ApiError::Other(format!("Response status code: {e}")),
     }
 }
 
@@ -114,7 +114,7 @@ pub(crate) async fn send_simple(
     // Send request
     trace!("Sending HTTP request");
     let res = client
-        .post(format!("{}/send_simple", endpoint))
+        .post(format!("{endpoint}/send_simple"))
         .form(&params)
         .header("accept", "application/json")
         .header(SDK_HEADER, SDK_USER_AGENT)
@@ -128,6 +128,7 @@ pub(crate) async fn send_simple(
 }
 
 /// Send an encrypted E2E message to the specified recipient.
+#[allow(clippy::too_many_arguments)]
 pub(crate) async fn send_e2e(
     client: &Client,
     endpoint: &str,
@@ -155,7 +156,7 @@ pub(crate) async fn send_e2e(
     // Send request
     trace!("Sending HTTP request");
     let res = client
-        .post(format!("{}/send_e2e", endpoint))
+        .post(format!("{endpoint}/send_e2e"))
         .form(&params)
         .header("accept", "application/json")
         .header(SDK_HEADER, SDK_USER_AGENT)
@@ -221,7 +222,7 @@ impl From<&BulkE2eMessage> for JsonE2eMessage {
     }
 }
 
-/// Custom deserializer for error codes that converts u16 to ApiError
+/// Custom deserializer for error codes that converts u16 to [`ApiError`]
 fn deserialize_error_code<'de, D>(deserializer: D) -> Result<ApiError, D::Error>
 where
     D: Deserializer<'de>,
@@ -250,16 +251,19 @@ pub enum BulkE2eMessageSendStatus {
 
 impl BulkE2eMessageSendStatus {
     /// Returns `true` if sending this message was successful.
+    #[must_use]
     pub fn is_success(&self) -> bool {
         matches!(self, BulkE2eMessageSendStatus::Success { .. })
     }
 
     /// Returns `true` if sending this message failed.
+    #[must_use]
     pub fn is_error(&self) -> bool {
         matches!(self, BulkE2eMessageSendStatus::Error { .. })
     }
 
     /// Returns the message ID if the message was sent successfully, or `None` if it failed.
+    #[must_use]
     pub fn message_id(&self) -> Option<&str> {
         match self {
             BulkE2eMessageSendStatus::Success { message_id } => Some(message_id),
@@ -268,6 +272,7 @@ impl BulkE2eMessageSendStatus {
     }
 
     /// Returns the error if the message failed to send.
+    #[must_use]
     pub fn error(&self) -> Option<&ApiError> {
         match self {
             BulkE2eMessageSendStatus::Success { .. } => None,
@@ -303,7 +308,7 @@ pub(crate) async fn send_e2e_bulk(
     // Send request
     trace!("Sending HTTP request");
     let res = client
-        .post(format!("{}/send_e2e_bulk", endpoint))
+        .post(format!("{endpoint}/send_e2e_bulk"))
         .query(&params)
         .json(&messages)
         .header("accept", "application/json")
@@ -328,7 +333,7 @@ pub(crate) async fn blob_upload(
     additional_params: Option<HashMap<String, String>>,
 ) -> Result<BlobId, ApiError> {
     // Build URL
-    let url = format!("{}/upload_blob", endpoint);
+    let url = format!("{endpoint}/upload_blob");
     let mut params = vec![("from", from), ("secret", secret)];
     if persist {
         params.push(("persist", "1"));
@@ -437,43 +442,39 @@ mod tests {
         // Test success status with messageId
         let success_json = r#"{"messageId": "abc123def456"}"#;
         let success_status: BulkE2eMessageSendStatus = serde_json::from_str(success_json).unwrap();
-        match success_status {
-            BulkE2eMessageSendStatus::Success { message_id } => {
-                assert_eq!(message_id, "abc123def456");
-            }
-            _ => panic!("Expected Success variant"),
+        if let BulkE2eMessageSendStatus::Success { message_id } = success_status {
+            assert_eq!(message_id, "abc123def456");
+        } else {
+            panic!("Expected Success variant");
         }
 
         // Test error status with errorCode
         let error_json = r#"{"errorCode": 404}"#;
         let error_status: BulkE2eMessageSendStatus = serde_json::from_str(error_json).unwrap();
-        match error_status {
-            BulkE2eMessageSendStatus::Error { error } => {
-                assert!(matches!(error, ApiError::IdNotFound));
-            }
-            _ => panic!("Expected Error variant"),
+        if let BulkE2eMessageSendStatus::Error { error } = error_status {
+            assert!(matches!(error, ApiError::IdNotFound));
+        } else {
+            panic!("Expected Error variant");
         }
 
         // Test success status with extra fields (should still work)
         let success_with_extra_json = r#"{"messageId": "xyz789", "extraField": "ignored"}"#;
         let success_with_extra: BulkE2eMessageSendStatus =
             serde_json::from_str(success_with_extra_json).unwrap();
-        match success_with_extra {
-            BulkE2eMessageSendStatus::Success { message_id } => {
-                assert_eq!(message_id, "xyz789");
-            }
-            _ => panic!("Expected Success variant"),
+        if let BulkE2eMessageSendStatus::Success { message_id } = success_with_extra {
+            assert_eq!(message_id, "xyz789");
+        } else {
+            panic!("Expected Success variant");
         }
 
         // Test error status with extra fields (should still work)
         let error_with_extra_json = r#"{"errorCode": 500, "description": "Internal server error"}"#;
         let error_with_extra: BulkE2eMessageSendStatus =
             serde_json::from_str(error_with_extra_json).unwrap();
-        match error_with_extra {
-            BulkE2eMessageSendStatus::Error { error } => {
-                assert!(matches!(error, ApiError::ServerError));
-            }
-            _ => panic!("Expected Error variant"),
+        if let BulkE2eMessageSendStatus::Error { error } = error_with_extra {
+            assert!(matches!(error, ApiError::ServerError));
+        } else {
+            panic!("Expected Error variant");
         }
 
         // Test that invalid JSON fails gracefully
@@ -483,7 +484,7 @@ mod tests {
         assert!(invalid_result.is_err(), "Should fail to parse invalid JSON");
 
         // Test that empty JSON fails gracefully
-        let empty_json = r#"{}"#;
+        let empty_json = r"{}";
         let empty_result: Result<BulkE2eMessageSendStatus, _> = serde_json::from_str(empty_json);
         assert!(empty_result.is_err(), "Should fail to parse empty JSON");
     }
@@ -512,31 +513,28 @@ mod tests {
         // Test 400 -> ApiError::Other (bad request)
         let error_400_json = r#"{"errorCode": 400}"#;
         let error_400: BulkE2eMessageSendStatus = serde_json::from_str(error_400_json).unwrap();
-        match error_400 {
-            BulkE2eMessageSendStatus::Error { error } => {
-                assert!(matches!(error, ApiError::Other(_)));
-            }
-            _ => panic!("Expected Error variant"),
+        if let BulkE2eMessageSendStatus::Error { error } = error_400 {
+            assert!(matches!(error, ApiError::Other(_)));
+        } else {
+            panic!("Expected Error variant");
         }
 
         // Test 402 -> ApiError::NoCredits
         let error_402_json = r#"{"errorCode": 402}"#;
         let error_402: BulkE2eMessageSendStatus = serde_json::from_str(error_402_json).unwrap();
-        match error_402 {
-            BulkE2eMessageSendStatus::Error { error } => {
-                assert!(matches!(error, ApiError::NoCredits));
-            }
-            _ => panic!("Expected Error variant"),
+        if let BulkE2eMessageSendStatus::Error { error } = error_402 {
+            assert!(matches!(error, ApiError::NoCredits));
+        } else {
+            panic!("Expected Error variant");
         }
 
         // Test unknown error code -> ApiError::Other
         let error_999_json = r#"{"errorCode": 999}"#;
         let error_999: BulkE2eMessageSendStatus = serde_json::from_str(error_999_json).unwrap();
-        match error_999 {
-            BulkE2eMessageSendStatus::Error { error } => {
-                assert!(matches!(error, ApiError::Other(_)));
-            }
-            _ => panic!("Expected Error variant"),
+        if let BulkE2eMessageSendStatus::Error { error } = error_999 {
+            assert!(matches!(error, ApiError::Other(_)));
+        } else {
+            panic!("Expected Error variant");
         }
     }
 

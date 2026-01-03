@@ -144,11 +144,13 @@ impl RecipientKey {
     }
 
     /// Return a reference to the contained key bytes.
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_ref()
     }
 
     /// Encode the key bytes as lowercase hex string.
+    #[must_use]
     pub fn to_hex_string(&self) -> String {
         HEXLOWER.encode(self.as_bytes())
     }
@@ -160,7 +162,7 @@ impl FromStr for RecipientKey {
     /// Create a `RecipientKey` from a hex encoded string slice.
     fn from_str(val: &str) -> Result<Self, Self::Err> {
         let bytes = HEXLOWER_PERMISSIVE.decode(val.as_bytes()).map_err(|e| {
-            CryptoError::BadKey(format!("Could not decode public key hex string: {}", e))
+            CryptoError::BadKey(format!("Could not decode public key hex string: {e}"))
         })?;
         RecipientKey::from_bytes(bytes.as_slice())
     }
@@ -194,7 +196,7 @@ pub fn encrypt(
     let padding = repeat_n(padding_amount, padding_amount as usize);
     let msgtype_byte = repeat_n(msgtype.into(), 1);
     let padded_plaintext: Vec<u8> = msgtype_byte
-        .chain(data.iter().cloned())
+        .chain(data.iter().copied())
         .chain(padding)
         .collect();
 
@@ -340,6 +342,7 @@ mod test {
     }
 
     #[test]
+    #[allow(clippy::cast_possible_truncation)]
     fn test_encrypt_image_msg() {
         // Set up keys
         let own_sec = SecretKey::from([

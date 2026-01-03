@@ -28,13 +28,13 @@ async fn main() {
     // Create E2eApi instance
     let api = ApiBuilder::new(from, secret)
         .with_private_key_str(private_key)
-        .and_then(|builder| builder.into_e2e())
+        .and_then(ApiBuilder::into_e2e)
         .unwrap();
 
     // Fetch recipient public key
     // Note: In a real application, you should cache the public key
     let recipient_key = api.lookup_pubkey(to).await.unwrap_or_else(|e| {
-        println!("Could not fetch public key: {}", e);
+        println!("Could not fetch public key: {e}");
         process::exit(1);
     });
 
@@ -48,7 +48,7 @@ async fn main() {
     let msg_id = api.send(to, &encrypted, false).await;
 
     match msg_id {
-        Ok(id) => println!("Sent. Message id is {}.", id),
-        Err(e) => println!("Could not send message: {}", e),
+        Ok(id) => println!("Sent. Message id is {id}."),
+        Err(e) => println!("Could not send message: {e}"),
     }
 }

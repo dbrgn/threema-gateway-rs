@@ -31,35 +31,35 @@ async fn main() {
 
     // Make sure that the file exists
     if !path.exists() {
-        println!("File at {:?} does not exist", path);
+        println!("File at {path:?} does not exist");
         process::exit(1);
     }
     if path.extension() != Some(OsStr::new("jpg")) {
-        println!("File at {:?} must end with .jpg", path);
+        println!("File at {path:?} must end with .jpg");
         process::exit(1);
     }
 
     // Create E2eApi instance
     let api = ApiBuilder::new(from, secret)
         .with_private_key_str(private_key)
-        .and_then(|builder| builder.into_e2e())
+        .and_then(ApiBuilder::into_e2e)
         .unwrap();
 
     // Fetch recipient public key
     // Note: In a real application, you should cache the public key
     let recipient_key = api.lookup_pubkey(to).await.unwrap_or_else(|e| {
-        println!("Could not fetch public key: {}", e);
+        println!("Could not fetch public key: {e}");
         process::exit(1);
     });
 
     // Encrypt image
     let mut file = File::open(path).unwrap_or_else(|e| {
-        println!("Could not open file: {}", e);
+        println!("Could not open file: {e}");
         process::exit(1);
     });
     let mut img_data: Vec<u8> = vec![];
     file.read_to_end(&mut img_data).unwrap_or_else(|e| {
-        println!("Could not read file: {}", e);
+        println!("Could not read file: {e}");
         process::exit(1);
     });
     let encrypted_image = api
@@ -74,7 +74,7 @@ async fn main() {
         .blob_upload(&encrypted_image, false)
         .await
         .unwrap_or_else(|e| {
-            println!("Could not upload image to blob server: {}", e);
+            println!("Could not upload image to blob server: {e}");
             process::exit(1);
         });
 
@@ -82,7 +82,7 @@ async fn main() {
     let msg = api
         .encrypt_image_msg(
             &blob_id,
-            img_data.len() as u32,
+            u32::try_from(img_data.len()).expect("Image data length does not fit in u32"),
             &encrypted_image.nonce,
             &recipient_key,
         )
@@ -94,7 +94,7 @@ async fn main() {
     // Send
     let msg_id = api.send(to, &msg, false).await;
     match msg_id {
-        Ok(id) => println!("Sent. Message id is {}.", id),
-        Err(e) => println!("Could not send message: {}", e),
+        Ok(id) => println!("Sent. Message id is {id}."),
+        Err(e) => println!("Could not send message: {e}"),
     }
 }
