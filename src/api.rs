@@ -10,6 +10,8 @@ use data_encoding::HEXLOWER_PERMISSIVE;
 use log::{debug, warn};
 use reqwest::Client;
 
+#[cfg(feature = "receive")]
+use crate::receive::IncomingMessage;
 use crate::{
     MSGAPI_URL,
     cache::PublicKeyCache,
@@ -25,7 +27,6 @@ use crate::{
         BulkIdentityPublicKey, Capabilities, LookupCriterion, lookup_capabilities, lookup_credits,
         lookup_id, lookup_ids_bulk, lookup_pubkey, lookup_pubkeys_bulk,
     },
-    receive::IncomingMessage,
     types::{BlobId, FileMessage, MessageType},
 };
 
@@ -508,6 +509,7 @@ impl E2eApi {
     ///
     /// This will validate the MAC. If the MAC is invalid,
     /// [`ApiError::InvalidMac`] will be returned.
+    #[cfg(feature = "receive")]
     pub fn decode_incoming_message<B: AsRef<[u8]>>(
         &self,
         bytes: B,
@@ -520,6 +522,7 @@ impl E2eApi {
     ///
     /// The format of the returned decrypted message bytes is documented at
     /// <https://gateway.threema.ch/de/developer/e2e>.
+    #[cfg(feature = "receive")]
     pub fn decrypt_incoming_message(
         &self,
         message: &IncomingMessage,
