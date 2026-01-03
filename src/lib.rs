@@ -84,6 +84,7 @@ mod lookup;
 mod receive;
 mod types;
 
+pub use connection::BulkE2eMessage;
 pub use crypto_box::{PublicKey, SecretKey};
 pub use crypto_secretbox::Nonce;
 
@@ -95,7 +96,7 @@ pub use crate::{
         EncryptedFileData, EncryptedMessage, FileData, Key, RecipientKey, decrypt_file_data,
         encrypt, encrypt_file_data, encrypt_raw,
     },
-    lookup::{Capabilities, LookupCriterion},
+    lookup::{BulkIdentityPublicKey, Capabilities, LookupCriterion},
     types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType},
 };
 
