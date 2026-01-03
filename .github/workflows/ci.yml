@@ -19,7 +19,7 @@ jobs:
         rust: [$RUST_VERSION, stable]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
@@ -34,7 +34,7 @@ jobs:
     name: run rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: $RUST_VERSION
@@ -46,7 +46,7 @@ jobs:
     name: run clippy lints
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
@@ -59,6 +59,6 @@ jobs:
     runs-on: ubuntu-latest
     container: dbrgn/cargo-audit:latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Audit all used dependencies
         run: cargo audit
