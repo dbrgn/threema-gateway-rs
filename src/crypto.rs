@@ -100,9 +100,10 @@ fn random_padding_amount() -> u8 {
 }
 
 /// An encrypted message. Contains both the ciphertext and the nonce.
-#[allow(missing_docs)]
 pub struct EncryptedMessage {
+    /// Ciphertext of the encrypted message
     pub ciphertext: Vec<u8>,
+    /// Nonce of the encrypted message
     pub nonce: Nonce,
 }
 

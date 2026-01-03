@@ -1,3 +1,5 @@
+//! Example: Generate keypair
+
 use crypto_secretbox::aead::OsRng;
 use data_encoding::HEXLOWER;
 

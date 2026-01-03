@@ -297,7 +297,7 @@ pub struct BulkIdentityPublicKey {
 
 /// Look up multiple IDs in the Threema directory.
 ///
-/// Note: The use of this endpoint is restricted and requires manual
+/// **Note:** The use of this endpoint is restricted and requires manual
 /// approval. Please contact the Threema support team directly if you
 /// would like to use this feature.
 pub(crate) async fn lookup_ids_bulk(

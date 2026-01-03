@@ -1,3 +1,5 @@
+//! Example: Lookup public key
+
 use docopt::Docopt;
 use threema_gateway::{ApiBuilder, PublicKeyCache};
 

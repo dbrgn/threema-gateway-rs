@@ -47,7 +47,7 @@ macro_rules! impl_common_functionality {
         /// and therefore you can also look up the key associated with a given ID from
         /// the server.
         ///
-        /// *Note:* It is strongly recommended that you cache the public keys to avoid
+        /// **Note:** It is strongly recommended that you cache the public keys to avoid
         /// querying the API for each message. To simplify this, the
         /// `lookup_pubkey_with_cache` method can be used instead.
         pub async fn lookup_pubkey(&self, id: &str) -> Result<RecipientKey, ApiError> {
@@ -128,7 +128,7 @@ macro_rules! impl_common_functionality {
         /// This is like `lookup_id`, but you can look up multiple IDs in a
         /// single request.
         ///
-        /// *Note:* The use of this endpoint is restricted and requires manual
+        /// **Note:** The use of this endpoint is restricted and requires manual
         /// approval. Please contact the Threema support team directly if you
         /// would like to use this feature.
         pub async fn lookup_ids_bulk(
@@ -300,7 +300,7 @@ impl E2eApi {
     ///
     /// The encrypted data will include PKCS#7 style random padding.
     ///
-    /// Note: In almost all cases you should use [`encrypt_text_msg`],
+    /// **Note:** In almost all cases you should use [`encrypt_text_msg`],
     /// [`encrypt_file_msg`] or [`encrypt_image_msg`] instead.
     ///
     /// [`encrypt_text_msg`]: Self::encrypt_text_msg
@@ -358,8 +358,8 @@ impl E2eApi {
     /// share the same message ID. This is a feature that is only relevant for
     /// group messaging. If unsure, set this to `false`.
     ///
-    /// *Note:* This endpoint is rate-limited. You may send a maximum of 1000
-    /// messages in a single bulk request and will get an
+    /// **Note:** This endpoint is rate-limited. You may send a maximum of
+    /// 1000 messages in a single bulk request and will get an
     /// [`ApiError::RateLimitReached`] when the rate limit is exceeded.
     ///
     /// Cost: 1 credit per message.

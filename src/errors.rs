@@ -80,11 +80,13 @@ impl From<ReqwestError> for ApiError {
     }
 }
 
+/// Either an [`ApiError`] or a cache error.
 #[derive(Debug, Error)]
-#[allow(missing_docs)]
 pub enum ApiOrCacheError<C: std::error::Error> {
+    /// API error, see contained [`ApiError`] value
     #[error("api error: {0}")]
     ApiError(ApiError),
+    /// Cache error, see contained value `C`
     #[error("cache error: {0}")]
     CacheError(C),
 }
