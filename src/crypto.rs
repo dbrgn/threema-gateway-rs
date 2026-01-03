@@ -23,6 +23,7 @@ use crate::{
     types::{BlobId, FileMessage, MessageType},
 };
 
+#[cfg(feature = "receive")]
 pub(crate) const NONCE_SIZE: usize = 24;
 const KEY_SIZE: usize = 32;
 
