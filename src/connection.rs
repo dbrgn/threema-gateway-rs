@@ -205,6 +205,22 @@ struct JsonE2eMessage {
     group: Option<bool>,
 }
 
+impl From<&BulkE2eMessage> for JsonE2eMessage {
+    fn from(m: &BulkE2eMessage) -> Self {
+        let no_delivery_receipts = m.delivery_receipts.not().then_some(true);
+        let no_push = m.push.not().then_some(true);
+        let group = m.is_group_message.then_some(true);
+        JsonE2eMessage {
+            to: m.to.clone(),
+            nonce: BASE64.encode(&m.message.nonce),
+            r#box: BASE64.encode(&m.message.ciphertext),
+            no_delivery_receipts,
+            no_push,
+            group,
+        }
+    }
+}
+
 /// Custom deserializer for error codes that converts u16 to ApiError
 fn deserialize_error_code<'de, D>(deserializer: D) -> Result<ApiError, D::Error>
 where
@@ -282,22 +298,8 @@ pub(crate) async fn send_e2e_bulk(
     if same_message_id {
         params.insert("sameMessageId", "1".to_string());
     }
-    let messages: Vec<JsonE2eMessage> = messages
-        .iter()
-        .map(|m| {
-            let no_delivery_receipts = m.delivery_receipts.not().then_some(true);
-            let no_push = m.push.not().then_some(true);
-            let group = m.is_group_message.not().then_some(true);
-            JsonE2eMessage {
-                to: m.to.clone(),
-                nonce: BASE64.encode(&m.message.nonce),
-                r#box: BASE64.encode(&m.message.ciphertext),
-                no_delivery_receipts,
-                no_push,
-                group,
-            }
-        })
-        .collect();
+    let messages: Vec<JsonE2eMessage> = messages.iter().map(|m| JsonE2eMessage::from(*m)).collect();
+
     // Send request
     log::trace!("Sending HTTP request");
     let res = client
@@ -535,6 +537,66 @@ mod tests {
                 assert!(matches!(error, ApiError::Other(_)));
             }
             _ => panic!("Expected Error variant"),
+        }
+    }
+
+    mod json_e2e_message_from_bulk {
+        use crypto_secretbox::{AeadCore, XSalsa20Poly1305, aead::OsRng};
+
+        use super::*;
+
+        #[test]
+        fn optional_fields_none() {
+            // When delivery_receipts=true, push=true, is_group_message=false,
+            // the optional fields should be None
+            let nonce = XSalsa20Poly1305::generate_nonce(&mut OsRng);
+            let ciphertext = vec![10, 20, 30, 40];
+            let bulk_msg = BulkE2eMessage {
+                to: "ABCD1234".to_string(),
+                message: EncryptedMessage {
+                    nonce,
+                    ciphertext: ciphertext.clone(),
+                },
+                delivery_receipts: true,
+                push: true,
+                is_group_message: false,
+            };
+
+            let json_msg = JsonE2eMessage::from(&bulk_msg);
+
+            assert_eq!(json_msg.to, "ABCD1234");
+            assert_eq!(json_msg.nonce, BASE64.encode(&nonce));
+            assert_eq!(json_msg.r#box, BASE64.encode(&ciphertext));
+            assert_eq!(json_msg.no_delivery_receipts, None);
+            assert_eq!(json_msg.no_push, None);
+            assert_eq!(json_msg.group, None);
+        }
+
+        #[test]
+        fn optional_fields_some() {
+            // When delivery_receipts=false, push=false, is_group_message=true,
+            // the optional fields should be Some(true)
+            let nonce = XSalsa20Poly1305::generate_nonce(&mut OsRng);
+            let ciphertext = vec![0xdd, 0xee, 0xff];
+            let bulk_msg = BulkE2eMessage {
+                to: "WXYZ9876".to_string(),
+                message: EncryptedMessage {
+                    nonce,
+                    ciphertext: ciphertext.clone(),
+                },
+                delivery_receipts: false,
+                push: false,
+                is_group_message: true,
+            };
+
+            let json_msg = JsonE2eMessage::from(&bulk_msg);
+
+            assert_eq!(json_msg.to, "WXYZ9876");
+            assert_eq!(json_msg.nonce, BASE64.encode(&nonce));
+            assert_eq!(json_msg.r#box, BASE64.encode(&ciphertext));
+            assert_eq!(json_msg.no_delivery_receipts, Some(true));
+            assert_eq!(json_msg.no_push, Some(true));
+            assert_eq!(json_msg.group, Some(true));
         }
     }
 }
