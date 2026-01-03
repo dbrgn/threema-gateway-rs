@@ -1,0 +1,14 @@
+version: 2
+updates:
+
+  # Create PRs for GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    cooldown:
+      default-days: 7
+
+  # Note: Rust dependencies are not handled here. For those dependencies, we
+  # want Dependabot only for security updates, which is already enabled through
+  # GitHub repository settings.
