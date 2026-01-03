@@ -1,6 +1,6 @@
 //! Encrypt and decrypt messages.
 
-use std::{convert::Into, fmt::Debug, io::Write, iter::repeat, str::FromStr, sync::OnceLock};
+use std::{convert::Into, fmt::Debug, io::Write, iter::repeat_n, str::FromStr, sync::OnceLock};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 use crypto_box::{SalsaBox, aead::Aead};
@@ -191,8 +191,8 @@ pub fn encrypt(
 ) -> Result<EncryptedMessage, CryptoError> {
     // Add random amount of PKCS#7 style padding
     let padding_amount = random_padding_amount();
-    let padding = repeat(padding_amount).take(padding_amount as usize);
-    let msgtype_byte = repeat(msgtype.into()).take(1);
+    let padding = repeat_n(padding_amount, padding_amount as usize);
+    let msgtype_byte = repeat_n(msgtype.into(), 1);
     let padded_plaintext: Vec<u8> = msgtype_byte
         .chain(data.iter().cloned())
         .chain(padding)
