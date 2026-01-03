@@ -10,7 +10,7 @@
     // Basic security: Limited capabilities
     "--cap-drop=ALL",
     "--cap-add=CHOWN",
-    "--cap-add=SETGID",
+    "--cap-add=SETGID"
   ],
 
   // Run as non-root user
@@ -26,7 +26,7 @@
   // Commands run after creating devcontainer
   "initializeCommand": {
     "create-opencode-config-dir": "mkdir -p ${HOME}/.config/opencode",
-    "create-opencode-auth-file": "mkdir -p ${HOME}/.local/share/opencode && touch ${HOME}/.local/share/opencode/auth.json",
+    "create-opencode-auth-file": "mkdir -p ${HOME}/.local/share/opencode && touch ${HOME}/.local/share/opencode/auth.json"
   },
 
   // Mounts
@@ -44,7 +44,7 @@
     "./features/opencode": {
       "version": "latest",
       "binaryType": "glibc"
-    },
+    }
   },
 
   // Forward ports
@@ -63,6 +63,9 @@
         "[jsonc]": {
           "json.format.keepLines": true
         },
+        "[rust]": {
+          "editor.defaultFormatter": "rust-lang.rust-analyzer"
+        }
       },
       "extensions": [
         // General
@@ -70,9 +73,8 @@
         "esbenp.prettier-vscode",
         // Rust
         "rust-lang.rust-analyzer",
-        "tamasfe.even-better-toml",
+        "tamasfe.even-better-toml"
       ]
     }
-  },
-
+  }
 }
