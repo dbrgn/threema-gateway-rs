@@ -127,7 +127,7 @@ for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 be dual licensed as above, without any additional terms or conditions.
 
 <!-- Badges -->
-[github-actions]: https://github.com/dbrgn/threema-gateway-rs/actions?query=branch%3Amaster
+[github-actions]: https://github.com/dbrgn/threema-gateway-rs/actions?query=branch%3Amain
 [github-actions-badge]: https://github.com/dbrgn/threema-gateway-rs/workflows/CI/badge.svg
 [crates-io]: https://crates.io/crates/threema-gateway
 [crates-io-badge]: https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600

@@ -66,7 +66,7 @@
 //! ```
 //!
 //! For more examples, see the
-//! [`examples/`](https://github.com/dbrgn/threema-gateway-rs/tree/master/examples) directory.
+//! [`examples/`](https://github.com/dbrgn/threema-gateway-rs/tree/main/examples) directory.
 
 mod api;
 mod cache;
