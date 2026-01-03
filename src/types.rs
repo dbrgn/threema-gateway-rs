@@ -1,3 +1,5 @@
+//! Types used throughout the codebase.
+
 use std::{default::Default, fmt, str::FromStr};
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};

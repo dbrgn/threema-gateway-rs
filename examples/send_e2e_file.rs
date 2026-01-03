@@ -1,3 +1,5 @@
+//! Example: Send E2EE file
+
 use std::{ffi::OsStr, fs::File, io::Read, path::Path, process};
 
 use docopt::Docopt;

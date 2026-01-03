@@ -1,3 +1,5 @@
+//! Example: Lookup credits
+
 use std::process;
 
 use docopt::Docopt;

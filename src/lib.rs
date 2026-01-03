@@ -6,7 +6,7 @@
 //! Documentation of the HTTP API can be found at
 //! [gateway.threema.ch](https://gateway.threema.ch/de/developer/api).
 //!
-//! Note: This library is fully asynchronous (because the underlying HTTP
+//! **Note:** This library is fully asynchronous (because the underlying HTTP
 //! client is async as well). To call the async methods, either call them from
 //! an async context, or wrap the returned future in a `block_on` method
 //! provided by an executor like tokio, async-std or smol.
@@ -84,6 +84,7 @@ mod lookup;
 mod receive;
 mod types;
 
+pub use connection::{BulkE2eMessage, BulkE2eMessageSendStatus};
 pub use crypto_box::{PublicKey, SecretKey};
 pub use crypto_secretbox::Nonce;
 
@@ -95,7 +96,7 @@ pub use crate::{
         EncryptedFileData, EncryptedMessage, FileData, Key, RecipientKey, decrypt_file_data,
         encrypt, encrypt_file_data, encrypt_raw,
     },
-    lookup::{Capabilities, LookupCriterion},
+    lookup::{BulkIdentityPublicKey, Capabilities, LookupCriterion},
     types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType},
 };
 

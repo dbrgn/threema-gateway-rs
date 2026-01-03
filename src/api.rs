@@ -12,14 +12,17 @@ use reqwest::Client;
 use crate::{
     MSGAPI_URL,
     cache::PublicKeyCache,
-    connection::{Recipient, blob_download, blob_upload, send_e2e, send_simple},
+    connection::{
+        BulkE2eMessage, BulkE2eMessageSendStatus, Recipient, blob_download, blob_upload, send_e2e,
+        send_e2e_bulk, send_simple,
+    },
     crypto::{
         EncryptedMessage, RecipientKey, encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw,
     },
     errors::{ApiBuilderError, ApiError, ApiOrCacheError, CryptoError},
     lookup::{
-        Capabilities, LookupCriterion, lookup_capabilities, lookup_credits, lookup_id,
-        lookup_pubkey,
+        BulkIdentityPublicKey, Capabilities, LookupCriterion, lookup_capabilities, lookup_credits,
+        lookup_id, lookup_ids_bulk, lookup_pubkey, lookup_pubkeys_bulk,
     },
     receive::IncomingMessage,
     types::{BlobId, FileMessage, MessageType},
@@ -27,7 +30,7 @@ use crate::{
 
 fn make_reqwest_client() -> Client {
     Client::builder()
-        .timeout(Duration::from_secs(10))
+        .timeout(Duration::from_secs(120))
         .user_agent(crate::SDK_USER_AGENT)
         .build()
         .expect("Could not build client")
@@ -44,7 +47,7 @@ macro_rules! impl_common_functionality {
         /// and therefore you can also look up the key associated with a given ID from
         /// the server.
         ///
-        /// *Note:* It is strongly recommended that you cache the public keys to avoid
+        /// **Note:** It is strongly recommended that you cache the public keys to avoid
         /// querying the API for each message. To simplify this, the
         /// `lookup_pubkey_with_cache` method can be used instead.
         pub async fn lookup_pubkey(&self, id: &str) -> Result<RecipientKey, ApiError> {
@@ -85,6 +88,24 @@ macro_rules! impl_common_functionality {
             Ok(pubkey)
         }
 
+        /// Lookup multiple public keys at once.
+        ///
+        /// This is like `lookup_pubkey`, but you can look up public keys for
+        /// multiple IDs in a single request.
+        pub async fn lookup_pubkeys_bulk(
+            &self,
+            ids: &[&str],
+        ) -> Result<HashMap<String, RecipientKey>, ApiError> {
+            lookup_pubkeys_bulk(
+                &self.client,
+                self.endpoint.borrow(),
+                &self.id,
+                ids,
+                &self.secret,
+            )
+            .await
+        }
+
         /// Look up a Threema ID in the directory.
         ///
         /// An ID can be looked up either by a phone number or an e-mail
@@ -96,6 +117,28 @@ macro_rules! impl_common_functionality {
                 &self.client,
                 self.endpoint.borrow(),
                 criterion,
+                &self.id,
+                &self.secret,
+            )
+            .await
+        }
+
+        /// Look up multiple IDs at once.
+        ///
+        /// This is like `lookup_id`, but you can look up multiple IDs in a
+        /// single request.
+        ///
+        /// **Note:** The use of this endpoint is restricted and requires manual
+        /// approval. Please contact the Threema support team directly if you
+        /// would like to use this feature.
+        pub async fn lookup_ids_bulk(
+            &self,
+            criteria: &[&LookupCriterion],
+        ) -> Result<Vec<BulkIdentityPublicKey>, ApiError> {
+            lookup_ids_bulk(
+                &self.client,
+                self.endpoint.borrow(),
+                criteria,
                 &self.id,
                 &self.secret,
             )
@@ -257,7 +300,7 @@ impl E2eApi {
     ///
     /// The encrypted data will include PKCS#7 style random padding.
     ///
-    /// Note: In almost all cases you should use [`encrypt_text_msg`],
+    /// **Note:** In almost all cases you should use [`encrypt_text_msg`],
     /// [`encrypt_file_msg`] or [`encrypt_image_msg`] instead.
     ///
     /// [`encrypt_text_msg`]: Self::encrypt_text_msg
@@ -286,7 +329,7 @@ impl E2eApi {
     /// If `delivery_receipts` is set to `false`, then the recipient's device will
     /// be instructed not to send any delivery receipts. This can be useful for
     /// one-way communication where the delivery receipt will be discarded. If
-    /// you're unsure what value to use, set the flag to `false`.
+    /// you're unsure what value to use, set the flag to `true`.
     ///
     /// Cost: 1 credit.
     pub async fn send(
@@ -305,6 +348,33 @@ impl E2eApi {
             &message.ciphertext,
             delivery_receipts,
             None,
+        )
+        .await
+    }
+
+    /// Send multiple encrypted E2E messages.
+    ///
+    /// If `same_message_id` is set to `true`, then all messages sent will
+    /// share the same message ID. This is a feature that is only relevant for
+    /// group messaging. If unsure, set this to `false`.
+    ///
+    /// **Note:** This endpoint is rate-limited. You may send a maximum of
+    /// 1000 messages in a single bulk request and will get an
+    /// [`ApiError::RateLimitReached`] when the rate limit is exceeded.
+    ///
+    /// Cost: 1 credit per message.
+    pub async fn send_bulk(
+        &self,
+        messages: &[&BulkE2eMessage],
+        same_message_id: bool,
+    ) -> Result<Vec<BulkE2eMessageSendStatus>, ApiError> {
+        send_e2e_bulk(
+            &self.client,
+            self.endpoint.borrow(),
+            &self.id,
+            &self.secret,
+            messages,
+            same_message_id,
         )
         .await
     }
@@ -488,6 +558,7 @@ impl E2eApi {
 ///                              .unwrap();
 /// ```
 #[derive(Debug)]
+#[allow(missing_docs)]
 pub struct ApiBuilder {
     pub id: String,
     pub secret: String,

@@ -1,3 +1,5 @@
+//! Example: Decrypt and decode incoming message
+
 use data_encoding::HEXLOWER_PERMISSIVE;
 use docopt::Docopt;
 use threema_gateway::{ApiBuilder, SecretKey};

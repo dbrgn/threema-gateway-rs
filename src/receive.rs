@@ -33,8 +33,8 @@ where
 /// server implementation. The request body bytes that are received this way
 /// can then be parsed using [`IncomingMessage::from_urlencoded_bytes`].
 ///
-/// Note: The [`IncomingMessage::from_urlencoded_bytes`] function validates the
-/// MAC, that's why it's not included in here again.
+/// **Note:** The [`IncomingMessage::from_urlencoded_bytes`] function validates
+/// the MAC, that's why it's not included in here again.
 ///
 /// Further docs:
 ///
@@ -69,7 +69,7 @@ impl IncomingMessage {
     /// This will validate the MAC. If the MAC is invalid,
     /// [`ApiError::InvalidMac`] will be returned.
     ///
-    /// Note: You should probably not use this directly, but instead use
+    /// **Note:** You should probably not use this directly, but instead use
     /// [`E2eApi::decode_incoming_message`](crate::E2eApi::decode_incoming_message)!
     pub fn from_urlencoded_bytes(
         bytes: impl AsRef<[u8]>,
@@ -136,7 +136,7 @@ impl IncomingMessage {
     /// The PKCS#7 padding will be removed. If the padding is missing or
     /// invalid, an [`CryptoError::BadPadding`] will be returned.
     ///
-    /// Note: For more convenience, you might want to prefer the shortcut
+    /// **Note:** For more convenience, you might want to prefer the shortcut
     /// [`E2eApi::decrypt_incoming_message`](crate::E2eApi::decrypt_incoming_message)!
     pub fn decrypt_box(
         &self,
