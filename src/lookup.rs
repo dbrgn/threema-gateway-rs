@@ -403,7 +403,87 @@ pub(crate) async fn lookup_capabilities(
 
 #[cfg(test)]
 mod tests {
+    use crate::errors::ApiError;
+
     use super::{Capabilities, LookupCriterion};
+
+    mod lookup_criterion_hash {
+        use super::*;
+
+        #[test]
+        fn phone_computes_hmac() {
+            let criterion = LookupCriterion::Phone("41791234567".to_string());
+            let hash = criterion.hash().unwrap();
+            // Hash should be 64 hex characters (256 bits)
+            assert_eq!(hash.len(), 64);
+            assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+            // Same input should produce same hash
+            let hash2 = LookupCriterion::Phone("41791234567".to_string())
+                .hash()
+                .unwrap();
+            assert_eq!(hash, hash2);
+        }
+
+        #[test]
+        fn phone_rejects_non_digits() {
+            let criterion = LookupCriterion::Phone("+41791234567".to_string());
+            let result = criterion.hash();
+            assert!(
+                matches!(result, Err(ApiError::Other(msg)) if msg == "Bad phone number format")
+            );
+        }
+
+        #[test]
+        fn phone_rejects_letters() {
+            let criterion = LookupCriterion::Phone("4179abc4567".to_string());
+            let result = criterion.hash();
+            assert!(
+                matches!(result, Err(ApiError::Other(msg)) if msg == "Bad phone number format")
+            );
+        }
+
+        #[test]
+        fn phone_hash_returns_value_unchanged() {
+            let hash_value = "abcdef1234567890abcdef1234567890".to_string();
+            let criterion = LookupCriterion::PhoneHash(hash_value.clone());
+            assert_eq!(criterion.hash().unwrap(), hash_value);
+        }
+
+        #[test]
+        fn email_computes_hmac() {
+            let criterion = LookupCriterion::Email("test@example.com".to_string());
+            let hash = criterion.hash().unwrap();
+            // Hash should be 64 hex characters (256 bits)
+            assert_eq!(hash.len(), 64);
+            assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+        }
+
+        #[test]
+        fn email_normalizes_case() {
+            let lower = LookupCriterion::Email("test@example.com".to_string());
+            let upper = LookupCriterion::Email("TEST@EXAMPLE.COM".to_string());
+            let mixed = LookupCriterion::Email("TeSt@ExAmPlE.cOm".to_string());
+            let hash_lower = lower.hash().unwrap();
+            let hash_upper = upper.hash().unwrap();
+            let hash_mixed = mixed.hash().unwrap();
+            assert_eq!(hash_lower, hash_upper);
+            assert_eq!(hash_lower, hash_mixed);
+        }
+
+        #[test]
+        fn email_trims_whitespace() {
+            let trimmed = LookupCriterion::Email("test@example.com".to_string());
+            let with_spaces = LookupCriterion::Email("  test@example.com  ".to_string());
+            assert_eq!(trimmed.hash().unwrap(), with_spaces.hash().unwrap());
+        }
+
+        #[test]
+        fn email_hash_returns_value_unchanged() {
+            let hash_value = "fedcba0987654321fedcba0987654321".to_string();
+            let criterion = LookupCriterion::EmailHash(hash_value.clone());
+            assert_eq!(criterion.hash().unwrap(), hash_value);
+        }
+    }
 
     #[test]
     fn test_lookup_criterion_display() {
