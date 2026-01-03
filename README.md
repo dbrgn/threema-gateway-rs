@@ -106,7 +106,7 @@ discussion](https://users.rust-lang.org/t/rust-version-requirement-change-as-sem
 
 ## TLS
 
-This library uses [rustls](https://github.com/ctz/rustls) with native
+This library uses [rustls](https://github.com/rustls/rustls) with native
 (system-provided) root certificates to establish a TLS connection.
 
 
