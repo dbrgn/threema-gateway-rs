@@ -1,4 +1,5 @@
 //! Example: Generate keypair
+#![allow(clippy::print_stdout, reason = "Example code")]
 
 use crypto_secretbox::aead::OsRng;
 use data_encoding::HEXLOWER;

@@ -3,6 +3,7 @@
 use std::{default::Default, fmt, str::FromStr};
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
+use log::warn;
 use serde::{Serialize, Serializer};
 
 use crate::{
@@ -137,10 +138,10 @@ impl FileMetadata {
 
 impl FileMessage {
     /// Shortcut for [`FileMessageBuilder::new`](struct.FileMessageBuilder.html#method.new).
-    pub fn builder(
+    pub fn builder<M: Into<String>>(
         file_blob_id: BlobId,
         blob_encryption_key: Key,
-        media_type: impl Into<String>,
+        media_type: M,
         file_size_bytes: u32,
     ) -> FileMessageBuilder {
         FileMessageBuilder::new(
@@ -182,10 +183,10 @@ impl FileMessageBuilder {
     /// implications.
     ///
     /// [`FileMessage`]: struct.FileMessage.html
-    pub fn new(
+    pub fn new<M: Into<String>>(
         file_blob_id: BlobId,
         blob_encryption_key: Key,
-        media_type: impl Into<String>,
+        media_type: M,
         file_size_bytes: u32,
     ) -> Self {
         FileMessageBuilder {
@@ -208,7 +209,9 @@ impl FileMessageBuilder {
         if self.metadata.is_none() {
             self.metadata = Some(FileMetadata::default());
         }
-        self.metadata.as_mut().unwrap() // Cannot fail, since we assign metadata above
+        self.metadata
+            .as_mut()
+            .expect("Cannot fail, since we assign metadata above")
     }
 
     /// Set a thumbnail.
@@ -216,7 +219,8 @@ impl FileMessageBuilder {
     /// Before calling this function, you need to encrypt and upload the
     /// thumbnail data along with the file data (as described in
     /// [`FileMessageBuilder::new`]).
-    pub fn thumbnail(self, blob_id: BlobId, media_type: impl Into<String>) -> Self {
+    #[must_use]
+    pub fn thumbnail<M: Into<String>>(self, blob_id: BlobId, media_type: M) -> Self {
         self.thumbnail_opt(Some((blob_id, media_type)))
     }
 
@@ -225,16 +229,14 @@ impl FileMessageBuilder {
     /// Before calling this function, you need to encrypt and upload the
     /// thumbnail data along with the file data (as described in
     /// [`FileMessageBuilder::new`]).
-    pub fn thumbnail_opt(mut self, blob: Option<(BlobId, impl Into<String>)>) -> Self {
-        match blob {
-            Some((blob_id, media_type)) => {
-                self.thumbnail_blob_id = Some(blob_id);
-                self.thumbnail_media_type = Some(media_type.into());
-            }
-            None => {
-                self.thumbnail_blob_id = None;
-                self.thumbnail_media_type = None;
-            }
+    #[must_use]
+    pub fn thumbnail_opt<M: Into<String>>(mut self, blob: Option<(BlobId, M)>) -> Self {
+        if let Some((blob_id, media_type)) = blob {
+            self.thumbnail_blob_id = Some(blob_id);
+            self.thumbnail_media_type = Some(media_type.into());
+        } else {
+            self.thumbnail_blob_id = None;
+            self.thumbnail_media_type = None;
         }
         self
     }
@@ -242,34 +244,39 @@ impl FileMessageBuilder {
     /// Set the file name.
     ///
     /// Note that the file name will not be shown in the clients if the
-    /// rendering type is not set to `File`.
-    pub fn file_name(self, file_name: impl Into<String>) -> Self {
+    /// rendering type is not set to [`RenderingType::File`].
+    #[must_use]
+    pub fn file_name<F: Into<String>>(self, file_name: F) -> Self {
         self.file_name_opt(Some(file_name))
     }
 
     /// Set the file name from an Option.
     ///
     /// Note that the file name will not be shown in the clients if the
-    /// rendering type is not set to `File`.
-    pub fn file_name_opt(mut self, file_name: Option<impl Into<String>>) -> Self {
+    /// rendering type is not set to [`RenderingType::File`].
+    #[must_use]
+    pub fn file_name_opt<F: Into<String>>(mut self, file_name: Option<F>) -> Self {
         self.file_name = file_name.map(Into::into);
         self
     }
 
     /// Set the file description / caption.
-    pub fn description(self, description: impl Into<String>) -> Self {
+    #[must_use]
+    pub fn description<D: Into<String>>(self, description: D) -> Self {
         self.description_opt(Some(description))
     }
 
     /// Set the file description / caption from an Option.
-    pub fn description_opt(mut self, description: Option<impl Into<String>>) -> Self {
+    #[must_use]
+    pub fn description_opt<D: Into<String>>(mut self, description: Option<D>) -> Self {
         self.description = description.map(Into::into);
         self
     }
 
     /// Set the rendering type.
     ///
-    /// See [`RenderingType`](enum.RenderingType.html) docs for more information.
+    /// See [`RenderingType`] docs for more information.
+    #[must_use]
     pub fn rendering_type(mut self, rendering_type: RenderingType) -> Self {
         self.rendering_type = rendering_type;
         self
@@ -277,7 +284,8 @@ impl FileMessageBuilder {
 
     /// Mark this file message as animated.
     ///
-    /// May only be used for files with rendering type `Media` or `Sticker`.
+    /// May only be used for files with rendering type [`RenderingType::Media`] or [`RenderingType::Sticker`].
+    #[must_use]
     pub fn animated(mut self, animated: bool) -> Self {
         self.ensure_metadata().animated = Some(animated);
         self
@@ -285,7 +293,8 @@ impl FileMessageBuilder {
 
     /// Set the dimensions of this file message.
     ///
-    /// May only be used for files with rendering type `Media` or `Sticker`.
+    /// May only be used for files with rendering type [`RenderingType::Media`] or [`RenderingType::Sticker`].
+    #[must_use]
     pub fn dimensions(mut self, height: u32, width: u32) -> Self {
         let metadata = self.ensure_metadata();
         metadata.height = Some(height);
@@ -295,15 +304,14 @@ impl FileMessageBuilder {
 
     /// Set the duration (in seconds) of this file message.
     ///
-    /// May only be used for audio/video files with rendering type `Media`.
+    /// May only be used for audio/video files with rendering type [`RenderingType::Media`].
+    #[must_use]
     pub fn duration(mut self, seconds: f32) -> Self {
         self.ensure_metadata().duration_seconds = Some(seconds);
         self
     }
 
     /// Create a [`FileMessage`] from this builder.
-    ///
-    /// [`FileMessage`]: struct.FileMessage.html
     pub fn build(self) -> Result<FileMessage, FileMessageBuilderError> {
         // Validate some metadata combinations
         if let Some(metadata) = &self.metadata {
@@ -324,13 +332,13 @@ impl FileMessageBuilder {
                 ));
             }
             if self.rendering_type == RenderingType::Media && metadata.none_set() {
-                log::warn!("Created FileMessage with rendering type Media but without metadata");
+                warn!("Created FileMessage with rendering type Media but without metadata");
             }
         } else {
             if self.rendering_type == RenderingType::Media {
-                log::warn!("Created FileMessage with rendering type Media but without metadata");
+                warn!("Created FileMessage with rendering type Media but without metadata");
             }
-        };
+        }
 
         Ok(FileMessage {
             file_blob_id: self.file_blob_id,
@@ -358,7 +366,8 @@ impl FileMessageBuilder {
 pub struct BlobId(pub [u8; 16]);
 
 impl BlobId {
-    /// Create a new BlobId.
+    /// Create a new [`BlobId`].
+    #[must_use]
     pub fn new(id: [u8; 16]) -> Self {
         BlobId(id)
     }
@@ -367,7 +376,7 @@ impl BlobId {
 impl FromStr for BlobId {
     type Err = ApiError;
 
-    /// Create a new BlobId from a 32 character hexadecimal String.
+    /// Create a new [`BlobId`] from a 32 character hexadecimal String.
     fn from_str(id: &str) -> Result<Self, Self::Err> {
         let bytes = HEXLOWER_PERMISSIVE
             .decode(id.as_bytes())
@@ -376,7 +385,7 @@ impl FromStr for BlobId {
             return Err(ApiError::BadBlobId);
         }
         let mut arr = [0; 16];
-        arr[..].clone_from_slice(&bytes[..bytes.len()]);
+        arr[..].clone_from_slice(bytes.get(..bytes.len()).expect("Bad slice"));
         Ok(BlobId(arr))
     }
 }
@@ -394,6 +403,7 @@ impl Serialize for BlobId {
 }
 
 #[cfg(test)]
+#[expect(clippy::default_numeric_fallback, reason = "Tests")]
 mod test {
     use std::collections::HashMap;
 
@@ -402,7 +412,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_blob_id_from_str() {
+    fn blob_id_from_str() {
         assert!(BlobId::from_str("0123456789abcdef0123456789abcdef").is_ok());
         assert!(BlobId::from_str("0123456789abcdef0123456789abcdeF").is_ok());
         assert!(BlobId::from_str("0123456789abcdef0123456789abcde").is_err());
@@ -416,7 +426,7 @@ mod test {
     }
 
     #[test]
-    fn test_serialize_to_string_minimal() {
+    fn serialize_to_string_minimal() {
         let key = Key::from([
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
@@ -456,7 +466,7 @@ mod test {
     }
 
     #[test]
-    fn test_serialize_to_string_full() {
+    fn serialize_to_string_full() {
         let key = Key::from([
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
@@ -509,7 +519,7 @@ mod test {
     }
 
     #[test]
-    fn test_builder() {
+    fn builder_works() {
         let key_bytes = [
             1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
             2, 3, 4,
@@ -529,10 +539,10 @@ mod test {
         assert_eq!(msg.file_media_type, "image/jpeg");
         assert_eq!(msg.thumbnail_blob_id, Some(thumb_blob_id));
         assert_eq!(msg.thumbnail_media_type, Some("image/png".into()));
-        assert_eq!(&msg.blob_encryption_key.as_ref()[..], key_bytes);
-        assert_eq!(msg.file_name, Some("hello.jpg".to_string()));
+        assert_eq!(&**msg.blob_encryption_key.as_ref(), key_bytes);
+        assert_eq!(msg.file_name, Some("hello.jpg".to_owned()));
         assert_eq!(msg.file_size_bytes, 2048);
-        assert_eq!(msg.description, Some("An image file".to_string()));
+        assert_eq!(msg.description, Some("An image file".to_owned()));
         assert_eq!(msg.rendering_type, RenderingType::Media);
         assert_eq!(msg.legacy_rendering_type, 1);
     }

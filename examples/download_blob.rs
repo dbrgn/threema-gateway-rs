@@ -1,4 +1,10 @@
 //! Example: Download blob
+#![allow(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    clippy::unwrap_used,
+    reason = "Example code"
+)]
 
 use std::process;
 
@@ -17,7 +23,7 @@ Options:
 async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
-        .unwrap_or_else(|e| e.exit());
+        .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
     let our_id = args.get_str("<our-id>");
@@ -25,33 +31,33 @@ async fn main() {
     let private_key = args.get_str("<private-key>");
     let blob_id: BlobId = match args.get_str("<blob-id>").parse() {
         Ok(val) => val,
-        Err(e) => {
-            eprintln!("Could not decode blob ID from hex: {}", e);
+        Err(error) => {
+            eprintln!("Could not decode blob ID from hex: {error}");
             process::exit(1);
         }
     };
     let blob_key_raw = args.get_str("<blob-key>");
-    let blob_key = if !blob_key_raw.is_empty() {
+    let blob_key = if blob_key_raw.is_empty() {
+        None
+    } else {
         let bytes = HEXLOWER_PERMISSIVE
             .decode(blob_key_raw.as_bytes())
             .expect("Invalid blob key");
         let key = Key::try_from(bytes).expect("Invalid size of blob key");
         Some(key)
-    } else {
-        None
     };
 
     // Create E2eApi instance
     let api = ApiBuilder::new(our_id, secret)
         .with_private_key_str(private_key)
-        .and_then(|builder| builder.into_e2e())
+        .and_then(ApiBuilder::into_e2e)
         .unwrap();
 
     // Download blob
-    println!("Downloading blob with ID {}...", blob_id);
+    println!("Downloading blob with ID {blob_id}...");
     let bytes = match api.blob_download(&blob_id).await {
-        Err(e) => {
-            eprintln!("Could not download blob: {}", e);
+        Err(error) => {
+            eprintln!("Could not download blob: {error}");
             process::exit(1);
         }
         Ok(bytes) => {

@@ -1,6 +1,13 @@
 //! Example: Send E2EE file
+#![allow(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    clippy::unwrap_used,
+    clippy::use_debug,
+    reason = "Example code"
+)]
 
-use std::{ffi::OsStr, fs::File, io::Read, path::Path, process};
+use std::{ffi::OsStr, fs, path::Path, process};
 
 use docopt::Docopt;
 use threema_gateway::{ApiBuilder, FileData, FileMessage, RenderingType, encrypt_file_data};
@@ -18,9 +25,9 @@ Options:
 /// Try or exit.
 macro_rules! etry {
     ($result:expr, $msg:expr) => {{
-        $result.unwrap_or_else(|e| {
-            eprintln!("{}: {}", $msg, e);
-            process::exit(1);
+        $result.unwrap_or_else(|error| {
+            eprintln!("{}: {}", $msg, error);
+            process::exit(1_i32);
         })
     }};
 }
@@ -29,7 +36,7 @@ macro_rules! etry {
 async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
-        .unwrap_or_else(|e| e.exit());
+        .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
     let from = args.get_str("<from>");
@@ -39,26 +46,26 @@ async fn main() {
     let filepath = Path::new(args.get_str("<path-to-file>"));
     let thumbpath = match args.get_str("--thumbnail") {
         "" => None,
-        p => Some(Path::new(p)),
+        path => Some(Path::new(path)),
     };
     let rendering_type = match args.get_str("--rendering-type") {
         "" | "file" => RenderingType::File,
         "media" => RenderingType::Media,
         "sticker" => RenderingType::Sticker,
         other => {
-            eprintln!("Invalid rendering type: {}", other);
+            eprintln!("Invalid rendering type: {other}");
             process::exit(1);
         }
     };
     let caption = match args.get_str("--caption") {
         "" => None,
-        c => Some(c),
+        caption => Some(caption),
     };
 
     // Verify thumbnail file type
-    if let Some(t) = thumbpath {
-        if t.extension() != Some(OsStr::new("jpg")) {
-            eprintln!("Thumbnail at {:?} must end with .jpg", t);
+    if let Some(path) = thumbpath {
+        if path.extension() != Some(OsStr::new("jpg")) {
+            eprintln!("Thumbnail at {path:?} must end with .jpg");
             process::exit(1);
         }
     }
@@ -66,7 +73,7 @@ async fn main() {
     // Create E2eApi instance
     let api = ApiBuilder::new(from, secret)
         .with_private_key_str(private_key)
-        .and_then(|builder| builder.into_e2e())
+        .and_then(ApiBuilder::into_e2e)
         .unwrap();
 
     // Fetch recipient public key
@@ -74,21 +81,8 @@ async fn main() {
     let recipient_key = etry!(api.lookup_pubkey(to).await, "Could not fetch public key");
 
     // Read files
-    let mut file = etry!(File::open(filepath), "Could not open file");
-    let mut file_bytes: Vec<u8> = vec![];
-    etry!(file.read_to_end(&mut file_bytes), "Could not read file");
-    let thumbnail_bytes = match thumbpath {
-        Some(p) => {
-            let mut thumb = etry!(File::open(p), format!("Could not open thumbnail {:?}", p));
-            let mut thumb_data: Vec<u8> = vec![];
-            etry!(
-                thumb.read_to_end(&mut thumb_data),
-                format!("Could not read thumbnail {:?}", p)
-            );
-            Some(thumb_data)
-        }
-        None => None,
-    };
+    let file_bytes = etry!(fs::read(filepath), "Could not read file");
+    let thumbnail_bytes = thumbpath.map(|path| etry!(fs::read(path), "Could not read thumbnail"));
 
     // Encrypt file data
     let file_data = FileData {
@@ -120,7 +114,8 @@ async fn main() {
         .first_or_octet_stream()
         .to_string();
     let file_name = filepath.file_name().and_then(OsStr::to_str);
-    let file_size_bytes = file_data.file.len() as u32;
+    let file_size_bytes =
+        u32::try_from(file_data.file.len()).expect("File data length does not fit in u32");
     let msg = FileMessage::builder(file_blob_id, key, file_media_type, file_size_bytes)
         .thumbnail_opt(thumb_blob_id)
         .file_name_opt(file_name)
@@ -136,7 +131,7 @@ async fn main() {
     // Send
     let msg_id = api.send(to, &encrypted, false).await;
     match msg_id {
-        Ok(id) => println!("Sent. Message id is {}.", id),
-        Err(e) => println!("Could not send message: {}", e),
+        Ok(id) => println!("Sent. Message id is {id}."),
+        Err(error) => println!("Could not send message: {error}"),
     }
 }

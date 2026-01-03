@@ -1,4 +1,5 @@
 //! Example: Lookup credits
+#![allow(clippy::print_stdout, reason = "Example code")]
 
 use std::process;
 
@@ -16,7 +17,7 @@ Options:
 async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
-        .unwrap_or_else(|e| e.exit());
+        .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
     let from = args.get_str("<from>");
@@ -27,10 +28,10 @@ async fn main() {
     // Look up ID
     let api = ApiBuilder::new(from, secret).into_simple();
     match api.lookup_credits().await {
-        Err(e) => {
-            println!("Could not look up credits: {}", e);
+        Err(error) => {
+            println!("Could not look up credits: {error}");
             process::exit(1);
         }
-        Ok(credits) => println!("You have {} credits remaining", credits),
+        Ok(credits) => println!("You have {credits} credits remaining"),
     }
 }

@@ -1,14 +1,15 @@
 //! Send and receive messages.
 
-use std::{borrow::Cow, collections::HashMap, ops::Not, str::FromStr};
+use std::{borrow::Cow, collections::HashMap, ops::Not as _, str::FromStr as _};
 
 use data_encoding::{BASE64, HEXLOWER};
+use log::{debug, trace};
 use reqwest::{Client, multipart};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{EncryptedMessage, SDK_HEADER, SDK_USER_AGENT, errors::ApiError, types::BlobId};
 
-/// Map HTTP response status code to an ApiError if it isn't "200".
+/// Map HTTP response status code to an [`ApiError`] if it isn't "200".
 ///
 /// Optionally, you can pass in the meaning of a 400 response code.
 pub(crate) fn map_response_code(
@@ -32,7 +33,7 @@ pub(crate) fn map_response_error_code(
         // Bad request
         400 => match bad_request_meaning {
             Some(error) => error,
-            None => ApiError::Other("Bad request (HTTP 400)".to_string()),
+            None => ApiError::Other("Bad request (HTTP 400)".to_owned()),
         },
         // Unauthorized
         401 => ApiError::BadCredentials,
@@ -47,34 +48,34 @@ pub(crate) fn map_response_error_code(
         // Internal Server Error
         500 => ApiError::ServerError,
         // Unexpected code
-        e => ApiError::Other(format!("Response status code: {}", e)),
+        error => ApiError::Other(format!("Response status code: {error}")),
     }
 }
 
 /// Different ways to specify a message recipient in basic mode.
 #[derive(Debug)]
-pub enum Recipient<'a> {
+pub enum Recipient<'cow> {
     /// Recipient identity (8 characters)
-    Id(Cow<'a, str>),
+    Id(Cow<'cow, str>),
     /// Recipient phone number (E.164), without leading +
-    Phone(Cow<'a, str>),
+    Phone(Cow<'cow, str>),
     /// Recipient e-mail address
-    Email(Cow<'a, str>),
+    Email(Cow<'cow, str>),
 }
 
-impl<'a> Recipient<'a> {
+impl<'cow> Recipient<'cow> {
     /// Create a `Recipient` from an identity.
-    pub fn new_id<T: Into<Cow<'a, str>>>(id: T) -> Self {
+    pub fn new_id<T: Into<Cow<'cow, str>>>(id: T) -> Self {
         Recipient::Id(id.into())
     }
 
     /// Create a `Recipient` from a phone number.
-    pub fn new_phone<T: Into<Cow<'a, str>>>(phone: T) -> Self {
+    pub fn new_phone<T: Into<Cow<'cow, str>>>(phone: T) -> Self {
         Recipient::Phone(phone.into())
     }
 
     /// Create a `Recipient` from an e-mail address.
-    pub fn new_email<T: Into<Cow<'a, str>>>(email: T) -> Self {
+    pub fn new_email<T: Into<Cow<'cow, str>>>(email: T) -> Self {
         Recipient::Email(email.into())
     }
 }
@@ -88,11 +89,7 @@ pub(crate) async fn send_simple(
     secret: &str,
     text: &str,
 ) -> Result<String, ApiError> {
-    log::debug!(
-        "Sending transport encrypted message from {} to {:?}",
-        from,
-        to
-    );
+    debug!("Sending transport encrypted message from {from} to {to:?}");
 
     // Check text length (max 3500 bytes)
     // Note: Strings in Rust are UTF8, so len() returns the byte count.
@@ -105,22 +102,22 @@ pub(crate) async fn send_simple(
     params.insert("from", from);
     params.insert("text", text);
     params.insert("secret", secret);
-    match *to {
-        Recipient::Id(ref id) => params.insert("to", id),
-        Recipient::Phone(ref phone) => params.insert("phone", phone),
-        Recipient::Email(ref email) => params.insert("email", email),
+    match to {
+        Recipient::Id(id) => params.insert("to", id),
+        Recipient::Phone(phone) => params.insert("phone", phone),
+        Recipient::Email(email) => params.insert("email", email),
     };
 
     // Send request
-    log::trace!("Sending HTTP request");
+    trace!("Sending HTTP request");
     let res = client
-        .post(format!("{}/send_simple", endpoint))
+        .post(format!("{endpoint}/send_simple"))
         .form(&params)
         .header("accept", "application/json")
         .header(SDK_HEADER, SDK_USER_AGENT)
         .send()
         .await?;
-    log::trace!("Received HTTP response");
+    trace!("Received HTTP response");
     map_response_code(res.status().as_u16(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
@@ -128,6 +125,7 @@ pub(crate) async fn send_simple(
 }
 
 /// Send an encrypted E2E message to the specified recipient.
+#[expect(clippy::too_many_arguments, reason = "TODO refactor later")]
 pub(crate) async fn send_e2e(
     client: &Client,
     endpoint: &str,
@@ -139,7 +137,7 @@ pub(crate) async fn send_e2e(
     delivery_receipts: bool,
     additional_params: Option<HashMap<String, String>>,
 ) -> Result<String, ApiError> {
-    log::debug!("Sending e2e encrypted message from {} to {}", from, to);
+    debug!("Sending e2e encrypted message from {from} to {to}");
 
     // Prepare POST data
     let mut params = additional_params.unwrap_or_default();
@@ -153,15 +151,15 @@ pub(crate) async fn send_e2e(
     }
 
     // Send request
-    log::trace!("Sending HTTP request");
+    trace!("Sending HTTP request");
     let res = client
-        .post(format!("{}/send_e2e", endpoint))
+        .post(format!("{endpoint}/send_e2e"))
         .form(&params)
         .header("accept", "application/json")
         .header(SDK_HEADER, SDK_USER_AGENT)
         .send()
         .await?;
-    log::trace!("Received HTTP response");
+    trace!("Received HTTP response");
     map_response_code(res.status().as_u16(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
@@ -206,14 +204,14 @@ struct JsonE2eMessage {
 }
 
 impl From<&BulkE2eMessage> for JsonE2eMessage {
-    fn from(m: &BulkE2eMessage) -> Self {
-        let no_delivery_receipts = m.delivery_receipts.not().then_some(true);
-        let no_push = m.push.not().then_some(true);
-        let group = m.is_group_message.then_some(true);
+    fn from(msg: &BulkE2eMessage) -> Self {
+        let no_delivery_receipts = msg.delivery_receipts.not().then_some(true);
+        let no_push = msg.push.not().then_some(true);
+        let group = msg.is_group_message.then_some(true);
         JsonE2eMessage {
-            to: m.to.clone(),
-            nonce: BASE64.encode(&m.message.nonce),
-            r#box: BASE64.encode(&m.message.ciphertext),
+            to: msg.to.clone(),
+            nonce: BASE64.encode(&msg.message.nonce),
+            r#box: BASE64.encode(&msg.message.ciphertext),
             no_delivery_receipts,
             no_push,
             group,
@@ -221,7 +219,7 @@ impl From<&BulkE2eMessage> for JsonE2eMessage {
     }
 }
 
-/// Custom deserializer for error codes that converts u16 to ApiError
+/// Custom deserializer for error codes that converts u16 to [`ApiError`]
 fn deserialize_error_code<'de, D>(deserializer: D) -> Result<ApiError, D::Error>
 where
     D: Deserializer<'de>,
@@ -250,16 +248,19 @@ pub enum BulkE2eMessageSendStatus {
 
 impl BulkE2eMessageSendStatus {
     /// Returns `true` if sending this message was successful.
+    #[must_use]
     pub fn is_success(&self) -> bool {
         matches!(self, BulkE2eMessageSendStatus::Success { .. })
     }
 
     /// Returns `true` if sending this message failed.
+    #[must_use]
     pub fn is_error(&self) -> bool {
         matches!(self, BulkE2eMessageSendStatus::Error { .. })
     }
 
     /// Returns the message ID if the message was sent successfully, or `None` if it failed.
+    #[must_use]
     pub fn message_id(&self) -> Option<&str> {
         match self {
             BulkE2eMessageSendStatus::Success { message_id } => Some(message_id),
@@ -268,6 +269,7 @@ impl BulkE2eMessageSendStatus {
     }
 
     /// Returns the error if the message failed to send.
+    #[must_use]
     pub fn error(&self) -> Option<&ApiError> {
         match self {
             BulkE2eMessageSendStatus::Success { .. } => None,
@@ -285,7 +287,7 @@ pub(crate) async fn send_e2e_bulk(
     messages: &[&BulkE2eMessage],
     same_message_id: bool,
 ) -> Result<Vec<BulkE2eMessageSendStatus>, ApiError> {
-    log::debug!(
+    debug!(
         "Sending e2e encrypted messages from {} to {} recipients",
         from,
         messages.len()
@@ -296,21 +298,24 @@ pub(crate) async fn send_e2e_bulk(
     params.insert("from", from.into());
     params.insert("secret", secret.into());
     if same_message_id {
-        params.insert("sameMessageId", "1".to_string());
+        params.insert("sameMessageId", "1".to_owned());
     }
-    let messages: Vec<JsonE2eMessage> = messages.iter().map(|m| JsonE2eMessage::from(*m)).collect();
+    let messages: Vec<JsonE2eMessage> = messages
+        .iter()
+        .map(|msg| JsonE2eMessage::from(*msg))
+        .collect();
 
     // Send request
-    log::trace!("Sending HTTP request");
+    trace!("Sending HTTP request");
     let res = client
-        .post(format!("{}/send_e2e_bulk", endpoint))
+        .post(format!("{endpoint}/send_e2e_bulk"))
         .query(&params)
         .json(&messages)
         .header("accept", "application/json")
         .header(SDK_HEADER, SDK_USER_AGENT)
         .send()
         .await?;
-    log::trace!("Received HTTP response");
+    trace!("Received HTTP response");
     map_response_code(res.status().as_u16(), None)?;
 
     // Read and return response body
@@ -328,7 +333,7 @@ pub(crate) async fn blob_upload(
     additional_params: Option<HashMap<String, String>>,
 ) -> Result<BlobId, ApiError> {
     // Build URL
-    let url = format!("{}/upload_blob", endpoint);
+    let url = format!("{endpoint}/upload_blob");
     let mut params = vec![("from", from), ("secret", secret)];
     if persist {
         params.push(("persist", "1"));
@@ -343,8 +348,8 @@ pub(crate) async fn blob_upload(
             .expect("Could not parse MIME string"),
     );
     if let Some(params) = additional_params {
-        for (k, v) in params {
-            form = form.text(k, v);
+        for (key, val) in params {
+            form = form.text(key, val);
         }
     }
 
@@ -389,14 +394,19 @@ pub(crate) async fn blob_download(
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::integer_division,
+    clippy::integer_division_remainder_used,
+    reason = "Tests"
+)]
 mod tests {
     use super::*;
 
     use crate::{MSGAPI_URL, errors::ApiError};
 
     #[tokio::test]
-    async fn test_simple_max_length_ok() {
-        let text: String = "à".repeat(3500 / 2);
+    async fn simple_max_length_ok() {
+        let text = "à".repeat(3500 / 2);
         let client = Client::new();
         let result = send_simple(
             &client,
@@ -413,8 +423,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_simple_max_length_too_long() {
-        let mut text: String = "à".repeat(3500 / 2);
+    async fn simple_max_length_too_long() {
+        let mut text = "à".repeat(3500 / 2);
         text.push('x');
         let client = Client::new();
         let result = send_simple(
@@ -433,47 +443,43 @@ mod tests {
     }
 
     #[test]
-    fn test_bulk_e2e_send_status_json_parsing() {
+    fn bulk_e2e_send_status_json_parsing() {
         // Test success status with messageId
         let success_json = r#"{"messageId": "abc123def456"}"#;
         let success_status: BulkE2eMessageSendStatus = serde_json::from_str(success_json).unwrap();
-        match success_status {
-            BulkE2eMessageSendStatus::Success { message_id } => {
-                assert_eq!(message_id, "abc123def456");
-            }
-            _ => panic!("Expected Success variant"),
+        if let BulkE2eMessageSendStatus::Success { message_id } = success_status {
+            assert_eq!(message_id, "abc123def456");
+        } else {
+            panic!("Expected Success variant");
         }
 
         // Test error status with errorCode
         let error_json = r#"{"errorCode": 404}"#;
         let error_status: BulkE2eMessageSendStatus = serde_json::from_str(error_json).unwrap();
-        match error_status {
-            BulkE2eMessageSendStatus::Error { error } => {
-                assert!(matches!(error, ApiError::IdNotFound));
-            }
-            _ => panic!("Expected Error variant"),
+        if let BulkE2eMessageSendStatus::Error { error } = error_status {
+            assert!(matches!(error, ApiError::IdNotFound));
+        } else {
+            panic!("Expected Error variant");
         }
 
         // Test success status with extra fields (should still work)
         let success_with_extra_json = r#"{"messageId": "xyz789", "extraField": "ignored"}"#;
         let success_with_extra: BulkE2eMessageSendStatus =
             serde_json::from_str(success_with_extra_json).unwrap();
-        match success_with_extra {
-            BulkE2eMessageSendStatus::Success { message_id } => {
-                assert_eq!(message_id, "xyz789");
-            }
-            _ => panic!("Expected Success variant"),
+        if let BulkE2eMessageSendStatus::Success { message_id } = success_with_extra {
+            assert_eq!(message_id, "xyz789");
+        } else {
+            panic!("Expected Success variant");
         }
 
         // Test error status with extra fields (should still work)
         let error_with_extra_json = r#"{"errorCode": 500, "description": "Internal server error"}"#;
         let error_with_extra: BulkE2eMessageSendStatus =
             serde_json::from_str(error_with_extra_json).unwrap();
-        match error_with_extra {
-            BulkE2eMessageSendStatus::Error { error } => {
-                assert!(matches!(error, ApiError::ServerError));
-            }
-            _ => panic!("Expected Error variant"),
+        if let BulkE2eMessageSendStatus::Error { error } = error_with_extra {
+            assert!(matches!(error, ApiError::ServerError));
+        } else {
+            panic!("Expected Error variant");
         }
 
         // Test that invalid JSON fails gracefully
@@ -483,13 +489,13 @@ mod tests {
         assert!(invalid_result.is_err(), "Should fail to parse invalid JSON");
 
         // Test that empty JSON fails gracefully
-        let empty_json = r#"{}"#;
+        let empty_json = "{}";
         let empty_result: Result<BulkE2eMessageSendStatus, _> = serde_json::from_str(empty_json);
         assert!(empty_result.is_err(), "Should fail to parse empty JSON");
     }
 
     #[test]
-    fn test_bulk_e2e_status_convenience_methods() {
+    fn bulk_e2e_status_convenience_methods() {
         // Test success status convenience methods
         let success_json = r#"{"messageId": "test123"}"#;
         let success_status: BulkE2eMessageSendStatus = serde_json::from_str(success_json).unwrap();
@@ -508,40 +514,37 @@ mod tests {
     }
 
     #[test]
-    fn test_bulk_e2e_error_code_mapping() {
+    fn bulk_e2e_error_code_mapping() {
         // Test 400 -> ApiError::Other (bad request)
         let error_400_json = r#"{"errorCode": 400}"#;
         let error_400: BulkE2eMessageSendStatus = serde_json::from_str(error_400_json).unwrap();
-        match error_400 {
-            BulkE2eMessageSendStatus::Error { error } => {
-                assert!(matches!(error, ApiError::Other(_)));
-            }
-            _ => panic!("Expected Error variant"),
+        if let BulkE2eMessageSendStatus::Error { error } = error_400 {
+            assert!(matches!(error, ApiError::Other(_)));
+        } else {
+            panic!("Expected Error variant");
         }
 
         // Test 402 -> ApiError::NoCredits
         let error_402_json = r#"{"errorCode": 402}"#;
         let error_402: BulkE2eMessageSendStatus = serde_json::from_str(error_402_json).unwrap();
-        match error_402 {
-            BulkE2eMessageSendStatus::Error { error } => {
-                assert!(matches!(error, ApiError::NoCredits));
-            }
-            _ => panic!("Expected Error variant"),
+        if let BulkE2eMessageSendStatus::Error { error } = error_402 {
+            assert!(matches!(error, ApiError::NoCredits));
+        } else {
+            panic!("Expected Error variant");
         }
 
         // Test unknown error code -> ApiError::Other
         let error_999_json = r#"{"errorCode": 999}"#;
         let error_999: BulkE2eMessageSendStatus = serde_json::from_str(error_999_json).unwrap();
-        match error_999 {
-            BulkE2eMessageSendStatus::Error { error } => {
-                assert!(matches!(error, ApiError::Other(_)));
-            }
-            _ => panic!("Expected Error variant"),
+        if let BulkE2eMessageSendStatus::Error { error } = error_999 {
+            assert!(matches!(error, ApiError::Other(_)));
+        } else {
+            panic!("Expected Error variant");
         }
     }
 
     mod json_e2e_message_from_bulk {
-        use crypto_secretbox::{AeadCore, XSalsa20Poly1305, aead::OsRng};
+        use crypto_secretbox::{AeadCore as _, XSalsa20Poly1305, aead::OsRng};
 
         use super::*;
 
@@ -552,7 +555,7 @@ mod tests {
             let nonce = XSalsa20Poly1305::generate_nonce(&mut OsRng);
             let ciphertext = vec![10, 20, 30, 40];
             let bulk_msg = BulkE2eMessage {
-                to: "ABCD1234".to_string(),
+                to: "ABCD1234".to_owned(),
                 message: EncryptedMessage {
                     nonce,
                     ciphertext: ciphertext.clone(),
@@ -579,7 +582,7 @@ mod tests {
             let nonce = XSalsa20Poly1305::generate_nonce(&mut OsRng);
             let ciphertext = vec![0xdd, 0xee, 0xff];
             let bulk_msg = BulkE2eMessage {
-                to: "WXYZ9876".to_string(),
+                to: "WXYZ9876".to_owned(),
                 message: EncryptedMessage {
                     nonce,
                     ciphertext: ciphertext.clone(),

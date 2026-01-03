@@ -1,11 +1,11 @@
-use std::future::Future;
+use core::future::Future;
 
 use crate::crypto::RecipientKey;
 
 /// A cache for Threema public keys
 pub trait PublicKeyCache {
     /// Error returned if cache operations fail
-    type Error: std::error::Error;
+    type Error: core::error::Error;
 
     /// Store a public key for `identity` in the cache
     fn store(

@@ -4,7 +4,8 @@ use std::{collections::HashMap, fmt, str};
 
 use crypto_box::KEY_SIZE;
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, Mac as _};
+use log::{debug, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
@@ -44,18 +45,17 @@ impl LookupCriterion {
         let email_key = b"\x30\xa5\x50\x0f\xed\x97\x01\xfa\x6d\xef\xdb\x61\x08\x41\x90\x0f\xeb\xb8\xe4\x30\x88\x1f\x7a\xd8\x16\x82\x62\x64\xec\x09\xba\xd7";
         let phone_key = b"\x85\xad\xf8\x22\x69\x53\xf3\xd9\x6c\xfd\x5d\x09\xbf\x29\x55\x5e\xb9\x55\xfc\xd8\xaa\x5e\xc4\xf9\xfc\xd8\x69\xe2\x58\x37\x07\x23";
 
-        let s = match self {
+        let hash = match self {
             Self::Phone(val) => {
                 let mut hmac_state = HmacSha256::new_from_slice(phone_key)
                     .expect("Failed to initialize HmacSha256 with phone key");
-                if !val.chars().all(|c| c.is_ascii_digit()) {
-                    return Err(ApiError::Other("Bad phone number format".to_string()));
+                if !val.chars().all(|char| char.is_ascii_digit()) {
+                    return Err(ApiError::Other("Bad phone number format".to_owned()));
                 }
                 hmac_state.update(val.as_bytes());
                 let hash = hmac_state.finalize().into_bytes();
                 HEXLOWER.encode(&hash)
             }
-            Self::PhoneHash(val) => val.to_owned(),
             Self::Email(val) => {
                 let mut hmac_state = HmacSha256::new_from_slice(email_key)
                     .expect("Failed to initialize HmacSha256 with email key");
@@ -63,25 +63,26 @@ impl LookupCriterion {
                 let hash = hmac_state.finalize().into_bytes();
                 HEXLOWER.encode(&hash)
             }
-            Self::EmailHash(val) => val.to_owned(),
+            Self::PhoneHash(val) | Self::EmailHash(val) => val.to_owned(),
         };
-        Ok(s)
+        Ok(hash)
     }
 }
 
 impl fmt::Display for LookupCriterion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            LookupCriterion::Phone(n) => write!(f, "phone {}", n),
-            LookupCriterion::PhoneHash(nh) => write!(f, "phone hash {}", nh),
-            LookupCriterion::Email(e) => write!(f, "email {}", e),
-            LookupCriterion::EmailHash(eh) => write!(f, "email hash {}", eh),
+            LookupCriterion::Phone(number) => write!(f, "phone {number}"),
+            LookupCriterion::PhoneHash(hash) => write!(f, "phone hash {hash}"),
+            LookupCriterion::Email(email) => write!(f, "email {email}"),
+            LookupCriterion::EmailHash(hash) => write!(f, "email hash {hash}"),
         }
     }
 }
 
 /// A struct containing flags according to the capabilities of a Threema ID.
 #[derive(Debug, PartialEq)]
+#[expect(clippy::struct_excessive_bools, reason = "Appropriate struct")]
 pub struct Capabilities {
     /// Whether the ID can receive text messages.
     pub text: bool,
@@ -98,6 +99,7 @@ pub struct Capabilities {
 }
 
 impl Capabilities {
+    #[must_use]
     fn new() -> Self {
         Capabilities {
             text: false,
@@ -106,6 +108,19 @@ impl Capabilities {
             audio: false,
             file: false,
             other: Vec::new(),
+        }
+    }
+
+    /// Return whether the specified capability is present.
+    #[must_use]
+    pub fn can(&self, capability: &str) -> bool {
+        match capability {
+            "text" => self.text,
+            "image" => self.image,
+            "video" => self.video,
+            "audio" => self.audio,
+            "file" => self.file,
+            _ => self.other.contains(&capability.to_lowercase()),
         }
     }
 }
@@ -123,7 +138,7 @@ impl str::FromStr for Capabilities {
                 "file" => capabilities.file = true,
                 _ if !capability.is_empty() => capabilities.other.push(capability),
                 _ => { /* skip empty entries */ }
-            };
+            }
         }
         Ok(capabilities)
     }
@@ -136,26 +151,12 @@ impl fmt::Display for Capabilities {
             "{{ text: {}, image: {}, video: {}, audio: {}, file: {}",
             self.text, self.image, self.video, self.audio, self.file
         )?;
-        if !self.other.is_empty() {
-            write!(f, ", other: {} }}", self.other.join(","))?;
-        } else {
+        if self.other.is_empty() {
             write!(f, " }}")?;
+        } else {
+            write!(f, ", other: {} }}", self.other.join(","))?;
         }
         Ok(())
-    }
-}
-
-impl Capabilities {
-    /// Return whether the specified capability is present.
-    pub fn can(&self, capability: &str) -> bool {
-        match capability {
-            "text" => self.text,
-            "image" => self.image,
-            "video" => self.video,
-            "audio" => self.audio,
-            "file" => self.file,
-            _ => self.other.contains(&capability.to_lowercase()),
-        }
     }
 }
 
@@ -171,7 +172,7 @@ pub(crate) async fn lookup_pubkey(
         .join("pubkeys/")?
         .join(their_id)?;
 
-    debug!("Looking up public key for {}", their_id);
+    debug!("Looking up public key for {their_id}");
 
     // Send request
     let res = client
@@ -186,17 +187,16 @@ pub(crate) async fn lookup_pubkey(
     let pubkey_hex_bytes = res.bytes().await?;
 
     // Decode key
-    let mut pubkey = [0u8; KEY_SIZE];
+    let mut pubkey = [0_u8; KEY_SIZE];
     let bytes_decoded = HEXLOWER_PERMISSIVE
         .decode_mut(&pubkey_hex_bytes, &mut pubkey)
-        .map_err(|e| {
-            warn!("Could not parse public key fetched from API: {:?}", e);
-            ApiError::ParseError("Invalid hex bytes for public key".to_string())
+        .map_err(|error| {
+            warn!("Could not parse public key fetched from API: {error:?}");
+            ApiError::ParseError("Invalid hex bytes for public key".to_owned())
         })?;
     if bytes_decoded != KEY_SIZE {
         return Err(ApiError::ParseError(format!(
-            "Invalid public key: Length must be 32 bytes, but is {} bytes",
-            bytes_decoded
+            "Invalid public key: Length must be 32 bytes, but is {bytes_decoded} bytes"
         )));
     }
     Ok(pubkey.into())
@@ -218,7 +218,7 @@ pub(crate) async fn lookup_pubkeys_bulk(
     secret: &str,
 ) -> Result<HashMap<String, RecipientKey>, ApiError> {
     // Build URL
-    let url = format!("{}/pubkeys/bulk", endpoint);
+    let url = format!("{endpoint}/pubkeys/bulk");
 
     debug!("Looking up public key for {} Threema IDs", their_ids.len());
 
@@ -239,7 +239,7 @@ pub(crate) async fn lookup_pubkeys_bulk(
 
     Ok(pub_keys
         .into_iter()
-        .map(|k| (k.identity, k.public_key))
+        .map(|key| (key.identity, key.public_key))
         .collect())
 }
 
@@ -253,13 +253,13 @@ pub(crate) async fn lookup_id(
 ) -> Result<String, ApiError> {
     // Build URL
     let url = match criterion {
-        LookupCriterion::Phone(val) => format!("{}/lookup/phone/{}", endpoint, val),
-        LookupCriterion::PhoneHash(val) => format!("{}/lookup/phone_hash/{}", endpoint, val),
-        LookupCriterion::Email(val) => format!("{}/lookup/email/{}", endpoint, val),
-        LookupCriterion::EmailHash(val) => format!("{}/lookup/email_hash/{}", endpoint, val),
+        LookupCriterion::Phone(val) => format!("{endpoint}/lookup/phone/{val}"),
+        LookupCriterion::PhoneHash(val) => format!("{endpoint}/lookup/phone_hash/{val}"),
+        LookupCriterion::Email(val) => format!("{endpoint}/lookup/email/{val}"),
+        LookupCriterion::EmailHash(val) => format!("{endpoint}/lookup/email_hash/{val}"),
     };
 
-    debug!("Looking up id key for {}", criterion);
+    debug!("Looking up id key for {criterion}");
 
     // Send request
     let res = client
@@ -315,11 +315,13 @@ pub(crate) async fn lookup_ids_bulk(
             LookupCriterion::Email(_) => ids.email_hashes.push(criterion.hash()?),
             LookupCriterion::EmailHash(val) => ids.email_hashes.push(val.to_owned()),
         }
-        if ids.phone_hashes.len() + ids.email_hashes.len() > 1000 {
+        let phone_hash_count = ids.phone_hashes.len();
+        let email_hash_count = ids.email_hashes.len();
+        if phone_hash_count.saturating_add(email_hash_count) > 1000 {
             return Err(ApiError::MessageTooLong);
         }
     }
-    let url = format!("{}/lookup/bulk", endpoint);
+    let url = format!("{endpoint}/lookup/bulk");
 
     debug!(
         "Looking up public keys for {} phone hashes and {} email hashes",
@@ -348,7 +350,7 @@ pub(crate) async fn lookup_credits(
     our_id: &str,
     secret: &str,
 ) -> Result<i64, ApiError> {
-    let url = format!("{}/credits", endpoint);
+    let url = format!("{endpoint}/credits");
 
     debug!("Looking up remaining credits");
 
@@ -364,10 +366,7 @@ pub(crate) async fn lookup_credits(
     // Read, parse and return response body
     let body = res.text().await?;
     body.trim().parse::<i64>().map_err(|_| {
-        ApiError::ParseError(format!(
-            "Could not parse response body as i64: \"{}\"",
-            body
-        ))
+        ApiError::ParseError(format!("Could not parse response body as i64: \"{body}\""))
     })
 }
 
@@ -383,7 +382,7 @@ pub(crate) async fn lookup_capabilities(
         .join("capabilities/")?
         .join(their_id)?;
 
-    debug!("Looking up capabilities for {}", their_id);
+    debug!("Looking up capabilities for {their_id}");
 
     // Send request
     let res = client
@@ -412,13 +411,13 @@ mod tests {
 
         #[test]
         fn phone_computes_hmac() {
-            let criterion = LookupCriterion::Phone("41791234567".to_string());
+            let criterion = LookupCriterion::Phone("41791234567".to_owned());
             let hash = criterion.hash().unwrap();
             // Hash should be 64 hex characters (256 bits)
             assert_eq!(hash.len(), 64);
-            assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+            assert!(hash.chars().all(|char| char.is_ascii_hexdigit()));
             // Same input should produce same hash
-            let hash2 = LookupCriterion::Phone("41791234567".to_string())
+            let hash2 = LookupCriterion::Phone("41791234567".to_owned())
                 .hash()
                 .unwrap();
             assert_eq!(hash, hash2);
@@ -426,7 +425,7 @@ mod tests {
 
         #[test]
         fn phone_rejects_non_digits() {
-            let criterion = LookupCriterion::Phone("+41791234567".to_string());
+            let criterion = LookupCriterion::Phone("+41791234567".to_owned());
             let result = criterion.hash();
             assert!(
                 matches!(result, Err(ApiError::Other(msg)) if msg == "Bad phone number format")
@@ -435,7 +434,7 @@ mod tests {
 
         #[test]
         fn phone_rejects_letters() {
-            let criterion = LookupCriterion::Phone("4179abc4567".to_string());
+            let criterion = LookupCriterion::Phone("4179abc4567".to_owned());
             let result = criterion.hash();
             assert!(
                 matches!(result, Err(ApiError::Other(msg)) if msg == "Bad phone number format")
@@ -444,25 +443,25 @@ mod tests {
 
         #[test]
         fn phone_hash_returns_value_unchanged() {
-            let hash_value = "abcdef1234567890abcdef1234567890".to_string();
+            let hash_value = "abcdef1234567890abcdef1234567890".to_owned();
             let criterion = LookupCriterion::PhoneHash(hash_value.clone());
             assert_eq!(criterion.hash().unwrap(), hash_value);
         }
 
         #[test]
         fn email_computes_hmac() {
-            let criterion = LookupCriterion::Email("test@example.com".to_string());
+            let criterion = LookupCriterion::Email("test@example.com".to_owned());
             let hash = criterion.hash().unwrap();
             // Hash should be 64 hex characters (256 bits)
             assert_eq!(hash.len(), 64);
-            assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+            assert!(hash.chars().all(|char| char.is_ascii_hexdigit()));
         }
 
         #[test]
         fn email_normalizes_case() {
-            let lower = LookupCriterion::Email("test@example.com".to_string());
-            let upper = LookupCriterion::Email("TEST@EXAMPLE.COM".to_string());
-            let mixed = LookupCriterion::Email("TeSt@ExAmPlE.cOm".to_string());
+            let lower = LookupCriterion::Email("test@example.com".to_owned());
+            let upper = LookupCriterion::Email("TEST@EXAMPLE.COM".to_owned());
+            let mixed = LookupCriterion::Email("TeSt@ExAmPlE.cOm".to_owned());
             let hash_lower = lower.hash().unwrap();
             let hash_upper = upper.hash().unwrap();
             let hash_mixed = mixed.hash().unwrap();
@@ -472,25 +471,25 @@ mod tests {
 
         #[test]
         fn email_trims_whitespace() {
-            let trimmed = LookupCriterion::Email("test@example.com".to_string());
-            let with_spaces = LookupCriterion::Email("  test@example.com  ".to_string());
+            let trimmed = LookupCriterion::Email("test@example.com".to_owned());
+            let with_spaces = LookupCriterion::Email("  test@example.com  ".to_owned());
             assert_eq!(trimmed.hash().unwrap(), with_spaces.hash().unwrap());
         }
 
         #[test]
         fn email_hash_returns_value_unchanged() {
-            let hash_value = "fedcba0987654321fedcba0987654321".to_string();
+            let hash_value = "fedcba0987654321fedcba0987654321".to_owned();
             let criterion = LookupCriterion::EmailHash(hash_value.clone());
             assert_eq!(criterion.hash().unwrap(), hash_value);
         }
     }
 
     #[test]
-    fn test_lookup_criterion_display() {
-        let phone = LookupCriterion::Phone("1234".to_string());
-        let phone_hash = LookupCriterion::PhoneHash("1234567890abcdef".to_string());
-        let email = LookupCriterion::Email("user@example.com".to_string());
-        let email_hash = LookupCriterion::EmailHash("1234567890abcdef".to_string());
+    fn lookup_criterion_display() {
+        let phone = LookupCriterion::Phone("1234".to_owned());
+        let phone_hash = LookupCriterion::PhoneHash("1234567890abcdef".to_owned());
+        let email = LookupCriterion::Email("user@example.com".to_owned());
+        let email_hash = LookupCriterion::EmailHash("1234567890abcdef".to_owned());
         assert_eq!(&phone.to_string(), "phone 1234");
         assert_eq!(&phone_hash.to_string(), "phone hash 1234567890abcdef");
         assert_eq!(&email.to_string(), "email user@example.com");
@@ -498,7 +497,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_capabilities_empty() {
+    fn parse_capabilities_empty() {
         assert_eq!(
             "".parse::<Capabilities>().unwrap(),
             Capabilities {
@@ -513,7 +512,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_capabilities_simple() {
+    fn parse_capabilities_simple() {
         assert_eq!(
             "image".parse::<Capabilities>().unwrap(),
             Capabilities {
@@ -528,7 +527,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_capabilities_combined() {
+    fn parse_capabilities_combined() {
         assert_eq!(
             "image,video,file".parse::<Capabilities>().unwrap(),
             Capabilities {
@@ -543,7 +542,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_capabilities_unknown() {
+    fn parse_capabilities_unknown() {
         assert_eq!(
             "jetpack,text,lasersword".parse::<Capabilities>().unwrap(),
             Capabilities {
@@ -558,7 +557,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_capabilities_cleanup() {
+    fn parse_capabilities_cleanup() {
         assert_eq!(
             "jetpack,Text ,LASERSWORD,,.,"
                 .parse::<Capabilities>()
@@ -575,7 +574,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_capabilities_can() {
+    fn parse_capabilities_can() {
         let cap = "jetpack,Text ,LASERSWORD,,.,"
             .parse::<Capabilities>()
             .unwrap();

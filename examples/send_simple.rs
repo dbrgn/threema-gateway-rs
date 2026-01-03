@@ -1,4 +1,5 @@
 //! Example: Send simple text message without E2EE
+#![allow(clippy::print_stdout, reason = "Example code")]
 
 use std::borrow::Cow;
 
@@ -18,7 +19,7 @@ Options:
 async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
-        .unwrap_or_else(|e| e.exit());
+        .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
     let from = args.get_str("<from>");
@@ -40,7 +41,7 @@ async fn main() {
     let api = ApiBuilder::new(from, secret).into_simple();
     let msg_id = api.send(&recipient, &text).await;
     match msg_id {
-        Ok(id) => println!("Sent. Message id is {}.", id),
-        Err(e) => println!("Could not send message: {}", e),
+        Ok(id) => println!("Sent. Message id is {id}."),
+        Err(error) => println!("Could not send message: {error}"),
     }
 }

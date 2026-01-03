@@ -1,4 +1,5 @@
 //! Example: Lookup capabilities
+#![allow(clippy::print_stdout, reason = "Example code")]
 
 use docopt::Docopt;
 use threema_gateway::ApiBuilder;
@@ -14,7 +15,7 @@ Options:
 async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
-        .unwrap_or_else(|e| e.exit());
+        .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
     let our_id = args.get_str("<our_id>");
@@ -27,7 +28,7 @@ async fn main() {
 
     // Show result
     match pubkey {
-        Ok(cap) => println!("Capabilities for {}: {}", their_id, cap),
-        Err(e) => println!("Could not lookup capabilities: {}", e),
+        Ok(cap) => println!("Capabilities for {their_id}: {cap}"),
+        Err(error) => println!("Could not lookup capabilities: {error}"),
     }
 }

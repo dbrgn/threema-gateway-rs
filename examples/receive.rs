@@ -1,4 +1,11 @@
 //! Example: Decrypt and decode incoming message
+#![allow(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    clippy::unwrap_used,
+    clippy::use_debug,
+    reason = "Example code"
+)]
 
 use data_encoding::HEXLOWER_PERMISSIVE;
 use docopt::Docopt;
@@ -15,7 +22,7 @@ Options:
 async fn main() {
     let args = Docopt::new(USAGE)
         .and_then(|docopt| docopt.parse())
-        .unwrap_or_else(|e| e.exit());
+        .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
     let our_id = args.get_str("<our-id>");
@@ -41,8 +48,8 @@ async fn main() {
     // Parse request body
     let msg = api
         .decode_incoming_message(request_body)
-        .unwrap_or_else(|e| {
-            eprintln!("Could not decode incoming message: {}", e);
+        .unwrap_or_else(|error| {
+            eprintln!("Could not decode incoming message: {error}");
             std::process::exit(1);
         });
 
@@ -54,19 +61,19 @@ async fn main() {
     println!("  Sender nickname: {:?}", msg.nickname);
 
     // Fetch sender public key
-    let recipient_key = api.lookup_pubkey(&msg.from).await.unwrap_or_else(|e| {
-        eprintln!("Could not fetch public key for {}: {}", &msg.from, e);
+    let recipient_key = api.lookup_pubkey(&msg.from).await.unwrap_or_else(|error| {
+        eprintln!("Could not fetch public key for {}: {}", &msg.from, error);
         std::process::exit(1);
     });
 
     // Decrypt
     let data = api
         .decrypt_incoming_message(&msg, &recipient_key)
-        .unwrap_or_else(|e| {
-            println!("Could not decrypt box: {}", e);
+        .unwrap_or_else(|error| {
+            println!("Could not decrypt box: {error}");
             std::process::exit(1);
         });
 
     // Show result
-    println!("Decrypted box: {:?}", data);
+    println!("Decrypted box: {data:?}");
 }

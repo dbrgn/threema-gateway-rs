@@ -68,12 +68,6 @@
 //! For more examples, see the
 //! [`examples/`](https://github.com/dbrgn/threema-gateway-rs/tree/master/examples) directory.
 
-#![allow(clippy::collapsible_else_if)]
-#![allow(clippy::too_many_arguments)]
-
-#[macro_use]
-extern crate log;
-
 mod api;
 mod cache;
 mod connection;

@@ -1,5 +1,5 @@
 use std::{
-    borrow::{Borrow, Cow},
+    borrow::{Borrow as _, Cow},
     collections::HashMap,
     time::Duration,
 };
@@ -7,6 +7,7 @@ use std::{
 use crypto_box::SecretKey;
 use crypto_secretbox::Nonce;
 use data_encoding::HEXLOWER_PERMISSIVE;
+use log::{debug, warn};
 use reqwest::Client;
 
 use crate::{
@@ -507,9 +508,9 @@ impl E2eApi {
     ///
     /// This will validate the MAC. If the MAC is invalid,
     /// [`ApiError::InvalidMac`] will be returned.
-    pub fn decode_incoming_message(
+    pub fn decode_incoming_message<B: AsRef<[u8]>>(
         &self,
-        bytes: impl AsRef<[u8]>,
+        bytes: B,
     ) -> Result<IncomingMessage, ApiError> {
         IncomingMessage::from_urlencoded_bytes(bytes, &self.secret)
     }
@@ -558,7 +559,7 @@ impl E2eApi {
 ///                              .unwrap();
 /// ```
 #[derive(Debug)]
-#[allow(missing_docs)]
+#[expect(missing_docs, reason = "Builder pattern")]
 pub struct ApiBuilder {
     pub id: String,
     pub secret: String,
@@ -568,7 +569,7 @@ pub struct ApiBuilder {
 }
 
 impl ApiBuilder {
-    /// Initialize the ApiBuilder with the Gateway ID and the Gateway Secret.
+    /// Initialize the `ApiBuilder` with the Gateway ID and the Gateway Secret.
     pub fn new<I: Into<String>, S: Into<String>>(id: I, secret: S) -> Self {
         ApiBuilder {
             id: id.into(),
@@ -582,9 +583,10 @@ impl ApiBuilder {
     /// Set a custom API endpoint.
     ///
     /// The API endpoint should be a HTTPS URL without trailing slash.
+    #[must_use]
     pub fn with_custom_endpoint<E: Into<Cow<'static, str>>>(mut self, endpoint: E) -> Self {
         let endpoint = endpoint.into();
-        debug!("Using custom endpoint: {}", endpoint);
+        debug!("Using custom endpoint: {endpoint}");
         if !(endpoint.starts_with("http:") || endpoint.starts_with("https:")) {
             warn!("Custom endpoint seems invalid!");
         }
@@ -594,6 +596,7 @@ impl ApiBuilder {
 
     /// Set a custom reqwest [`Client`][reqwest::Client] that will be re-used
     /// for all connections.
+    #[must_use]
     pub fn with_client(mut self, client: Client) -> Self {
         self.client = Some(client);
         self
@@ -610,6 +613,7 @@ impl ApiBuilder {
     }
 
     /// Set the private key. Only needed for E2e mode.
+    #[must_use]
     pub fn with_private_key(mut self, private_key: SecretKey) -> Self {
         self.private_key = Some(private_key);
         self
@@ -617,8 +621,8 @@ impl ApiBuilder {
 
     /// Set the private key from a byte slice. Only needed for E2e mode.
     pub fn with_private_key_bytes(mut self, private_key: &[u8]) -> Result<Self, ApiBuilderError> {
-        let private_key = SecretKey::from_slice(private_key).map_err(|e| {
-            ApiBuilderError::InvalidKey(format!("Invalid libsodium private key: {e}"))
+        let private_key = SecretKey::from_slice(private_key).map_err(|error| {
+            ApiBuilderError::InvalidKey(format!("Invalid libsodium private key: {error}"))
         })?;
         self.private_key = Some(private_key);
         Ok(self)
@@ -630,8 +634,8 @@ impl ApiBuilder {
         let private_key_bytes =
             HEXLOWER_PERMISSIVE
                 .decode(private_key.as_bytes())
-                .map_err(|e| {
-                    let msg = format!("Could not decode private key hex string: {}", e);
+                .map_err(|error| {
+                    let msg = format!("Could not decode private key hex string: {error}");
                     ApiBuilderError::InvalidKey(msg)
                 })?;
         self.with_private_key_bytes(&private_key_bytes)
