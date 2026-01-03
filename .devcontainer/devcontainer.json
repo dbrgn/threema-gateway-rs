@@ -60,6 +60,7 @@
         // General
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.formatOnSave": true,
+        "files.insertFinalNewline": true,
         // Extensions
         "rewrap.wrappingColumn": 110,
         // JSON
