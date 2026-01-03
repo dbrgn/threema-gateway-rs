@@ -5,6 +5,7 @@ use std::{collections::HashMap, fmt, str};
 use crypto_box::KEY_SIZE;
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use hmac::{Hmac, Mac};
+use log::{debug, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;

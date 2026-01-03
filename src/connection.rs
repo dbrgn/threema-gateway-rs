@@ -3,6 +3,7 @@
 use std::{borrow::Cow, collections::HashMap, ops::Not, str::FromStr};
 
 use data_encoding::{BASE64, HEXLOWER};
+use log::{debug, trace};
 use reqwest::{Client, multipart};
 use serde::{Deserialize, Deserializer, Serialize};
 
@@ -88,10 +89,9 @@ pub(crate) async fn send_simple(
     secret: &str,
     text: &str,
 ) -> Result<String, ApiError> {
-    log::debug!(
+    debug!(
         "Sending transport encrypted message from {} to {:?}",
-        from,
-        to
+        from, to
     );
 
     // Check text length (max 3500 bytes)
@@ -112,7 +112,7 @@ pub(crate) async fn send_simple(
     };
 
     // Send request
-    log::trace!("Sending HTTP request");
+    trace!("Sending HTTP request");
     let res = client
         .post(format!("{}/send_simple", endpoint))
         .form(&params)
@@ -120,7 +120,7 @@ pub(crate) async fn send_simple(
         .header(SDK_HEADER, SDK_USER_AGENT)
         .send()
         .await?;
-    log::trace!("Received HTTP response");
+    trace!("Received HTTP response");
     map_response_code(res.status().as_u16(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
@@ -139,7 +139,7 @@ pub(crate) async fn send_e2e(
     delivery_receipts: bool,
     additional_params: Option<HashMap<String, String>>,
 ) -> Result<String, ApiError> {
-    log::debug!("Sending e2e encrypted message from {} to {}", from, to);
+    debug!("Sending e2e encrypted message from {} to {}", from, to);
 
     // Prepare POST data
     let mut params = additional_params.unwrap_or_default();
@@ -153,7 +153,7 @@ pub(crate) async fn send_e2e(
     }
 
     // Send request
-    log::trace!("Sending HTTP request");
+    trace!("Sending HTTP request");
     let res = client
         .post(format!("{}/send_e2e", endpoint))
         .form(&params)
@@ -161,7 +161,7 @@ pub(crate) async fn send_e2e(
         .header(SDK_HEADER, SDK_USER_AGENT)
         .send()
         .await?;
-    log::trace!("Received HTTP response");
+    trace!("Received HTTP response");
     map_response_code(res.status().as_u16(), Some(ApiError::BadSenderOrRecipient))?;
 
     // Read and return response body
@@ -285,7 +285,7 @@ pub(crate) async fn send_e2e_bulk(
     messages: &[&BulkE2eMessage],
     same_message_id: bool,
 ) -> Result<Vec<BulkE2eMessageSendStatus>, ApiError> {
-    log::debug!(
+    debug!(
         "Sending e2e encrypted messages from {} to {} recipients",
         from,
         messages.len()
@@ -301,7 +301,7 @@ pub(crate) async fn send_e2e_bulk(
     let messages: Vec<JsonE2eMessage> = messages.iter().map(|m| JsonE2eMessage::from(*m)).collect();
 
     // Send request
-    log::trace!("Sending HTTP request");
+    trace!("Sending HTTP request");
     let res = client
         .post(format!("{}/send_e2e_bulk", endpoint))
         .query(&params)
@@ -310,7 +310,7 @@ pub(crate) async fn send_e2e_bulk(
         .header(SDK_HEADER, SDK_USER_AGENT)
         .send()
         .await?;
-    log::trace!("Received HTTP response");
+    trace!("Received HTTP response");
     map_response_code(res.status().as_u16(), None)?;
 
     // Read and return response body

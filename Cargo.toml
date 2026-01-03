@@ -47,4 +47,36 @@ tokio = { version = "1", features = ["macros", "rt"], default-features = false }
 tokio-test = "0.4"
 
 [lints.rust]
+deprecated_safe = "warn"
+explicit_outlives_requirements = "warn"
+# Wait for https://github.com/rust-lang/rust/issues/130351
+# fuzzy_provenance_casts = "warn"
+impl_trait_overcaptures = "warn"
+# Wait for https://github.com/rust-lang/rust/issues/130351
+# lossy_provenance_casts = "warn"
+macro_use_extern_crate = "warn"
+meta_variable_misuse = "warn"
+missing_abi = "warn"
 missing_docs = "warn"
+missing_unsafe_on_extern = "warn"
+non_ascii_idents = "warn"
+# Wait for https://github.com/rust-lang/rust/issues/89554
+# non_exhaustive_omitted_patterns = "warn"
+non_local_definitions = "warn"
+redundant_lifetimes = "warn"
+single_use_lifetimes = "warn"
+unit_bindings = "warn"
+unnameable_types = "warn"
+unreachable_pub = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+unstable_features = "warn"
+# Disabled due to https://github.com/rust-lang/rust/issues/95513
+# unused_crate_dependencies = "warn"
+unused_extern_crates = "warn"
+unused_macro_rules = "warn"
+unused_qualifications = "warn"
+
+[lints.rustdoc]
+missing_crate_level_docs = "warn"
+private_doc_tests = "warn"
+unescaped_backticks = "warn"

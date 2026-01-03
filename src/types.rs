@@ -3,6 +3,7 @@
 use std::{default::Default, fmt, str::FromStr};
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
+use log::warn;
 use serde::{Serialize, Serializer};
 
 use crate::{
@@ -324,11 +325,11 @@ impl FileMessageBuilder {
                 ));
             }
             if self.rendering_type == RenderingType::Media && metadata.none_set() {
-                log::warn!("Created FileMessage with rendering type Media but without metadata");
+                warn!("Created FileMessage with rendering type Media but without metadata");
             }
         } else {
             if self.rendering_type == RenderingType::Media {
-                log::warn!("Created FileMessage with rendering type Media but without metadata");
+                warn!("Created FileMessage with rendering type Media but without metadata");
             }
         };
 

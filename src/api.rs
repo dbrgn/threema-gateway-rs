@@ -7,6 +7,7 @@ use std::{
 use crypto_box::SecretKey;
 use crypto_secretbox::Nonce;
 use data_encoding::HEXLOWER_PERMISSIVE;
+use log::{debug, warn};
 use reqwest::Client;
 
 use crate::{
@@ -568,7 +569,7 @@ pub struct ApiBuilder {
 }
 
 impl ApiBuilder {
-    /// Initialize the ApiBuilder with the Gateway ID and the Gateway Secret.
+    /// Initialize the `ApiBuilder` with the Gateway ID and the Gateway Secret.
     pub fn new<I: Into<String>, S: Into<String>>(id: I, secret: S) -> Self {
         ApiBuilder {
             id: id.into(),
@@ -594,6 +595,7 @@ impl ApiBuilder {
 
     /// Set a custom reqwest [`Client`][reqwest::Client] that will be re-used
     /// for all connections.
+    #[must_use]
     pub fn with_client(mut self, client: Client) -> Self {
         self.client = Some(client);
         self
@@ -610,6 +612,7 @@ impl ApiBuilder {
     }
 
     /// Set the private key. Only needed for E2e mode.
+    #[must_use]
     pub fn with_private_key(mut self, private_key: SecretKey) -> Self {
         self.private_key = Some(private_key);
         self
@@ -631,7 +634,7 @@ impl ApiBuilder {
             HEXLOWER_PERMISSIVE
                 .decode(private_key.as_bytes())
                 .map_err(|e| {
-                    let msg = format!("Could not decode private key hex string: {}", e);
+                    let msg = format!("Could not decode private key hex string: {e}");
                     ApiBuilderError::InvalidKey(msg)
                 })?;
         self.with_private_key_bytes(&private_key_bytes)

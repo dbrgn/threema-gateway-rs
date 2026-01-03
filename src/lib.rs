@@ -71,9 +71,6 @@
 #![allow(clippy::collapsible_else_if)]
 #![allow(clippy::too_many_arguments)]
 
-#[macro_use]
-extern crate log;
-
 mod api;
 mod cache;
 mod connection;

@@ -17,11 +17,11 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     PublicKey, SecretKey,
-    errors::{self, CryptoError},
+    errors::CryptoError,
     types::{BlobId, FileMessage, MessageType},
 };
 
-pub const NONCE_SIZE: usize = 24;
+pub(crate) const NONCE_SIZE: usize = 24;
 const KEY_SIZE: usize = 32;
 
 /// Key type used for nacl secretbox cryptography
@@ -53,7 +53,7 @@ impl From<[u8; KEY_SIZE]> for Key {
 }
 
 impl TryFrom<Vec<u8>> for Key {
-    type Error = errors::CryptoError;
+    type Error = CryptoError;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         <[u8; KEY_SIZE]>::try_from(value)
@@ -203,7 +203,7 @@ pub fn encrypt(
 }
 
 /// Encrypt an image message for the recipient.
-pub fn encrypt_image_msg(
+pub(crate) fn encrypt_image_msg(
     blob_id: &BlobId,
     img_size_bytes: u32,
     image_data_nonce: &Nonce,
@@ -227,7 +227,7 @@ pub fn encrypt_image_msg(
 }
 
 /// Encrypt a file message for the recipient.
-pub fn encrypt_file_msg(
+pub(crate) fn encrypt_file_msg(
     msg: &FileMessage,
     public_key: &PublicKey,
     private_key: &SecretKey,
