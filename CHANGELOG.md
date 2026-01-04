@@ -13,10 +13,14 @@ Possible log types:
 
 ### Unreleased
 
+### v0.19.0 (2026-01-04)
+
 - [added] Add support for generic public key caching:`lookup_pubkey_with_cache`
-  API method and PublicKeyCache` trait (#77)
+  API method and `PublicKeyCache` trait (#77)
 - [added] Add support for bulk lookups: `lookup_pubkeys_bulk` and `lookup_ids_bulk` (#89)
 - [added] Add support for bulk sending through `E2eApi::send_bulk` (#89)
+- [fixed] Check the length of the MAC before decoding it to avoid panic (#79)
+- [changed] Set default user agent, send along custom SDK version header (#78)
 - [changed] Bump reqwest from 0.12 to 0.13 (#92)
 - [changed] Increase default HTTP client timeout from 10s to 120s (#89)
 
