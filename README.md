@@ -89,6 +89,8 @@ Download a blob:
 This library offers the following optional features:
 
 - `receive`: Add support for processing incoming messages. Enabled by default.
+- `public-key-cache-inmemory`: Add support for `InMemoryPublicKeyCache` implementation backed by
+  [moka](https://crates.io/crates/moka).
 
 ## Rust Version Requirements (MSRV)
 

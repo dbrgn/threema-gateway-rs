@@ -69,7 +69,7 @@
 //! [`examples/`](https://github.com/threema-ch/threema-msgapi-sdk-rust/tree/main/examples) directory.
 
 mod api;
-mod cache;
+pub mod cache;
 mod connection;
 mod crypto;
 pub mod errors;
