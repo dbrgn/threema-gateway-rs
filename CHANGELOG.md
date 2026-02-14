@@ -13,10 +13,12 @@ Possible log types:
 
 ### Unreleased
 
-- [added] Add an `InMemoryPublicKeyCache` backed by the moka crate. Enabled through the
-  `public-key-cache-inmemory` Cargo feature (enabled by default).
-- [changed] The `cache` module is now exposed directly. The `PublicKeyCache` trait will not be re-exported at
-  top level anymore in the next breaking release.
+- [added] Add an `InMemoryPublicKeyCache` backed by the moka crate. Enabled through
+  the `public-key-cache-inmemory` Cargo feature.
+- [added] Add a `RedisPublicKeyCache`. Enabled through the `public-key-cache-redis`
+  Cargo feature.
+- [changed] The `cache` module is now exposed directly. The `PublicKeyCache` trait
+  will not be re-exported at top level anymore in the next breaking release.
 
 ### v0.19.0 (2026-01-04)
 

@@ -23,6 +23,8 @@ pub enum InMemoryPublicKeyCacheError {
 /// In-memory public key cache backed by [`moka`].
 ///
 /// The cache has a max capacity and a TTL.
+///
+/// Requires the `public-key-cache-inmemory` Cargo feature to be enabled.
 pub struct InMemoryPublicKeyCache {
     cache: Cache<String, Vec<u8>>,
 }

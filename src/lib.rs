@@ -1,3 +1,5 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 //! # Threema Gateway SDK for Rust
 //!
 //! This library makes it easy to use the [Threema
