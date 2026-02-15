@@ -20,7 +20,10 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::{
     PublicKey, SecretKey,
     errors::CryptoError,
-    types::{BlobId, FileMessage, MessageType},
+    protocol::{
+        BlobId,
+        e2e::{MessageType, file::FileMessage},
+    },
 };
 
 #[cfg(feature = "receive")]
@@ -327,7 +330,7 @@ mod test {
 
     use crate::{
         api::ApiBuilder,
-        types::{BlobId, MessageType},
+        protocol::{BlobId, e2e::MessageType},
     };
     use crypto_box::{Nonce, PublicKey, SalsaBox, SecretKey};
 

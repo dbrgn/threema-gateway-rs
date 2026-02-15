@@ -7,7 +7,7 @@ use log::{debug, trace};
 use reqwest::{Client, multipart};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::{EncryptedMessage, SDK_HEADER, SDK_USER_AGENT, errors::ApiError, types::BlobId};
+use crate::{EncryptedMessage, SDK_HEADER, SDK_USER_AGENT, errors::ApiError, protocol::BlobId};
 
 /// Map HTTP response status code to an [`ApiError`] if it isn't "200".
 ///

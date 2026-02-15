@@ -27,7 +27,10 @@ use crate::{
         BulkIdentityPublicKey, Capabilities, LookupCriterion, lookup_capabilities, lookup_credits,
         lookup_id, lookup_ids_bulk, lookup_pubkey, lookup_pubkeys_bulk,
     },
-    types::{BlobId, FileMessage, MessageType},
+    protocol::{
+        BlobId,
+        e2e::{MessageType, file::FileMessage},
+    },
 };
 
 fn make_reqwest_client() -> Client {
