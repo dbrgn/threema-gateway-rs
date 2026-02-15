@@ -31,7 +31,7 @@ pub(crate) const NONCE_SIZE: usize = 24;
 const KEY_SIZE: usize = 32;
 
 /// Key type used for nacl secretbox cryptography
-#[derive(PartialEq, Zeroize, ZeroizeOnDrop)]
+#[derive(PartialEq, Clone, Zeroize, ZeroizeOnDrop)]
 pub struct Key(SecretboxKey);
 
 impl AsRef<SecretboxKey> for Key {

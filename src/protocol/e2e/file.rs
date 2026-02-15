@@ -33,7 +33,7 @@ impl Serialize for RenderingType {
 }
 
 /// A file message.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FileMessage {
     #[serde(rename = "b")]
     file_blob_id: BlobId,
@@ -72,7 +72,7 @@ pub struct FileMessage {
 /// Metadata for a file message (depending on media type).
 ///
 /// This data is intended to enhance the layout logic.
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default)]
 struct FileMetadata {
     #[serde(rename = "a")]
     #[serde(skip_serializing_if = "Option::is_none")]
