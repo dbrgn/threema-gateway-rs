@@ -1,5 +1,5 @@
 use log::warn;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{Key, errors::FileMessageBuilderError, protocol::BlobId};
 
@@ -14,6 +14,8 @@ pub enum RenderingType {
     Media,
     /// Display as sticker (images with transparency, rendered without bubble)
     Sticker,
+    /// Another rendering type (unknown)
+    Other(u8),
 }
 
 impl From<RenderingType> for u8 {
@@ -22,6 +24,7 @@ impl From<RenderingType> for u8 {
             RenderingType::File => 0,
             RenderingType::Media => 1,
             RenderingType::Sticker => 2,
+            RenderingType::Other(value) => value,
         }
     }
 }
@@ -32,8 +35,20 @@ impl Serialize for RenderingType {
     }
 }
 
+impl<'de> Deserialize<'de> for RenderingType {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = u8::deserialize(deserializer)?;
+        match value {
+            0 => Ok(RenderingType::File),
+            1 => Ok(RenderingType::Media),
+            2 => Ok(RenderingType::Sticker),
+            other => Ok(RenderingType::Other(other)),
+        }
+    }
+}
+
 /// A file message.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FileMessage {
     #[serde(rename = "b")]
     file_blob_id: BlobId,
@@ -72,7 +87,7 @@ pub struct FileMessage {
 /// Metadata for a file message (depending on media type).
 ///
 /// This data is intended to enhance the layout logic.
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 struct FileMetadata {
     #[serde(rename = "a")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -99,7 +114,7 @@ impl FileMetadata {
 }
 
 impl FileMessage {
-    /// Shortcut for [`FileMessageBuilder::new`](struct.FileMessageBuilder.html#method.new).
+    /// Shortcut for [`FileMessageBuilder::new`].
     pub fn builder<M: Into<String>>(
         file_blob_id: BlobId,
         blob_encryption_key: Key,
@@ -115,7 +130,7 @@ impl FileMessage {
     }
 }
 
-/// Builder for [`FileMessage`](struct.FileMessage.html).
+/// Builder for [`FileMessage`].
 pub struct FileMessageBuilder {
     file_blob_id: BlobId,
     file_media_type: String,

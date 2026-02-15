@@ -51,6 +51,7 @@ zeroize = { version = "1", features = ["zeroize_derive"], default-features = fal
 
 [dev-dependencies]
 docopt = "1.1.0"
+insta = { version = "1", features = ["json"] }
 mime_guess = "2.0.0"
 tokio = { version = "1", features = ["macros", "rt"], default-features = false }
 tokio-test = "0.4"
@@ -101,6 +102,7 @@ pedantic = "warn"
 collapsible_if = { level = "allow", priority = 1 }
 collapsible_else_if = { level = "allow", priority = 1 }
 missing_errors_doc = { level = "allow", priority = 1 }
+missing_panics_doc = { level = "allow", priority = 1 }
 similar_names = { level = "allow", priority = 1 }
 too_many_lines = { level = "allow", priority = 1 }
 unnecessary_debug_formatting = { level = "allow", priority = 1 }

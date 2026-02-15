@@ -1,0 +1,13 @@
+---
+source: src/protocol/e2e/mod.rs
+expression: json_value
+---
+{
+  "b": "0123456789abcdef0123456789abcdef",
+  "i": 0,
+  "j": 0,
+  "k": "0102030401020304010203040102030401020304010203040102030401020304",
+  "m": "application/pdf",
+  "n": "test.pdf",
+  "s": 1024
+}

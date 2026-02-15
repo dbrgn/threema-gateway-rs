@@ -70,7 +70,7 @@ mod connection;
 mod crypto;
 pub mod errors;
 mod lookup;
-mod protocol;
+pub mod protocol;
 #[cfg(feature = "receive")]
 mod receive;
 

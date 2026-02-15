@@ -3,11 +3,11 @@
 use std::{fmt, str::FromStr};
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::errors::ApiError;
 
-pub(crate) mod e2e;
+pub mod e2e;
 
 /// A 16-byte blob ID.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -50,6 +50,13 @@ impl Serialize for BlobId {
     }
 }
 
+impl<'de> Deserialize<'de> for BlobId {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let str = String::deserialize(deserializer)?;
+        BlobId::from_str(&str).map_err(serde::de::Error::custom)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -69,6 +76,17 @@ mod test {
                 BlobId::from_str("000102030405060708090a0b0c0d0eff").unwrap(),
                 BlobId::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xff])
             );
+        }
+
+        #[test]
+        fn serde_serialize_deserialize() {
+            let blob_id = BlobId::new([1, 2, 3, 4, 5, 6, 7, 8, 9, 8, 7, 6, 5, 4, 0xfe, 0xff]);
+
+            let json = serde_json::to_string(&blob_id).unwrap();
+            assert_eq!(json, "\"0102030405060708090807060504feff\"");
+
+            let deserialized: BlobId = serde_json::from_str(&json).unwrap();
+            assert_eq!(deserialized, blob_id);
         }
     }
 }
