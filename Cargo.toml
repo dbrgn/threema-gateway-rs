@@ -53,6 +53,7 @@ zeroize = { version = "1", features = ["zeroize_derive"], default-features = fal
 docopt = "1.1.0"
 insta = { version = "1", features = ["json"] }
 mime_guess = "2.0.0"
+rstest = "0.25"
 tokio = { version = "1", features = ["macros", "rt"], default-features = false }
 tokio-test = "0.4"
 

@@ -33,6 +33,18 @@ impl From<MessageType> for u8 {
     }
 }
 
+impl From<u8> for MessageType {
+    fn from(val: u8) -> Self {
+        match val {
+            0x01 => MessageType::Text,
+            0x02 => MessageType::Image,
+            0x13 => MessageType::Video,
+            0x17 => MessageType::File,
+            other => MessageType::Other(other),
+        }
+    }
+}
+
 /// Errors while decoding a message.
 #[derive(Debug, Error)]
 pub enum MessageDecodeError {
@@ -138,6 +150,42 @@ mod tests {
             .file_name("test.pdf")
             .build()
             .unwrap()
+    }
+
+    mod message_type {
+        use rstest::rstest;
+
+        use super::*;
+
+        #[rstest]
+        #[case::text(0x01, MessageType::Text)]
+        #[case::image(0x02, MessageType::Image)]
+        #[case::video(0x13, MessageType::Video)]
+        #[case::file(0x17, MessageType::File)]
+        #[case::other(0x42, MessageType::Other(0x42))]
+        #[case::zero(0x00, MessageType::Other(0x00))]
+        fn from_u8(#[case] byte: u8, #[case] expected: MessageType) {
+            assert_eq!(MessageType::from(byte), expected);
+        }
+
+        #[rstest]
+        #[case::text(MessageType::Text, 0x01)]
+        #[case::image(MessageType::Image, 0x02)]
+        #[case::video(MessageType::Video, 0x13)]
+        #[case::file(MessageType::File, 0x17)]
+        #[case::other(MessageType::Other(0x42), 0x42)]
+        fn to_u8(#[case] msgtype: MessageType, #[case] expected: u8) {
+            let byte: u8 = msgtype.into();
+            assert_eq!(byte, expected);
+        }
+
+        #[test]
+        fn round_trip() {
+            let original = MessageType::File;
+            let byte: u8 = original.into();
+            let restored = MessageType::from(byte);
+            assert_eq!(restored, original);
+        }
     }
 
     mod encode {
