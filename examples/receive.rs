@@ -67,13 +67,13 @@ async fn main() {
     });
 
     // Decrypt
-    let data = api
-        .decrypt_incoming_message(&msg, &recipient_key)
+    let message = api
+        .decrypt_and_decode_incoming_message(&msg, &recipient_key)
         .unwrap_or_else(|error| {
             println!("Could not decrypt box: {error}");
             std::process::exit(1);
         });
 
     // Show result
-    println!("Decrypted box: {data:?}");
+    println!("Decrypted message: {message:?}");
 }

@@ -1,6 +1,6 @@
 //! Error types used in this library.
 
-use std::io::Error as IoError;
+use std::{io::Error as IoError, str::Utf8Error};
 
 use reqwest::Error as ReqwestError;
 use thiserror::Error;
@@ -113,6 +113,33 @@ pub enum CryptoError {
     /// Encryption failed
     #[error("encryption failed")]
     EncryptionFailed,
+}
+
+/// Errors while decoding a message.
+#[derive(Debug, Error)]
+pub enum MessageDecodeError {
+    /// Message is empty (no type byte)
+    #[error("message is empty (no type byte)")]
+    EmptyMessage,
+
+    /// Invalid UTF-8
+    #[error("invalid utf-8: {0}")]
+    InvalidUtf8(Utf8Error),
+
+    /// JSON error
+    #[error("json error: {0}")]
+    Json(#[from] serde_json::Error),
+}
+
+/// Either a [`CryptoError`] or a [`MessageDecodeError`].
+#[derive(Debug, Error)]
+pub enum CryptoOrMessageDecodeError {
+    /// The inner [`CryptoError`]
+    #[error("crypto error: {0}")]
+    Crypto(#[from] CryptoError),
+    /// The [`MessageDecodeError`]
+    #[error("decode error: {0}")]
+    Decode(#[from] MessageDecodeError),
 }
 
 /// Errors when interacting with the [`ApiBuilder`](../struct.ApiBuilder.html).

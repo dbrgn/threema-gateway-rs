@@ -17,6 +17,10 @@ Possible log types:
   the `public-key-cache-inmemory` Cargo feature.
 - [added] Add a `RedisPublicKeyCache`. Enabled through the `public-key-cache-redis`
   Cargo feature.
+- [added] Add `E2eMessage` type
+- [added] Add `E2eApi::decrypt_and_decode_incoming_message` method
+- [added] Derive `Clone` and `PartialEq` for FileMessage
+- [added] Implement `Deserialize` for FileMessage
 - [changed] The `cache` module is now exposed directly. The `PublicKeyCache` trait
   is not re-exported at top level anymore, import it from the `cache` module.
 

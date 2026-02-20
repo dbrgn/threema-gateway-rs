@@ -38,7 +38,7 @@ The official Rust SDK for Threema Gateway.
 - [x] Decode incoming request body
 - [x] Verify MAC of incoming message
 - [x] Decrypt incoming message
-- [ ] Decode incoming message
+- [x] Decode incoming message
 
 **Files**
 

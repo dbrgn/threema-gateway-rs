@@ -1,8 +1,6 @@
 //! Types used in the Threema end-to-end protocol.
 
-use std::str::Utf8Error;
-
-use thiserror::Error;
+use crate::errors::MessageDecodeError;
 
 pub(crate) mod file;
 
@@ -45,18 +43,6 @@ impl From<u8> for MessageType {
     }
 }
 
-/// Errors while decoding a message.
-#[derive(Debug, Error)]
-pub enum MessageDecodeError {
-    /// Invalid UTF-8
-    #[error("invalid utf-8: {0}")]
-    InvalidUtf8(Utf8Error),
-
-    /// JSON error
-    #[error("json error: {0}")]
-    Json(#[from] serde_json::Error),
-}
-
 /// An encoded [`E2eMessage`] along with the message type.
 pub struct EncodedE2eMessage {
     /// The message type
@@ -66,7 +52,7 @@ pub struct EncodedE2eMessage {
 }
 
 /// A message on the end-to-end layer, exchanged in encrypted form between Threema IDs.
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum E2eMessage {
     /// Text message
     Text(String),
@@ -128,6 +114,19 @@ impl E2eMessage {
                 message_bytes: message_bytes.to_vec(),
             }),
         }
+    }
+
+    /// Decode from raw decrypted message bytes.
+    ///
+    /// The first byte is interpreted as the message type byte, the remaining
+    /// bytes are the message payload. This matches the format returned by
+    /// [`IncomingMessage::decrypt_box`](crate::IncomingMessage::decrypt_box)
+    /// and [`E2eApi::decrypt_incoming_message`](crate::E2eApi::decrypt_incoming_message).
+    pub fn decode_from_decrypted_bytes(bytes: &[u8]) -> Result<Self, MessageDecodeError> {
+        let (&type_byte, payload) = bytes
+            .split_first()
+            .ok_or(MessageDecodeError::EmptyMessage)?;
+        Self::decode(MessageType::from(type_byte), payload)
     }
 }
 
@@ -324,6 +323,71 @@ mod tests {
             };
             assert_eq!(message_type, MessageType::Other(0x42));
             assert_eq!(message_bytes, bytes);
+        }
+    }
+
+    mod decode_from_decrypted_bytes {
+        use super::*;
+
+        #[test]
+        fn text_message() {
+            let bytes = [0x01, b'H', b'i'];
+            let msg = E2eMessage::decode_from_decrypted_bytes(&bytes).unwrap();
+            let E2eMessage::Text(text) = msg else {
+                panic!("expected Text variant");
+            };
+            assert_eq!(text, "Hi");
+        }
+
+        #[test]
+        fn file_message() {
+            let file_msg = sample_file_message();
+            let json_bytes = serde_json::to_vec(&file_msg).unwrap();
+            let mut bytes = vec![0x17];
+            bytes.extend_from_slice(&json_bytes);
+
+            let msg = E2eMessage::decode_from_decrypted_bytes(&bytes).unwrap();
+            let E2eMessage::File(decoded) = msg else {
+                panic!("expected File variant");
+            };
+            assert_eq!(decoded, file_msg);
+        }
+
+        #[test]
+        fn other_message() {
+            let bytes = [0x42, 1, 2, 3];
+            let msg = E2eMessage::decode_from_decrypted_bytes(&bytes).unwrap();
+            let E2eMessage::Other {
+                message_type,
+                message_bytes,
+            } = msg
+            else {
+                panic!("expected Other variant");
+            };
+            assert_eq!(message_type, MessageType::Other(0x42));
+            assert_eq!(message_bytes, vec![1, 2, 3]);
+        }
+
+        #[test]
+        fn empty_bytes() {
+            let bytes = [];
+            let Err(err) = E2eMessage::decode_from_decrypted_bytes(&bytes) else {
+                panic!("expected Err");
+            };
+            assert!(
+                matches!(err, MessageDecodeError::EmptyMessage),
+                "expected EmptyMessage, got {err:?}"
+            );
+        }
+
+        #[test]
+        fn type_byte_only() {
+            let bytes = [0x01];
+            let msg = E2eMessage::decode_from_decrypted_bytes(&bytes).unwrap();
+            let E2eMessage::Text(text) = msg else {
+                panic!("expected Text variant");
+            };
+            assert_eq!(text, "");
         }
     }
 }

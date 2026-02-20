@@ -10,8 +10,6 @@ use data_encoding::HEXLOWER_PERMISSIVE;
 use log::{debug, warn};
 use reqwest::Client;
 
-#[cfg(feature = "receive")]
-use crate::receive::IncomingMessage;
 use crate::{
     MSGAPI_URL,
     cache::PublicKeyCache,
@@ -31,6 +29,10 @@ use crate::{
         BlobId,
         e2e::{MessageType, file::FileMessage},
     },
+};
+#[cfg(feature = "receive")]
+use crate::{
+    errors::CryptoOrMessageDecodeError, protocol::e2e::E2eMessage, receive::IncomingMessage,
 };
 
 fn make_reqwest_client() -> Client {
@@ -520,11 +522,14 @@ impl E2eApi {
         IncomingMessage::from_urlencoded_bytes(bytes, &self.secret)
     }
 
-    /// Decrypt an [`IncomingMessage`] using the provided public key and our
-    /// own private key.
+    /// Decrypt an [`IncomingMessage`] using the provided public key and our own private key and return the
+    /// raw bytes.
     ///
     /// The format of the returned decrypted message bytes is documented at
     /// <https://gateway.threema.ch/de/developer/e2e>.
+    ///
+    /// **Note:** You should probably not use this directly, but instead use
+    /// [`E2eApi::decrypt_and_decode_incoming_message`]!
     #[cfg(feature = "receive")]
     pub fn decrypt_incoming_message(
         &self,
@@ -532,6 +537,18 @@ impl E2eApi {
         recipient_key: &RecipientKey,
     ) -> Result<Vec<u8>, CryptoError> {
         message.decrypt_box(&recipient_key.0, &self.private_key)
+    }
+
+    /// Decrypt and decode an [`IncomingMessage`] using the provided public key and our own private key.
+    #[cfg(feature = "receive")]
+    pub fn decrypt_and_decode_incoming_message(
+        &self,
+        message: &IncomingMessage,
+        recipient_key: &RecipientKey,
+    ) -> Result<E2eMessage, CryptoOrMessageDecodeError> {
+        let decrypted_bytes = self.decrypt_incoming_message(message, recipient_key)?;
+        let e2e_message = E2eMessage::decode_from_decrypted_bytes(&decrypted_bytes)?;
+        Ok(e2e_message)
     }
 }
 

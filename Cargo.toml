@@ -57,6 +57,10 @@ rstest = "0.25"
 tokio = { version = "1", features = ["macros", "rt"], default-features = false }
 tokio-test = "0.4"
 
+[[example]]
+name = "receive"
+required-features = ["receive"]
+
 [lints.rust]
 deprecated_safe = "warn"
 explicit_outlives_requirements = "warn"
