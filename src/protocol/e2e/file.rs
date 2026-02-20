@@ -339,11 +339,8 @@ impl FileMessageBuilder {
 }
 
 #[cfg(test)]
-#[expect(clippy::default_numeric_fallback, reason = "Tests")]
 mod test {
-    use std::{collections::HashMap, str::FromStr as _};
-
-    use serde_json as json;
+    use std::str::FromStr as _;
 
     use super::*;
 
@@ -366,25 +363,7 @@ mod test {
             legacy_rendering_type: 0,
             metadata: None,
         };
-        let data = json::to_string(&msg).unwrap();
-        let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
-
-        assert_eq!(deserialized.keys().len(), 6);
-        assert_eq!(
-            deserialized.get("b").unwrap(),
-            "0123456789abcdef0123456789abcdef"
-        );
-        assert_eq!(deserialized.get("t"), None);
-        assert_eq!(
-            deserialized.get("k").unwrap(),
-            "0102030401020304010203040102030401020304010203040102030401020304"
-        );
-        assert_eq!(deserialized.get("m").unwrap(), "application/pdf");
-        assert_eq!(deserialized.get("n"), None);
-        assert_eq!(deserialized.get("s").unwrap(), 2048);
-        assert_eq!(deserialized.get("j").unwrap(), 0);
-        assert_eq!(deserialized.get("i").unwrap(), 0);
-        assert_eq!(deserialized.get("d"), None);
+        insta::assert_json_snapshot!(msg);
     }
 
     #[test]
@@ -411,33 +390,7 @@ mod test {
                 duration_seconds: Some(12.7),
             }),
         };
-        let data = json::to_string(&msg).unwrap();
-        let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
-
-        assert_eq!(deserialized.keys().len(), 11);
-        assert_eq!(
-            deserialized.get("b").unwrap(),
-            "0123456789abcdef0123456789abcdef"
-        );
-        assert_eq!(
-            deserialized.get("t").unwrap(),
-            "abcdef0123456789abcdef0123456789"
-        );
-        assert_eq!(
-            deserialized.get("k").unwrap(),
-            "0102030401020304010203040102030401020304010203040102030401020304"
-        );
-        assert_eq!(deserialized.get("m").unwrap(), "application/pdf");
-        assert_eq!(deserialized.get("p").unwrap(), "image/jpeg");
-        assert_eq!(deserialized.get("n").unwrap(), "secret.pdf");
-        assert_eq!(deserialized.get("s").unwrap(), 2048);
-        assert_eq!(deserialized.get("j").unwrap(), 2);
-        assert_eq!(deserialized.get("i").unwrap(), 1);
-        assert_eq!(deserialized.get("d").unwrap(), "This is a fancy file");
-        assert_eq!(deserialized.get("x").unwrap().get("a").unwrap(), true);
-        assert_eq!(deserialized.get("x").unwrap().get("h").unwrap(), 320);
-        assert_eq!(deserialized.get("x").unwrap().get("w").unwrap(), 240);
-        assert_eq!(deserialized.get("x").unwrap().get("d").unwrap(), 12.7);
+        insta::assert_json_snapshot!(msg);
     }
 
     #[test]

@@ -1,0 +1,22 @@
+---
+source: src/protocol/e2e/file.rs
+expression: msg
+---
+{
+  "b": "0123456789abcdef0123456789abcdef",
+  "m": "application/pdf",
+  "t": "abcdef0123456789abcdef0123456789",
+  "p": "image/jpeg",
+  "k": "0102030401020304010203040102030401020304010203040102030401020304",
+  "n": "secret.pdf",
+  "s": 2048,
+  "d": "This is a fancy file",
+  "j": 2,
+  "i": 1,
+  "x": {
+    "a": true,
+    "h": 320,
+    "w": 240,
+    "d": 12.7
+  }
+}
