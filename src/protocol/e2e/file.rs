@@ -52,57 +52,78 @@ impl<'de> Deserialize<'de> for RenderingType {
 /// A file message.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FileMessage {
+    /// Blob ID of encrypted file data on blob server
     #[serde(rename = "b")]
-    file_blob_id: BlobId,
+    pub file_blob_id: BlobId,
+    /// Media type (aka MIME type) of the file
     #[serde(rename = "m")]
-    file_media_type: String,
+    pub file_media_type: String,
 
+    /// Blob ID of encrypted thumbnail data on blob server
     #[serde(rename = "t")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    thumbnail_blob_id: Option<BlobId>,
+    pub thumbnail_blob_id: Option<BlobId>,
+    /// Media type (aka MIME type) of the thumbnail
     #[serde(rename = "p")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    thumbnail_media_type: Option<String>,
+    pub thumbnail_media_type: Option<String>,
 
+    /// Symmetric encryption key used for blobs
     #[serde(rename = "k")]
-    blob_encryption_key: Key,
+    pub blob_encryption_key: Key,
 
+    /// File name
     #[serde(rename = "n")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    file_name: Option<String>,
+    pub file_name: Option<String>,
+    /// File size in bytes
     #[serde(rename = "s")]
-    file_size_bytes: u32,
+    pub file_size_bytes: u32,
+    /// Caption text
     #[serde(rename = "d")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    description: Option<String>,
+    pub description: Option<String>,
 
+    /// Rendering type
+    ///
+    /// This type determines how to render the file in a chat.
     #[serde(rename = "j")]
-    rendering_type: RenderingType,
+    pub rendering_type: RenderingType,
+    /// Legacy rendering type
+    ///
+    /// Set this to 1 if the rendering type is `Media` or `Sticker`, otherwise set this to 0.
+    ///
+    /// When receiving a file message, ignore this flag.
     #[serde(rename = "i")]
-    legacy_rendering_type: u8,
+    pub legacy_rendering_type: u8,
 
+    /// Optional additional metadata
     #[serde(rename = "x")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    metadata: Option<FileMetadata>,
+    pub metadata: Option<FileMetadata>,
 }
 
 /// Metadata for a file message (depending on media type).
 ///
-/// This data is intended to enhance the layout logic.
+/// This data is intended to enhance the layout logic when rendering the file in a chat.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
-struct FileMetadata {
+pub struct FileMetadata {
+    /// (For image) Image is animated (e.g. an animated GIF)
     #[serde(rename = "a")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    animated: Option<bool>,
+    pub animated: Option<bool>,
+    /// (For image or video) Height in px
     #[serde(rename = "h")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    height: Option<u32>,
+    pub height: Option<u32>,
+    /// (For image or video) Width in px
     #[serde(rename = "w")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    width: Option<u32>,
+    pub width: Option<u32>,
+    /// (For video or audio) Duration in seconds
     #[serde(rename = "d")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    duration_seconds: Option<f32>,
+    pub duration_seconds: Option<f32>,
 }
 
 impl FileMetadata {

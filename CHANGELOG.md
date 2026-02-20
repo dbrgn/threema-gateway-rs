@@ -23,6 +23,7 @@ Possible log types:
 - [added] Implement `Deserialize` for FileMessage
 - [changed] The `cache` module is now exposed directly. The `PublicKeyCache` trait
   is not re-exported at top level anymore, import it from the `cache` module.
+- [changed] Make `FileMessage` fields and `FileMetadata` struct public
 - [changed] The type `BlobId` is not re-exported at top level anymore, import it from the `protocol` module
   instead
 - [changed] The type `MessageType` is not re-exported at top level anymore, import it from the `protocol`
