@@ -23,6 +23,12 @@ Possible log types:
 - [added] Implement `Deserialize` for FileMessage
 - [changed] The `cache` module is now exposed directly. The `PublicKeyCache` trait
   is not re-exported at top level anymore, import it from the `cache` module.
+- [changed] The type `BlobId` is not re-exported at top level anymore, import it from the `protocol` module
+  instead
+- [changed] The type `MessageType` is not re-exported at top level anymore, import it from the `protocol`
+  module instead
+- [changed] The types `FileMessage`, `FileMessageBuilder` and `RenderingType` are not re-exported at top level
+  anymore, import them from the `protocol::e2e::file` module instead
 
 ### v0.19.0 (2026-01-04)
 

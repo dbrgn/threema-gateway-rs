@@ -1,3 +1,5 @@
+//! File message related types.
+
 use log::warn;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 

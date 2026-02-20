@@ -10,7 +10,10 @@
 use std::{ffi::OsStr, fs, path::Path, process};
 
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, FileData, FileMessage, RenderingType, encrypt_file_data};
+use threema_gateway::{
+    ApiBuilder, FileData, encrypt_file_data,
+    protocol::e2e::file::{FileMessage, RenderingType},
+};
 
 const USAGE: &str = "
 Usage: send_e2e_file [options] <from> <to> <secret> <private-key> <path-to-file>

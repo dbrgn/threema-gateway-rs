@@ -86,13 +86,6 @@ pub use crate::{
         encrypt, encrypt_file_data, encrypt_raw,
     },
     lookup::{BulkIdentityPublicKey, Capabilities, LookupCriterion},
-    protocol::{
-        BlobId,
-        e2e::{
-            MessageType,
-            file::{FileMessage, FileMessageBuilder, RenderingType},
-        },
-    },
 };
 
 #[cfg(feature = "receive")]

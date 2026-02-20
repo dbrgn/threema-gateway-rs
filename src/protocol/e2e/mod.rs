@@ -2,7 +2,7 @@
 
 use crate::errors::MessageDecodeError;
 
-pub(crate) mod file;
+pub mod file;
 
 /// A message type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
