@@ -5,7 +5,7 @@ use std::time::Duration;
 use redis::{AsyncCommands as _, aio::ConnectionLike};
 use thiserror::Error;
 
-use crate::{PublicKeyCache, crypto::RecipientKey, errors::CryptoError};
+use crate::{cache::PublicKeyCache, crypto::RecipientKey, errors::CryptoError};
 
 /// Errors when interacting with the [`RedisPublicKeyCache`].
 #[derive(Debug, Error)]
@@ -58,7 +58,7 @@ pub enum RedisPublicKeyCacheError {
 ///
 /// ```no_run
 /// use std::time::Duration;
-/// use threema_gateway::{PublicKeyCache, RecipientKey, cache::RedisPublicKeyCache};
+/// use threema_gateway::{RecipientKey, cache::{PublicKeyCache, RedisPublicKeyCache}};
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let client = redis::Client::open("redis://127.0.0.1:6379")?;

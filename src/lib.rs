@@ -86,7 +86,6 @@ pub use crypto_secretbox::Nonce;
 
 pub use crate::{
     api::{ApiBuilder, E2eApi, SimpleApi},
-    cache::PublicKeyCache,
     connection::Recipient,
     crypto::{
         EncryptedFileData, EncryptedMessage, FileData, Key, RecipientKey, decrypt_file_data,

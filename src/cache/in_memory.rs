@@ -5,7 +5,7 @@ use std::time::Duration;
 use moka::future::Cache;
 use thiserror::Error;
 
-use crate::{PublicKeyCache, RecipientKey, errors::CryptoError};
+use crate::{RecipientKey, cache::PublicKeyCache, errors::CryptoError};
 
 /// Errors when interacting with the [`InMemoryPublicKeyCache`].
 #[derive(Debug, Error)]
