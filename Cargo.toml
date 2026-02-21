@@ -1,11 +1,11 @@
 [package]
 name = "threema-gateway"
 version = "0.19.0"
-authors = ["Danilo Bargen <mail@dbrgn.ch>"]
+authors = ["Threema GmbH <opensource@threema.ch>"]
 documentation = "https://docs.rs/threema-gateway"
-repository = "https://github.com/dbrgn/threema-gateway-rs"
+repository = "https://github.com/threema-ch/threema-msgapi-sdk-rust/"
 license = "MIT OR Apache-2.0"
-description = "A client library for the Threema Gateway."
+description = "Official Rust SDK for Threema Gateway."
 readme = "README.md"
 keywords = ["threema", "end-to-end", "e2e", "e2ee", "gateway"]
 categories = ["api-bindings"]
