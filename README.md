@@ -4,11 +4,9 @@
 [![Crates.io Version][crates-io-badge]][crates-io]
 [![Crates.io Downloads][crates-io-download-badge]][crates-io-download]
 
-This is a mostly-complete implementation of an asynchronous Threema Gateway
-client library in Rust. For implementation status, see feature list below.
+The official Rust SDK for Threema Gateway.
 
 [Docs](https://docs.rs/threema-gateway)
-
 
 ## Features
 
@@ -46,7 +44,6 @@ client library in Rust. For implementation status, see feature list below.
 
 - [x] Upload files
 - [x] Download files
-
 
 ## Usage
 
@@ -87,13 +84,11 @@ Download a blob:
 
     cargo run --example download_blob -- <our-id> <secret> <private-key> <blob-id>
 
-
 ## Cargo Features
 
 This library offers the following optional features:
 
 - `receive`: Add support for processing incoming messages. Enabled by default.
-
 
 ## Rust Version Requirements (MSRV)
 
@@ -103,22 +98,19 @@ possible. However, in many cases transitive dependencies make guaranteeing a
 minimal supported Rust version impossible (see [this
 discussion](https://users.rust-lang.org/t/rust-version-requirement-change-as-semver-breaking-or-not/20980/25)).
 
-
 ## TLS
 
 This library uses [rustls](https://github.com/rustls/rustls) with native
 (system-provided) root certificates to establish a TLS connection.
 
-
 ## License
 
 Licensed under either of
 
- * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
-   http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or
-   http://opensource.org/licenses/MIT) at your option.
-
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
+  http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or
+  http://opensource.org/licenses/MIT) at your option.
 
 ### Contributing
 
@@ -127,8 +119,9 @@ for inclusion in the work by you, as defined in the Apache-2.0 license, shall
 be dual licensed as above, without any additional terms or conditions.
 
 <!-- Badges -->
-[github-actions]: https://github.com/dbrgn/threema-gateway-rs/actions?query=branch%3Amain
-[github-actions-badge]: https://github.com/dbrgn/threema-gateway-rs/workflows/CI/badge.svg
+
+[github-actions]: https://github.com/threema-ch/threema-msgapi-sdk-rust/actions?query=branch%3Amain
+[github-actions-badge]: https://github.com/threema-ch/threema-msgapi-sdk-rust/workflows/CI/badge.svg
 [crates-io]: https://crates.io/crates/threema-gateway
 [crates-io-badge]: https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600
 [crates-io-download]: https://crates.io/crates/threema-gateway
