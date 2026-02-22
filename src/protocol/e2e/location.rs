@@ -4,6 +4,18 @@ use std::{num::ParseFloatError, str::FromStr};
 
 use thiserror::Error;
 
+/// Errors when constructing [`Coordinates`].
+#[derive(Debug, PartialEq, Clone, Error)]
+pub enum CoordinatesError {
+    /// Latitude out of range (must be in `[-90, 90]` and finite)
+    #[error("latitude out of range: {0}")]
+    LatitudeOutOfRange(f64),
+
+    /// Longitude out of range (must be in `[-180, 180]` and finite)
+    #[error("longitude out of range: {0}")]
+    LongitudeOutOfRange(f64),
+}
+
 /// Errors when parsing a location message.
 #[derive(Debug, PartialEq, Clone, Error)]
 pub enum LocationMessageParseError {
@@ -18,6 +30,10 @@ pub enum LocationMessageParseError {
     /// Invalid longitude value
     #[error("invalid longitude: {0}")]
     InvalidLongitude(#[source] ParseFloatError),
+
+    /// Coordinates out of range
+    #[error(transparent)]
+    InvalidCoordinates(#[from] CoordinatesError),
 
     /// Invalid accuracy value
     #[error("invalid accuracy: {0}")]
@@ -34,6 +50,57 @@ pub enum LocationMessageBuilderError {
     /// A name was set without an address
     #[error("name requires address to be set")]
     MissingAddress,
+
+    /// Coordinates out of range
+    #[error(transparent)]
+    InvalidCoordinates(#[from] CoordinatesError),
+}
+
+/// WGS-84 coordinates (latitude and longitude).
+///
+/// Latitude must be in `[-90, 90]` and longitude in `[-180, 180]`. Both must be
+/// finite. These invariants are enforced at construction time via
+/// [`Coordinates::new`].
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Coordinates {
+    latitude: f64,
+    longitude: f64,
+}
+
+impl Coordinates {
+    /// Create new [`Coordinates`] from a latitude and longitude.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoordinatesError::LatitudeOutOfRange`] if `latitude` is not in
+    /// `[-90, 90]` or is non-finite.
+    ///
+    /// Returns [`CoordinatesError::LongitudeOutOfRange`] if `longitude` is not
+    /// in `[-180, 180]` or is non-finite.
+    pub fn new(latitude: f64, longitude: f64) -> Result<Self, CoordinatesError> {
+        if !latitude.is_finite() || !(-90.0_f64..=90.0_f64).contains(&latitude) {
+            return Err(CoordinatesError::LatitudeOutOfRange(latitude));
+        }
+        if !longitude.is_finite() || !(-180.0_f64..=180.0_f64).contains(&longitude) {
+            return Err(CoordinatesError::LongitudeOutOfRange(longitude));
+        }
+        Ok(Self {
+            latitude,
+            longitude,
+        })
+    }
+
+    /// Latitude in WGS-84.
+    #[must_use]
+    pub fn latitude(&self) -> f64 {
+        self.latitude
+    }
+
+    /// Longitude in WGS-84.
+    #[must_use]
+    pub fn longitude(&self) -> f64 {
+        self.longitude
+    }
 }
 
 /// Address information for a location message.
@@ -54,10 +121,8 @@ pub struct LocationAddress {
 /// [`LocationMessage::builder`].
 #[derive(Debug, Clone, PartialEq)]
 pub struct LocationMessage {
-    /// Latitude in WGS-84
-    pub latitude: f64,
-    /// Longitude in WGS-84
-    pub longitude: f64,
+    /// WGS-84 coordinates
+    pub coordinates: Coordinates,
     /// Accuracy in meters (should only be set when sending the current device location)
     pub accuracy: Option<f64>,
     /// Address and optional point-of-interest name
@@ -83,7 +148,12 @@ impl LocationMessage {
 impl std::fmt::Display for LocationMessage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // First line: lat,lon[,accuracy]
-        write!(f, "{},{}", self.latitude, self.longitude)?;
+        write!(
+            f,
+            "{},{}",
+            self.coordinates.latitude(),
+            self.coordinates.longitude()
+        )?;
         if let Some(accuracy) = self.accuracy {
             write!(f, ",{accuracy}")?;
         }
@@ -118,7 +188,7 @@ impl FromStr for LocationMessage {
         }
 
         // Parse first line: lat,lon[,accuracy]
-        let (latitude, longitude, accuracy) = {
+        let (coordinates, accuracy) = {
             let coord_line = lines
                 .first()
                 .ok_or(LocationMessageParseError::MissingCoordinates)?;
@@ -141,6 +211,8 @@ impl FromStr for LocationMessage {
                 .parse::<f64>()
                 .map_err(LocationMessageParseError::InvalidLongitude)?;
 
+            let coordinates = Coordinates::new(latitude, longitude)?;
+
             let accuracy = parts
                 .next()
                 .map(|acc_str| {
@@ -151,7 +223,7 @@ impl FromStr for LocationMessage {
                 })
                 .transpose()?;
 
-            (latitude, longitude, accuracy)
+            (coordinates, accuracy)
         };
 
         // Parse optional name / address lines
@@ -176,8 +248,7 @@ impl FromStr for LocationMessage {
         };
 
         Ok(LocationMessage {
-            latitude,
-            longitude,
+            coordinates,
             accuracy,
             address,
         })
@@ -253,8 +324,13 @@ impl LocationMessageBuilder {
 
     /// Build the [`LocationMessage`].
     ///
-    /// Returns [`LocationMessageBuilderError::MissingAddress`] if a name was set without an address.
+    /// # Errors
+    ///
+    /// - [`LocationMessageBuilderError::InvalidCoordinates`] if the latitude is not in `[-90, 90]`
+    ///   or the longitude is not in `[-180, 180]` (or either is non-finite).
+    /// - [`LocationMessageBuilderError::MissingAddress`] if a name was set without an address.
     pub fn build(self) -> Result<LocationMessage, LocationMessageBuilderError> {
+        let coordinates = Coordinates::new(self.latitude, self.longitude)?;
         if self.name.is_some() && self.address.is_none() {
             return Err(LocationMessageBuilderError::MissingAddress);
         }
@@ -263,8 +339,7 @@ impl LocationMessageBuilder {
             name: self.name,
         });
         Ok(LocationMessage {
-            latitude: self.latitude,
-            longitude: self.longitude,
+            coordinates,
             accuracy: self.accuracy,
             address,
         })
@@ -280,14 +355,92 @@ impl LocationMessageBuilder {
 mod tests {
     use super::*;
 
+    mod coordinates {
+        use super::*;
+
+        #[test]
+        fn valid() {
+            let c = Coordinates::new(47.3769, 8.5417).unwrap();
+            assert_eq!(c.latitude(), 47.3769);
+            assert_eq!(c.longitude(), 8.5417);
+        }
+
+        #[test]
+        fn boundary_latitude() {
+            let c = Coordinates::new(-90.0, 0.0).unwrap();
+            assert_eq!(c.latitude(), -90.0);
+            let c = Coordinates::new(90.0, 0.0).unwrap();
+            assert_eq!(c.latitude(), 90.0);
+        }
+
+        #[test]
+        fn boundary_longitude() {
+            let c = Coordinates::new(0.0, -180.0).unwrap();
+            assert_eq!(c.longitude(), -180.0);
+            let c = Coordinates::new(0.0, 180.0).unwrap();
+            assert_eq!(c.longitude(), 180.0);
+        }
+
+        #[test]
+        fn latitude_out_of_range() {
+            let err = Coordinates::new(90.1, 0.0).unwrap_err();
+            assert_eq!(err, CoordinatesError::LatitudeOutOfRange(90.1));
+
+            let err = Coordinates::new(-90.1, 0.0).unwrap_err();
+            assert_eq!(err, CoordinatesError::LatitudeOutOfRange(-90.1));
+        }
+
+        #[test]
+        fn longitude_out_of_range() {
+            let err = Coordinates::new(0.0, 180.1).unwrap_err();
+            assert_eq!(err, CoordinatesError::LongitudeOutOfRange(180.1));
+
+            let err = Coordinates::new(0.0, -180.1).unwrap_err();
+            assert_eq!(err, CoordinatesError::LongitudeOutOfRange(-180.1));
+        }
+
+        #[test]
+        fn nan_latitude() {
+            let err = Coordinates::new(f64::NAN, 0.0).unwrap_err();
+            assert!(
+                matches!(err, CoordinatesError::LatitudeOutOfRange(v) if v.is_nan()),
+                "expected LatitudeOutOfRange(NaN), got {err:?}"
+            );
+        }
+
+        #[test]
+        fn nan_longitude() {
+            let err = Coordinates::new(0.0, f64::NAN).unwrap_err();
+            assert!(
+                matches!(err, CoordinatesError::LongitudeOutOfRange(v) if v.is_nan()),
+                "expected LongitudeOutOfRange(NaN), got {err:?}"
+            );
+        }
+
+        #[test]
+        fn infinite_latitude() {
+            let err = Coordinates::new(f64::INFINITY, 0.0).unwrap_err();
+            assert_eq!(err, CoordinatesError::LatitudeOutOfRange(f64::INFINITY));
+        }
+
+        #[test]
+        fn infinite_longitude() {
+            let err = Coordinates::new(0.0, f64::NEG_INFINITY).unwrap_err();
+            assert_eq!(
+                err,
+                CoordinatesError::LongitudeOutOfRange(f64::NEG_INFINITY)
+            );
+        }
+    }
+
     mod builder {
         use super::*;
 
         #[test]
         fn minimal() {
             let msg = LocationMessage::builder(47.3769, 8.5417).build().unwrap();
-            assert_eq!(msg.latitude, 47.3769_f64);
-            assert_eq!(msg.longitude, 8.5417_f64);
+            assert_eq!(msg.coordinates.latitude(), 47.3769_f64);
+            assert_eq!(msg.coordinates.longitude(), 8.5417_f64);
             assert!(msg.accuracy.is_none());
             assert!(msg.address.is_none());
         }
@@ -322,6 +475,28 @@ mod tests {
             let addr = msg.address.as_ref().expect("address should be set");
             assert_eq!(addr.name.as_deref(), Some("Zürich HB"));
             assert_eq!(addr.address, "Bahnhofplatz, 8001 Zürich");
+        }
+
+        #[test]
+        fn latitude_out_of_range() {
+            let err = LocationMessage::builder(91.0, 0.0).build().unwrap_err();
+            assert_eq!(
+                err,
+                LocationMessageBuilderError::InvalidCoordinates(
+                    CoordinatesError::LatitudeOutOfRange(91.0)
+                )
+            );
+        }
+
+        #[test]
+        fn longitude_out_of_range() {
+            let err = LocationMessage::builder(0.0, 181.0).build().unwrap_err();
+            assert_eq!(
+                err,
+                LocationMessageBuilderError::InvalidCoordinates(
+                    CoordinatesError::LongitudeOutOfRange(181.0)
+                )
+            );
         }
 
         #[test]
@@ -435,8 +610,8 @@ mod tests {
         #[test]
         fn coordinates_only() {
             let msg: LocationMessage = "47.3769,8.5417".parse().unwrap();
-            assert_eq!(msg.latitude, 47.3769);
-            assert_eq!(msg.longitude, 8.5417);
+            assert_eq!(msg.coordinates.latitude(), 47.3769);
+            assert_eq!(msg.coordinates.longitude(), 8.5417);
             assert!(msg.accuracy.is_none());
             assert!(msg.address.is_none());
         }
@@ -444,8 +619,8 @@ mod tests {
         #[test]
         fn with_accuracy() {
             let msg: LocationMessage = "47.3769,8.5417,12.5".parse().unwrap();
-            assert_eq!(msg.latitude, 47.3769);
-            assert_eq!(msg.longitude, 8.5417);
+            assert_eq!(msg.coordinates.latitude(), 47.3769);
+            assert_eq!(msg.coordinates.longitude(), 8.5417);
             assert_eq!(msg.accuracy, Some(12.5));
         }
 
@@ -454,7 +629,7 @@ mod tests {
             let msg: LocationMessage = "47.3769,8.5417\nBahnhofstrasse 1, 8001 Zürich"
                 .parse()
                 .unwrap();
-            assert_eq!(msg.latitude, 47.3769);
+            assert_eq!(msg.coordinates.latitude(), 47.3769);
             let addr = msg.address.as_ref().expect("address should be set");
             assert_eq!(addr.address, "Bahnhofstrasse 1, 8001 Zürich");
             assert!(addr.name.is_none());
@@ -481,8 +656,33 @@ mod tests {
         #[test]
         fn negative_coordinates() {
             let msg: LocationMessage = "-33.8688,151.2093".parse().unwrap();
-            assert_eq!(msg.latitude, -33.8688);
-            assert_eq!(msg.longitude, 151.2093);
+            assert_eq!(msg.coordinates.latitude(), -33.8688);
+            assert_eq!(msg.coordinates.longitude(), 151.2093);
+        }
+
+        #[test]
+        fn invalid_latitude() {
+            let err = "91.0,8.5417".parse::<LocationMessage>().unwrap_err();
+            assert_eq!(
+                err,
+                LocationMessageParseError::InvalidCoordinates(
+                    CoordinatesError::LatitudeOutOfRange(91.0)
+                )
+            );
+        }
+
+        #[test]
+        fn nan_longitude() {
+            let err = "47.3769,NaN".parse::<LocationMessage>().unwrap_err();
+            assert!(
+                matches!(
+                    err,
+                    LocationMessageParseError::InvalidCoordinates(
+                        CoordinatesError::LongitudeOutOfRange(v)
+                    ) if v.is_nan()
+                ),
+                "expected LongitudeOutOfRange(NaN), got {err:?}"
+            );
         }
 
         #[test]
@@ -505,7 +705,7 @@ mod tests {
         }
 
         #[test]
-        fn invalid_latitude() {
+        fn non_float_latitude() {
             let err = "abc,8.5417".parse::<LocationMessage>().unwrap_err();
             assert!(
                 matches!(err, LocationMessageParseError::InvalidLatitude(_)),
@@ -514,7 +714,7 @@ mod tests {
         }
 
         #[test]
-        fn invalid_longitude() {
+        fn non_float_longitude() {
             let err = "47.3769,xyz".parse::<LocationMessage>().unwrap_err();
             assert!(
                 matches!(err, LocationMessageParseError::InvalidLongitude(_)),
@@ -523,7 +723,7 @@ mod tests {
         }
 
         #[test]
-        fn invalid_accuracy() {
+        fn non_float_accuracy() {
             let err = "47.3769,8.5417,bad".parse::<LocationMessage>().unwrap_err();
             assert!(
                 matches!(err, LocationMessageParseError::InvalidAccuracy(_)),

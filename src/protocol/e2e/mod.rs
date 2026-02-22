@@ -355,8 +355,8 @@ mod tests {
             let E2eMessage::Location(decoded) = msg else {
                 panic!("expected Location variant");
             };
-            assert_eq!(decoded.latitude, 47.3769);
-            assert_eq!(decoded.longitude, 8.5417_f64);
+            assert_eq!(decoded.coordinates.latitude(), 47.3769);
+            assert_eq!(decoded.coordinates.longitude(), 8.5417_f64);
             assert_eq!(decoded.accuracy, None);
             let addr = decoded.address.as_ref().expect("address should be set");
             assert_eq!(addr.name.as_deref(), Some("Zürich HB"));
