@@ -21,7 +21,7 @@ The official Rust SDK for Threema Gateway.
 - [x] Encrypt text messages
 - [x] Encrypt image messages
 - [x] Encrypt file messages
-- [ ] Encrypt delivery receipt messages
+- [x] Encrypt delivery receipt messages
 
 **Lookup**
 

@@ -5,7 +5,9 @@ use std::{io::Error as IoError, str::Utf8Error};
 use reqwest::Error as ReqwestError;
 use thiserror::Error;
 
-use crate::protocol::e2e::location::LocationMessageParseError;
+use crate::protocol::e2e::{
+    delivery_receipt::DeliveryReceiptMessageParseError, location::LocationMessageParseError,
+};
 
 /// Errors when interacting with the API.
 #[derive(Debug, Error)]
@@ -135,6 +137,10 @@ pub enum MessageDecodeError {
     /// Location message parse error
     #[error("location message parse error: {0}")]
     InvalidLocation(#[from] LocationMessageParseError),
+
+    /// Delivery receipt message parse error
+    #[error("delivery receipt message parse error: {0}")]
+    InvalidDeliveryReceipt(#[from] DeliveryReceiptMessageParseError),
 }
 
 /// Either a [`CryptoError`] or a [`MessageDecodeError`].

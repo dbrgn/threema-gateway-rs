@@ -2,6 +2,7 @@
 
 use crate::errors::MessageDecodeError;
 
+pub mod delivery_receipt;
 pub mod file;
 pub mod location;
 
@@ -18,6 +19,8 @@ pub enum MessageType {
     File,
     /// Location message
     Location,
+    /// Delivery receipt (received / read)
+    DeliveryReceipt,
     /// Another message type
     Other(u8),
 }
@@ -30,6 +33,7 @@ impl From<MessageType> for u8 {
             MessageType::Video => 0x13,
             MessageType::File => 0x17,
             MessageType::Location => 0x10,
+            MessageType::DeliveryReceipt => 0x80,
             MessageType::Other(msgtype_byte) => msgtype_byte,
         }
     }
@@ -43,6 +47,7 @@ impl From<u8> for MessageType {
             0x10 => MessageType::Location,
             0x13 => MessageType::Video,
             0x17 => MessageType::File,
+            0x80 => MessageType::DeliveryReceipt,
             other => MessageType::Other(other),
         }
     }
@@ -65,6 +70,8 @@ pub enum E2eMessage {
     File(file::FileMessage),
     /// Location message
     Location(location::LocationMessage),
+    /// Delivery receipt message
+    DeliveryReceipt(delivery_receipt::DeliveryReceiptMessage),
     /// Another message
     Other {
         /// The message type
@@ -91,6 +98,10 @@ impl E2eMessage {
             Self::Location(location_message) => EncodedE2eMessage {
                 message_type: MessageType::Location,
                 message_bytes: location_message.encode(),
+            },
+            Self::DeliveryReceipt(delivery_receipt_message) => EncodedE2eMessage {
+                message_type: MessageType::DeliveryReceipt,
+                message_bytes: delivery_receipt_message.encode(),
             },
             Self::Other {
                 message_type,
@@ -125,6 +136,11 @@ impl E2eMessage {
                     str::from_utf8(message_bytes).map_err(MessageDecodeError::InvalidUtf8)?;
                 let location_message = text.parse::<location::LocationMessage>()?;
                 Ok(Self::Location(location_message))
+            }
+            MessageType::DeliveryReceipt => {
+                let delivery_receipt_message =
+                    delivery_receipt::DeliveryReceiptMessage::decode(message_bytes)?;
+                Ok(Self::DeliveryReceipt(delivery_receipt_message))
             }
             other => Ok(Self::Other {
                 message_type: other,

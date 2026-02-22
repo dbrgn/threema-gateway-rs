@@ -23,6 +23,7 @@ Possible log types:
 - [added] Implement `Deserialize` for FileMessage
 - [added] Derive `Clone`/`PartialEq` and implement `Deserialize` for FileMessage
 - [added] Add support for location messages
+- [added] Add support for delivery receipt messages
 - [changed] The `cache` module is now exposed directly. The `PublicKeyCache` trait
   is not re-exported at top level anymore, import it from the `cache` module.
 - [changed] Make `FileMessage` fields and `FileMetadata` struct public

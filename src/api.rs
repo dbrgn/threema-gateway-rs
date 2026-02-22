@@ -27,7 +27,10 @@ use crate::{
     },
     protocol::{
         BlobId,
-        e2e::{MessageType, file::FileMessage, location::LocationMessage},
+        e2e::{
+            MessageType, delivery_receipt::DeliveryReceiptMessage, file::FileMessage,
+            location::LocationMessage,
+        },
     },
 };
 #[cfg(feature = "receive")]
@@ -312,6 +315,21 @@ impl E2eApi {
         encrypt(
             &data,
             MessageType::Location,
+            &recipient_key.0,
+            &self.private_key,
+        )
+    }
+
+    /// Encrypt a delivery receipt message for the specified recipient public key.
+    pub fn encrypt_delivery_receipt_msg(
+        &self,
+        msg: &DeliveryReceiptMessage,
+        recipient_key: &RecipientKey,
+    ) -> Result<EncryptedMessage, CryptoError> {
+        let data = msg.encode();
+        encrypt(
+            &data,
+            MessageType::DeliveryReceipt,
             &recipient_key.0,
             &self.private_key,
         )
