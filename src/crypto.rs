@@ -14,16 +14,12 @@ use crypto_secretbox::{
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use rand::Rng as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
-use serde_json as json;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::{
     PublicKey, SecretKey,
     errors::CryptoError,
-    protocol::{
-        BlobId,
-        e2e::{MessageType, file::FileMessage},
-    },
+    protocol::{BlobId, e2e::MessageType},
 };
 
 #[cfg(feature = "receive")]
@@ -229,6 +225,10 @@ pub fn encrypt(
 }
 
 /// Encrypt an image message for the recipient.
+#[deprecated(
+    since = "0.20.0",
+    note = "The image message type is deprecated. Use file messages with appropriate rendering type instead."
+)]
 pub(crate) fn encrypt_image_msg(
     blob_id: &BlobId,
     img_size_bytes: u32,
@@ -250,17 +250,6 @@ pub(crate) fn encrypt_image_msg(
         .expect("Writing to buffer failed");
     let msgtype = MessageType::Image;
     encrypt(&data, msgtype, public_key, private_key)
-}
-
-/// Encrypt a file message for the recipient.
-pub(crate) fn encrypt_file_msg(
-    msg: &FileMessage,
-    public_key: &PublicKey,
-    private_key: &SecretKey,
-) -> Result<EncryptedMessage, CryptoError> {
-    let data = json::to_string(msg).expect("Serialization failed"); // Should be infallible
-    let msgtype = MessageType::File;
-    encrypt(data.as_bytes(), msgtype, public_key, private_key)
 }
 
 /// Raw unencrypted bytes of a file and optionally a thumbnail.
@@ -371,6 +360,7 @@ mod test {
     }
 
     #[test]
+    #[expect(deprecated, reason = "Testing deprecated function")]
     fn encrypt_image_msg() {
         // Set up keys
         let own_sec = SecretKey::from([

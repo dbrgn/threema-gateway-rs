@@ -17,9 +17,7 @@ use crate::{
         BulkE2eMessage, BulkE2eMessageSendStatus, Recipient, blob_download, blob_upload, send_e2e,
         send_e2e_bulk, send_simple,
     },
-    crypto::{
-        EncryptedMessage, RecipientKey, encrypt, encrypt_file_msg, encrypt_image_msg, encrypt_raw,
-    },
+    crypto::{EncryptedMessage, RecipientKey, encrypt, encrypt_raw},
     errors::{ApiBuilderError, ApiError, ApiOrCacheError, CryptoError},
     lookup::{
         BulkIdentityPublicKey, Capabilities, LookupCriterion, lookup_capabilities, lookup_credits,
@@ -27,16 +25,11 @@ use crate::{
     },
     protocol::{
         BlobId,
-        e2e::{
-            MessageType, delivery_receipt::DeliveryReceiptMessage, file::FileMessage,
-            location::LocationMessage,
-        },
+        e2e::{E2eMessage, MessageType, file::FileMessage},
     },
 };
 #[cfg(feature = "receive")]
-use crate::{
-    errors::CryptoOrMessageDecodeError, protocol::e2e::E2eMessage, receive::IncomingMessage,
-};
+use crate::{errors::CryptoOrMessageDecodeError, receive::IncomingMessage};
 
 fn make_reqwest_client() -> Client {
     Client::builder()
@@ -254,7 +247,26 @@ impl E2eApi {
         }
     }
 
-    /// Encrypt a text message for the specified recipient public key.
+    /// Encode and encrypt an [`E2eMessage`] for the specified recipient public key.
+    pub fn encode_and_encrypt(
+        &self,
+        msg: &E2eMessage,
+        recipient_key: &RecipientKey,
+    ) -> Result<EncryptedMessage, CryptoError> {
+        let encoded = msg.encode();
+        encrypt(
+            &encoded.message_bytes,
+            encoded.message_type,
+            &recipient_key.0,
+            &self.private_key,
+        )
+    }
+
+    /// Encode and encrypt a text message for the specified recipient public key.
+    #[deprecated(
+        since = "0.20.0",
+        note = "Use `encode_and_encrypt` with `E2eMessage::Text` instead"
+    )]
     pub fn encrypt_text_msg(
         &self,
         text: &str,
@@ -264,7 +276,7 @@ impl E2eApi {
         encrypt(data, MessageType::Text, &recipient_key.0, &self.private_key)
     }
 
-    /// Encrypt an image message for the specified recipient public key.
+    /// Encode and encrypt an image message for the specified recipient public key.
     ///
     /// Before calling this function, you need to encrypt the image data (JPEG
     /// format) with [`encrypt_raw`](struct.E2eApi.html#method.encrypt_raw) and
@@ -273,6 +285,14 @@ impl E2eApi {
     /// The image size needs to be specified in bytes. Note that the size is
     /// only used for download size displaying purposes and has no security
     /// implications.
+    #[deprecated(
+        since = "0.20.0",
+        note = "The image message type is deprecated. Use file messages with appropriate rendering type instead."
+    )]
+    #[expect(
+        deprecated,
+        reason = "Deprecated method delegates to deprecated function"
+    )]
     pub fn encrypt_image_msg(
         &self,
         blob_id: &BlobId,
@@ -280,7 +300,7 @@ impl E2eApi {
         image_data_nonce: &Nonce,
         recipient_key: &RecipientKey,
     ) -> Result<EncryptedMessage, CryptoError> {
-        encrypt_image_msg(
+        crate::crypto::encrypt_image_msg(
             blob_id,
             img_size_bytes,
             image_data_nonce,
@@ -295,56 +315,24 @@ impl E2eApi {
     ///
     /// [`FileMessage`]: struct.FileMessage.html
     /// [`FileMessageBuilder`]: struct.FileMessageBuilder.html
+    #[deprecated(
+        since = "0.20.0",
+        note = "Use `encode_and_encrypt` with `E2eMessage::File` instead"
+    )]
     pub fn encrypt_file_msg(
         &self,
         msg: &FileMessage,
         recipient_key: &RecipientKey,
     ) -> Result<EncryptedMessage, CryptoError> {
-        encrypt_file_msg(msg, &recipient_key.0, &self.private_key)
+        self.encode_and_encrypt(&E2eMessage::File(msg.clone()), recipient_key)
     }
 
-    /// Encrypt a location message for the specified recipient public key.
+    /// Encrypt arbitrary pre-encoded message bytes (excluding the message type byte) for the specified
+    /// recipient public key.
     ///
-    /// To construct a [`LocationMessage`], use the [`LocationMessage::builder`] method.
-    pub fn encrypt_location_msg(
-        &self,
-        msg: &LocationMessage,
-        recipient_key: &RecipientKey,
-    ) -> Result<EncryptedMessage, CryptoError> {
-        let data = msg.encode();
-        encrypt(
-            &data,
-            MessageType::Location,
-            &recipient_key.0,
-            &self.private_key,
-        )
-    }
-
-    /// Encrypt a delivery receipt message for the specified recipient public key.
-    pub fn encrypt_delivery_receipt_msg(
-        &self,
-        msg: &DeliveryReceiptMessage,
-        recipient_key: &RecipientKey,
-    ) -> Result<EncryptedMessage, CryptoError> {
-        let data = msg.encode();
-        encrypt(
-            &data,
-            MessageType::DeliveryReceipt,
-            &recipient_key.0,
-            &self.private_key,
-        )
-    }
-
-    /// Encrypt an arbitrary message for the specified recipient public key.
+    /// **Note:** In almost all cases you should use [`encode_and_encrypt`] instead.
     ///
-    /// The encrypted data will include PKCS#7 style random padding.
-    ///
-    /// **Note:** In almost all cases you should use [`encrypt_text_msg`],
-    /// [`encrypt_file_msg`] or [`encrypt_image_msg`] instead.
-    ///
-    /// [`encrypt_text_msg`]: Self::encrypt_text_msg
-    /// [`encrypt_file_msg`]: Self::encrypt_file_msg
-    /// [`encrypt_image_msg`]: Self::encrypt_image_msg
+    /// [`encode_and_encrypt`]: Self::encode_and_encrypt
     pub fn encrypt(
         &self,
         raw_data: &[u8],
@@ -355,6 +343,10 @@ impl E2eApi {
     }
 
     /// Encrypt raw bytes for the specified recipient public key.
+    #[deprecated(
+        since = "0.20.0",
+        note = "Only needed for image messages, which are deprecated. Use file messages with appropriate rendering type instead."
+    )]
     pub fn encrypt_raw(
         &self,
         raw_data: &[u8],
