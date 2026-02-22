@@ -115,10 +115,8 @@ macro_rules! impl_common_functionality {
 
         /// Look up a Threema ID in the directory.
         ///
-        /// An ID can be looked up either by a phone number or an e-mail
-        /// address, in plaintext or hashed form. You can specify one of those
-        /// criteria using the [`LookupCriterion`](enum.LookupCriterion.html)
-        /// enum.
+        /// An ID can be looked up either by a phone number or an e-mail address, in plaintext or hashed form.
+        /// You can specify one of those criteria using the [`LookupCriterion`] enum.
         pub async fn lookup_id(&self, criterion: &LookupCriterion) -> Result<String, ApiError> {
             lookup_id(
                 &self.client,
@@ -640,7 +638,7 @@ impl ApiBuilder {
         self
     }
 
-    /// Return a [`SimpleAPI`](struct.SimpleApi.html) instance.
+    /// Return a [`SimpleApi`] instance.
     pub fn into_simple(self) -> SimpleApi {
         SimpleApi::new(
             self.endpoint,
@@ -679,7 +677,7 @@ impl ApiBuilder {
         self.with_private_key_bytes(&private_key_bytes)
     }
 
-    /// Return a [`E2eAPI`](struct.SimpleApi.html) instance.
+    /// Return a [`E2eApi`] instance.
     ///
     /// This will fail if no private key was set.
     pub fn into_e2e(self) -> Result<E2eApi, ApiBuilderError> {
