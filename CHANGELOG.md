@@ -34,6 +34,7 @@ Possible log types:
   module instead
 - [changed] The types `FileMessage`, `FileMessageBuilder` and `RenderingType` are not re-exported at top level
   anymore, import them from the `protocol::e2e::file` module instead
+- [changed] Change `IncomingMessage.message_id` type from `String` to `MessageId`
 - [deprecated] In `E2eApi` the `encrypt_text_msg`, `encrypt_image_msg`, `encrypt_file_msg` and `encrypt_raw`
   methods are deprecated and will be removed in a future release
 
