@@ -2,6 +2,8 @@
 
 use thiserror::Error;
 
+use crate::protocol::MessageId;
+
 /// A delivery receipt is sent by the recipient of a message when certain events happen.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DeliveryReceipt {
@@ -62,13 +64,17 @@ pub struct DeliveryReceiptMessage {
     /// The delivery receipt status
     pub receipt: DeliveryReceipt,
     /// One or more message IDs whose status should be updated
-    pub message_ids: Vec<u64>,
+    pub message_ids: Vec<MessageId>,
 }
 
 impl DeliveryReceiptMessage {
     /// Create a new [`DeliveryReceiptMessage`].
     #[must_use]
-    pub fn new(receipt: DeliveryReceipt, message_id: u64, additional_message_ids: &[u64]) -> Self {
+    pub fn new(
+        receipt: DeliveryReceipt,
+        message_id: MessageId,
+        additional_message_ids: &[MessageId],
+    ) -> Self {
         let mut message_ids = Vec::with_capacity(additional_message_ids.len().saturating_add(1));
         message_ids.push(message_id);
         message_ids.extend_from_slice(additional_message_ids);
@@ -88,7 +94,7 @@ impl DeliveryReceiptMessage {
         let mut buf = Vec::with_capacity(ids_len.saturating_add(1));
         buf.push(u8::from(self.receipt));
         for &id in &self.message_ids {
-            buf.extend_from_slice(&id.to_le_bytes());
+            buf.extend_from_slice(&id.as_u64().to_le_bytes());
         }
         buf
     }
@@ -123,7 +129,10 @@ impl DeliveryReceiptMessage {
         let message_ids = rest
             .chunks_exact(8)
             .map(|chunk| {
-                u64::from_le_bytes(chunk.try_into().expect("chunks_exact(8) guarantees failed"))
+                let numeric = u64::from_le_bytes(
+                    chunk.try_into().expect("chunks_exact(8) guarantees failed"),
+                );
+                MessageId::from_u64(numeric)
             })
             .collect();
 
@@ -174,24 +183,32 @@ mod tests {
     mod delivery_receipt_message {
         use super::*;
 
+        /// Shorthand for creating a [`MessageId`] in tests.
+        fn mid(value: u64) -> MessageId {
+            MessageId::from_u64(value)
+        }
+
         #[test]
         fn new_single_id() {
-            let msg = DeliveryReceiptMessage::new(DeliveryReceipt::Received, 42, &[]);
+            let msg = DeliveryReceiptMessage::new(DeliveryReceipt::Received, mid(42), &[]);
             assert_eq!(msg.receipt, DeliveryReceipt::Received);
-            assert_eq!(msg.message_ids, vec![42]);
+            assert_eq!(msg.message_ids, vec![mid(42)]);
         }
 
         #[test]
         fn new_multiple_ids() {
-            let msg = DeliveryReceiptMessage::new(DeliveryReceipt::Read, 1, &[2, 3]);
+            let msg = DeliveryReceiptMessage::new(DeliveryReceipt::Read, mid(1), &[mid(2), mid(3)]);
             assert_eq!(msg.receipt, DeliveryReceipt::Read);
-            assert_eq!(msg.message_ids, vec![1, 2, 3]);
+            assert_eq!(msg.message_ids, vec![mid(1), mid(2), mid(3)]);
         }
 
         #[test]
         fn encode_single_id() {
-            let msg =
-                DeliveryReceiptMessage::new(DeliveryReceipt::Received, 0x0102_0304_0506_0708, &[]);
+            let msg = DeliveryReceiptMessage::new(
+                DeliveryReceipt::Received,
+                mid(0x0102_0304_0506_0708),
+                &[],
+            );
             let bytes = msg.encode();
             assert_eq!(bytes[0], 0x01); // status
             assert_eq!(&bytes[1..], 0x0102_0304_0506_0708_u64.to_le_bytes());
@@ -199,7 +216,7 @@ mod tests {
 
         #[test]
         fn encode_multiple_ids() {
-            let msg = DeliveryReceiptMessage::new(DeliveryReceipt::Declined, 1, &[2]);
+            let msg = DeliveryReceiptMessage::new(DeliveryReceipt::Declined, mid(1), &[mid(2)]);
             let bytes = msg.encode();
             assert_eq!(bytes.len(), 1 + 2 * 8);
             assert_eq!(bytes[0], 0x04);
@@ -213,7 +230,7 @@ mod tests {
             bytes.extend_from_slice(&42_u64.to_le_bytes());
             let msg = DeliveryReceiptMessage::decode(&bytes).unwrap();
             assert_eq!(msg.receipt, DeliveryReceipt::Read);
-            assert_eq!(msg.message_ids, vec![42]);
+            assert_eq!(msg.message_ids, vec![mid(42)]);
         }
 
         #[test]
@@ -224,7 +241,7 @@ mod tests {
             bytes.extend_from_slice(&300_u64.to_le_bytes());
             let msg = DeliveryReceiptMessage::decode(&bytes).unwrap();
             assert_eq!(msg.receipt, DeliveryReceipt::Acknowledged);
-            assert_eq!(msg.message_ids, vec![100, 200, 300]);
+            assert_eq!(msg.message_ids, vec![mid(100), mid(200), mid(300)]);
         }
 
         #[test]
@@ -239,7 +256,7 @@ mod tests {
             bytes.extend_from_slice(&1_u64.to_le_bytes());
             let msg = DeliveryReceiptMessage::decode(&bytes).unwrap();
             assert_eq!(msg.receipt, DeliveryReceipt::Other(0xff));
-            assert_eq!(msg.message_ids, vec![1]);
+            assert_eq!(msg.message_ids, vec![mid(1)]);
         }
 
         #[test]
@@ -257,7 +274,7 @@ mod tests {
 
         #[test]
         fn round_trip_single_id() {
-            let original = DeliveryReceiptMessage::new(DeliveryReceipt::Received, 12345, &[]);
+            let original = DeliveryReceiptMessage::new(DeliveryReceipt::Received, mid(12345), &[]);
             let decoded = DeliveryReceiptMessage::decode(&original.encode()).unwrap();
             assert_eq!(decoded, original);
         }
@@ -266,8 +283,8 @@ mod tests {
         fn round_trip_multiple_ids() {
             let original = DeliveryReceiptMessage::new(
                 DeliveryReceipt::Read,
-                0,
-                &[u64::MAX, 0x0102_0304_0506_0708],
+                mid(0),
+                &[mid(u64::MAX), mid(0x0102_0304_0506_0708)],
             );
             let decoded = DeliveryReceiptMessage::decode(&original.encode()).unwrap();
             assert_eq!(decoded, original);
