@@ -78,7 +78,11 @@ Look up Threema ID by email hash:
 
 Decode and decrypt an incoming message payload:
 
-    cargo run --example receive -- <our-id> <secret> <private-key> <request-body>
+    cargo run --example decode -- <our-id> <secret> <private-key> <request-body>
+
+Start a test server to receive, decode and print any incoming message payload:
+
+    cargo run --example receive -- <our-id> <secret> <private-key> <listen-addr>
 
 Download a blob:
 

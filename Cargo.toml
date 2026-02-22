@@ -50,15 +50,20 @@ url = "2.5.4"
 zeroize = { version = "1", features = ["zeroize_derive"], default-features = false }
 
 [dev-dependencies]
+axum = "0.8"
 docopt = "1.1.0"
 insta = { version = "1", features = ["json"] }
 mime_guess = "2.0.0"
 rstest = "0.25"
-tokio = { version = "1", features = ["macros", "rt"], default-features = false }
+tokio = { version = "1", features = ["macros", "net", "rt"], default-features = false }
 tokio-test = "0.4"
 
 [[example]]
 name = "receive"
+required-features = ["receive"]
+
+[[example]]
+name = "decode"
 required-features = ["receive"]
 
 [lints.rust]
