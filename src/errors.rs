@@ -5,6 +5,8 @@ use std::{io::Error as IoError, str::Utf8Error};
 use reqwest::Error as ReqwestError;
 use thiserror::Error;
 
+use crate::protocol::e2e::location::LocationMessageParseError;
+
 /// Errors when interacting with the API.
 #[derive(Debug, Error)]
 pub enum ApiError {
@@ -129,6 +131,10 @@ pub enum MessageDecodeError {
     /// JSON error
     #[error("json error: {0}")]
     Json(#[from] serde_json::Error),
+
+    /// Location message parse error
+    #[error("location message parse error: {0}")]
+    InvalidLocation(#[from] LocationMessageParseError),
 }
 
 /// Either a [`CryptoError`] or a [`MessageDecodeError`].
@@ -152,12 +158,4 @@ pub enum ApiBuilderError {
     /// Invalid libsodium private key.
     #[error("invalid libsodium private key: {0}")]
     InvalidKey(String),
-}
-
-/// Errors when interacting with the [`FileMessageBuilder`](../struct.FileMessageBuilder.html).
-#[derive(Debug, PartialEq, Clone, Error)]
-pub enum FileMessageBuilderError {
-    /// Illegal combination of fields (e.g. setting the `animated` flag on a PDF file message).
-    #[error("illegal combination: {0}")]
-    IllegalCombination(&'static str),
 }

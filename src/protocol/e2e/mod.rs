@@ -3,6 +3,7 @@
 use crate::errors::MessageDecodeError;
 
 pub mod file;
+pub mod location;
 
 /// A message type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -15,6 +16,8 @@ pub enum MessageType {
     Video,
     /// File message
     File,
+    /// Location message
+    Location,
     /// Another message type
     Other(u8),
 }
@@ -26,6 +29,7 @@ impl From<MessageType> for u8 {
             MessageType::Image => 0x02,
             MessageType::Video => 0x13,
             MessageType::File => 0x17,
+            MessageType::Location => 0x10,
             MessageType::Other(msgtype_byte) => msgtype_byte,
         }
     }
@@ -36,6 +40,7 @@ impl From<u8> for MessageType {
         match val {
             0x01 => MessageType::Text,
             0x02 => MessageType::Image,
+            0x10 => MessageType::Location,
             0x13 => MessageType::Video,
             0x17 => MessageType::File,
             other => MessageType::Other(other),
@@ -58,6 +63,8 @@ pub enum E2eMessage {
     Text(String),
     /// File message
     File(file::FileMessage),
+    /// Location message
+    Location(location::LocationMessage),
     /// Another message
     Other {
         /// The message type
@@ -80,6 +87,10 @@ impl E2eMessage {
                 message_type: MessageType::File,
                 message_bytes: serde_json::to_vec(file_message)
                     .expect("Failed to serialize file message to JSON"),
+            },
+            Self::Location(location_message) => EncodedE2eMessage {
+                message_type: MessageType::Location,
+                message_bytes: location_message.encode(),
             },
             Self::Other {
                 message_type,
@@ -108,6 +119,12 @@ impl E2eMessage {
                     str::from_utf8(message_bytes).map_err(MessageDecodeError::InvalidUtf8)?;
                 let file_message = serde_json::from_str::<file::FileMessage>(json_text)?;
                 Ok(Self::File(file_message))
+            }
+            MessageType::Location => {
+                let text =
+                    str::from_utf8(message_bytes).map_err(MessageDecodeError::InvalidUtf8)?;
+                let location_message = text.parse::<location::LocationMessage>()?;
+                Ok(Self::Location(location_message))
             }
             other => Ok(Self::Other {
                 message_type: other,
@@ -157,12 +174,13 @@ mod tests {
         use super::*;
 
         #[rstest]
+        #[case::zero(0x00, MessageType::Other(0x00))]
         #[case::text(0x01, MessageType::Text)]
         #[case::image(0x02, MessageType::Image)]
+        #[case::location(0x10, MessageType::Location)]
         #[case::video(0x13, MessageType::Video)]
         #[case::file(0x17, MessageType::File)]
         #[case::other(0x42, MessageType::Other(0x42))]
-        #[case::zero(0x00, MessageType::Other(0x00))]
         fn from_u8(#[case] byte: u8, #[case] expected: MessageType) {
             assert_eq!(MessageType::from(byte), expected);
         }
@@ -172,6 +190,7 @@ mod tests {
         #[case::image(MessageType::Image, 0x02)]
         #[case::video(MessageType::Video, 0x13)]
         #[case::file(MessageType::File, 0x17)]
+        #[case::location(MessageType::Location, 0x10)]
         #[case::other(MessageType::Other(0x42), 0x42)]
         fn to_u8(#[case] msgtype: MessageType, #[case] expected: u8) {
             let byte: u8 = msgtype.into();
@@ -228,6 +247,20 @@ mod tests {
         }
 
         #[test]
+        fn location_message() {
+            let loc_msg = location::LocationMessage::builder(47.3769, 8.5417)
+                .address("Bahnhofplatz, 8001 Zürich")
+                .build()
+                .unwrap();
+            let encoded = E2eMessage::Location(loc_msg).encode();
+            assert_eq!(encoded.message_type, MessageType::Location);
+            assert_eq!(
+                String::from_utf8(encoded.message_bytes).expect("valid utf8"),
+                "47.3769,8.5417\nBahnhofplatz, 8001 Zürich"
+            );
+        }
+
+        #[test]
         fn other_with_known_type() {
             // This is not how the type should be used, but it's not invalid
             let encoded = E2eMessage::Other {
@@ -240,6 +273,11 @@ mod tests {
         }
     }
 
+    #[expect(
+        clippy::float_cmp,
+        clippy::default_numeric_fallback,
+        reason = "Allowed in tests"
+    )]
     mod decode {
         use super::*;
 
@@ -307,6 +345,45 @@ mod tests {
             assert!(
                 matches!(err, MessageDecodeError::Json(_)),
                 "expected Json, got {err:?}"
+            );
+        }
+
+        #[test]
+        fn location_message() {
+            let payload = "47.3769,8.5417\nZürich HB\nBahnhofplatz, 8001 Zürich".as_bytes();
+            let msg = E2eMessage::decode(MessageType::Location, payload).unwrap();
+            let E2eMessage::Location(decoded) = msg else {
+                panic!("expected Location variant");
+            };
+            assert_eq!(decoded.latitude, 47.3769);
+            assert_eq!(decoded.longitude, 8.5417_f64);
+            assert_eq!(decoded.accuracy, None);
+            let addr = decoded.address.as_ref().expect("address should be set");
+            assert_eq!(addr.name.as_deref(), Some("Zürich HB"));
+            assert_eq!(addr.address, "Bahnhofplatz, 8001 Zürich");
+        }
+
+        #[test]
+        fn location_message_invalid_utf8() {
+            let invalid = [0xff, 0xfe];
+            let Err(err) = E2eMessage::decode(MessageType::Location, &invalid) else {
+                panic!("expected Err");
+            };
+            assert!(
+                matches!(err, MessageDecodeError::InvalidUtf8(_)),
+                "expected InvalidUtf8, got {err:?}"
+            );
+        }
+
+        #[test]
+        fn location_message_invalid_content() {
+            let bad = b"not-a-float,8.5417";
+            let Err(err) = E2eMessage::decode(MessageType::Location, bad) else {
+                panic!("expected Err");
+            };
+            assert!(
+                matches!(err, MessageDecodeError::InvalidLocation(_)),
+                "expected Location, got {err:?}"
             );
         }
 

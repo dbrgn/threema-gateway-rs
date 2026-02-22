@@ -21,9 +21,12 @@ Possible log types:
 - [added] Add `E2eApi::decrypt_and_decode_incoming_message` method
 - [added] Derive `Clone` and `PartialEq` for FileMessage
 - [added] Implement `Deserialize` for FileMessage
+- [added] Derive `Clone`/`PartialEq` and implement `Deserialize` for FileMessage
+- [added] Add support for location messages
 - [changed] The `cache` module is now exposed directly. The `PublicKeyCache` trait
   is not re-exported at top level anymore, import it from the `cache` module.
 - [changed] Make `FileMessage` fields and `FileMetadata` struct public
+- [changed] The `FileMessageBuilder::new` constructor is not public anymore, use `FileMessage::builder` instead
 - [changed] The type `BlobId` is not re-exported at top level anymore, import it from the `protocol` module
   instead
 - [changed] The type `MessageType` is not re-exported at top level anymore, import it from the `protocol`

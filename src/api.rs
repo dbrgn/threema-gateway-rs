@@ -27,7 +27,7 @@ use crate::{
     },
     protocol::{
         BlobId,
-        e2e::{MessageType, file::FileMessage},
+        e2e::{MessageType, file::FileMessage, location::LocationMessage},
     },
 };
 #[cfg(feature = "receive")]
@@ -260,8 +260,7 @@ impl E2eApi {
         recipient_key: &RecipientKey,
     ) -> Result<EncryptedMessage, CryptoError> {
         let data = text.as_bytes();
-        let msgtype = MessageType::Text;
-        encrypt(data, msgtype, &recipient_key.0, &self.private_key)
+        encrypt(data, MessageType::Text, &recipient_key.0, &self.private_key)
     }
 
     /// Encrypt an image message for the specified recipient public key.
@@ -301,6 +300,23 @@ impl E2eApi {
         recipient_key: &RecipientKey,
     ) -> Result<EncryptedMessage, CryptoError> {
         encrypt_file_msg(msg, &recipient_key.0, &self.private_key)
+    }
+
+    /// Encrypt a location message for the specified recipient public key.
+    ///
+    /// To construct a [`LocationMessage`], use the [`LocationMessage::builder`] method.
+    pub fn encrypt_location_msg(
+        &self,
+        msg: &LocationMessage,
+        recipient_key: &RecipientKey,
+    ) -> Result<EncryptedMessage, CryptoError> {
+        let data = msg.encode();
+        encrypt(
+            &data,
+            MessageType::Location,
+            &recipient_key.0,
+            &self.private_key,
+        )
     }
 
     /// Encrypt an arbitrary message for the specified recipient public key.

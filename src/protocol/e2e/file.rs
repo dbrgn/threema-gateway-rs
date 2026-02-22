@@ -2,8 +2,9 @@
 
 use log::warn;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use thiserror::Error;
 
-use crate::{Key, errors::FileMessageBuilderError, protocol::BlobId};
+use crate::{Key, protocol::BlobId};
 
 /// The rendering type influences how a file message is displayed on the device
 /// of the recipient.
@@ -137,7 +138,19 @@ impl FileMetadata {
 }
 
 impl FileMessage {
-    /// Shortcut for [`FileMessageBuilder::new`].
+    /// Create a new [`FileMessageBuilder`].
+    ///
+    /// Before calling this function, you need to symmetrically encrypt the
+    /// file data with [`encrypt_file_data`](crate::encrypt_file_data) and
+    /// upload the ciphertext to the blob server with
+    /// [`blob_upload`](crate::E2eApi::blob_upload).
+    ///
+    /// The `file_blob_id` must point to the blob id of the uploaded file data,
+    /// encrypted with `blob_encryption_key`.
+    ///
+    /// The file size needs to be specified in bytes. Note that the size is
+    /// only used for download size displaying purposes and has no security
+    /// implications.
     pub fn builder<M: Into<String>>(
         file_blob_id: BlobId,
         blob_encryption_key: Key,
@@ -153,7 +166,15 @@ impl FileMessage {
     }
 }
 
-/// Builder for [`FileMessage`].
+/// Errors when interacting with the [`FileMessageBuilder`].
+#[derive(Debug, PartialEq, Clone, Error)]
+pub enum FileMessageBuilderError {
+    /// Illegal combination of fields (e.g. setting the `animated` flag on a PDF file message).
+    #[error("illegal combination: {0}")]
+    IllegalCombination(&'static str),
+}
+
+/// Builder for [`FileMessage`]. Instantiate through [`FileMessage::builder`].
 pub struct FileMessageBuilder {
     file_blob_id: BlobId,
     file_media_type: String,
@@ -168,22 +189,7 @@ pub struct FileMessageBuilder {
 }
 
 impl FileMessageBuilder {
-    /// Create a new [`FileMessage`] builder.
-    ///
-    /// Before calling this function, you need to symmetrically encrypt the
-    /// file data with [`encrypt_file_data`](crate::encrypt_file_data) and
-    /// upload the ciphertext to the blob server with
-    /// [`blob_upload`](crate::E2eApi::blob_upload).
-    ///
-    /// The `file_blob_id` must point to the blob id of the uploaded file data,
-    /// encrypted with `blob_encryption_key`.
-    ///
-    /// The file size needs to be specified in bytes. Note that the size is
-    /// only used for download size displaying purposes and has no security
-    /// implications.
-    ///
-    /// [`FileMessage`]: struct.FileMessage.html
-    pub fn new<M: Into<String>>(
+    pub(crate) fn new<M: Into<String>>(
         file_blob_id: BlobId,
         blob_encryption_key: Key,
         media_type: M,
@@ -218,7 +224,7 @@ impl FileMessageBuilder {
     ///
     /// Before calling this function, you need to encrypt and upload the
     /// thumbnail data along with the file data (as described in
-    /// [`FileMessageBuilder::new`]).
+    /// [`FileMessage::builder`]).
     #[must_use]
     pub fn thumbnail<M: Into<String>>(self, blob_id: BlobId, media_type: M) -> Self {
         self.thumbnail_opt(Some((blob_id, media_type)))
@@ -228,7 +234,7 @@ impl FileMessageBuilder {
     ///
     /// Before calling this function, you need to encrypt and upload the
     /// thumbnail data along with the file data (as described in
-    /// [`FileMessageBuilder::new`]).
+    /// [`FileMessage::builder`]).
     #[must_use]
     pub fn thumbnail_opt<M: Into<String>>(mut self, blob: Option<(BlobId, M)>) -> Self {
         if let Some((blob_id, media_type)) = blob {
