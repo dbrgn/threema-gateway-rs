@@ -598,13 +598,12 @@ impl E2eApi {
 ///                              .unwrap();
 /// ```
 #[derive(Debug)]
-#[expect(missing_docs, reason = "Builder pattern")]
 pub struct ApiBuilder {
-    pub id: String,
-    pub secret: String,
-    pub private_key: Option<SecretKey>,
-    pub endpoint: Cow<'static, str>,
-    pub client: Option<Client>,
+    id: String,
+    secret: String,
+    private_key: Option<SecretKey>,
+    endpoint: Cow<'static, str>,
+    client: Option<Client>,
 }
 
 impl ApiBuilder {
