@@ -29,11 +29,7 @@ impl FromStr for BlobId {
         let bytes = HEXLOWER_PERMISSIVE
             .decode(id.as_bytes())
             .map_err(|_| ApiError::BadBlobId)?;
-        if bytes.len() != 16 {
-            return Err(ApiError::BadBlobId);
-        }
-        let mut arr = [0; 16];
-        arr[..].clone_from_slice(bytes.get(..bytes.len()).expect("Bad slice"));
+        let arr: [u8; 16] = bytes.try_into().map_err(|_| ApiError::BadBlobId)?;
         Ok(BlobId(arr))
     }
 }
