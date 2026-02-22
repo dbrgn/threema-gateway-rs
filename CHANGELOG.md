@@ -18,6 +18,7 @@ Possible log types:
 - [added] Add a `RedisPublicKeyCache`. Enabled through the `public-key-cache-redis`
   Cargo feature.
 - [added] Add `E2eMessage` type
+- [added] Add `MessageId` type
 - [added] Add `E2eApi::decrypt_and_decode_incoming_message` method
 - [added] Add `E2eApi::encode_and_encrypt` method
 - [added] Derive `Clone`/`PartialEq` and implement `Deserialize` for FileMessage
