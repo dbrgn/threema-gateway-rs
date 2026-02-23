@@ -1,3 +1,5 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 //! # Threema Gateway SDK for Rust
 //!
 //! This library makes it easy to use the [Threema
@@ -69,7 +71,7 @@
 //! [`examples/`](https://github.com/threema-ch/threema-msgapi-sdk-rust/tree/main/examples) directory.
 
 mod api;
-mod cache;
+pub mod cache;
 mod connection;
 mod crypto;
 pub mod errors;
@@ -84,7 +86,6 @@ pub use crypto_secretbox::Nonce;
 
 pub use crate::{
     api::{ApiBuilder, E2eApi, SimpleApi},
-    cache::PublicKeyCache,
     connection::Recipient,
     crypto::{
         EncryptedFileData, EncryptedMessage, FileData, Key, RecipientKey, decrypt_file_data,

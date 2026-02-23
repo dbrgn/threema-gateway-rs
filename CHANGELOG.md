@@ -13,6 +13,13 @@ Possible log types:
 
 ### Unreleased
 
+- [added] Add an `InMemoryPublicKeyCache` backed by the moka crate. Enabled through
+  the `public-key-cache-inmemory` Cargo feature.
+- [added] Add a `RedisPublicKeyCache`. Enabled through the `public-key-cache-redis`
+  Cargo feature.
+- [changed] The `cache` module is now exposed directly. The `PublicKeyCache` trait
+  is not re-exported at top level anymore, import it from the `cache` module.
+
 ### v0.19.0 (2026-01-04)
 
 - [added] Add support for generic public key caching:`lookup_pubkey_with_cache`

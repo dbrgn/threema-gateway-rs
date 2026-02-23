@@ -2,7 +2,7 @@
 #![allow(clippy::print_stdout, clippy::unimplemented, reason = "Example code")]
 
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, PublicKeyCache};
+use threema_gateway::{ApiBuilder, cache::PublicKeyCache};
 
 const USAGE: &str = "
 Usage: lookup_pubkey [--with-cache] <our_id> <secret> <their_id>
