@@ -52,6 +52,7 @@ impl PublicKeyCache for InMemoryPublicKeyCache {
         self.cache
             .insert(identity.to_owned(), key.as_bytes().to_vec())
             .await;
+        log::trace!("Inserted into cache: {identity}");
         Ok(())
     }
 
@@ -64,9 +65,13 @@ impl PublicKeyCache for InMemoryPublicKeyCache {
                         error,
                     }
                 })?;
+                log::trace!("Loaded from cache: {identity}");
                 Ok(Some(recipient_key))
             }
-            None => Ok(None),
+            None => {
+                log::trace!("Cache miss: {identity}");
+                Ok(None)
+            }
         }
     }
 }

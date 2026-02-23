@@ -123,6 +123,7 @@ where
                 let _: () = conn.set(cache_key, key_bytes).await?;
             }
         }
+        log::trace!("Inserted into cache: {identity}");
         Ok(())
     }
 
@@ -140,9 +141,13 @@ where
                         error,
                     }
                 })?;
+                log::trace!("Loaded from cache: {identity}");
                 Ok(Some(recipient_key))
             }
-            None => Ok(None),
+            None => {
+                log::trace!("Cache miss: {identity}");
+                Ok(None)
+            }
         }
     }
 }
