@@ -165,3 +165,9 @@ pub enum ApiBuilderError {
     #[error("invalid libsodium private key: {0}")]
     InvalidKey(String),
 }
+
+/// Error returned when trying to construct a non-empty collection from an
+/// empty list.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+#[error("list must not be empty")]
+pub struct EmptyListError;

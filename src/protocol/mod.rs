@@ -10,7 +10,7 @@ use crate::errors::ApiError;
 pub mod e2e;
 mod message_id;
 
-pub use message_id::{MessageId, MessageIdParseError};
+pub use message_id::{MessageId, MessageIdParseError, MessageIds};
 
 /// A 16-byte blob ID.
 #[derive(Debug, PartialEq, Eq, Clone)]

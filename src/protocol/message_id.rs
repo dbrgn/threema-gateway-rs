@@ -6,6 +6,8 @@ use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
 
+use crate::errors::EmptyListError;
+
 /// Errors when parsing a [`MessageId`] from a hex string.
 #[derive(Debug, PartialEq, Clone, Error)]
 pub enum MessageIdParseError {
@@ -87,9 +89,48 @@ impl<'de> Deserialize<'de> for MessageId {
     }
 }
 
+/// A non-empty collection of [`MessageId`]s.
+///
+/// This newtype guarantees at construction time that at least one message ID is
+/// present, making it impossible to represent an empty list.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MessageIds {
+    /// Invariant: always contains at least one element.
+    ids: Vec<MessageId>,
+}
+
+impl MessageIds {
+    /// Create a new [`MessageIds`] containing a single message ID.
+    #[must_use]
+    pub fn new(id: MessageId) -> Self {
+        Self { ids: vec![id] }
+    }
+
+    /// Create a new [`MessageIds`] from a slice.
+    ///
+    /// Returns an error if the slice is empty.
+    pub fn from_slice(ids: &[MessageId]) -> Result<Self, EmptyListError> {
+        if ids.is_empty() {
+            return Err(EmptyListError);
+        }
+        Ok(Self { ids: ids.to_vec() })
+    }
+
+    /// Return the contained message IDs as a slice.
+    ///
+    /// The returned slice is guaranteed to be non-empty.
+    #[must_use]
+    pub fn as_slice(&self) -> &[MessageId] {
+        &self.ids
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::protocol::message_id::{MessageId, MessageIdParseError};
+    use crate::{
+        errors::EmptyListError,
+        protocol::message_id::{MessageId, MessageIdParseError, MessageIds},
+    };
 
     #[test]
     fn from_u64() {
@@ -194,5 +235,48 @@ mod tests {
 
         let deserialized: MessageId = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized, id);
+    }
+
+    mod message_ids {
+        use super::*;
+
+        /// Shorthand for creating a [`MessageId`] in tests.
+        fn mid(value: u64) -> MessageId {
+            MessageId::from_u64(value)
+        }
+
+        mod new {
+            use super::*;
+
+            #[test]
+            fn single_element() {
+                let ids = MessageIds::new(mid(42));
+                assert_eq!(ids.as_slice(), &[mid(42)]);
+            }
+        }
+
+        mod from_slice {
+            use super::*;
+
+            #[test]
+            fn single_element() {
+                let ids =
+                    MessageIds::from_slice(&[mid(1)]).expect("single-element slice should succeed");
+                assert_eq!(ids.as_slice(), &[mid(1)]);
+            }
+
+            #[test]
+            fn multiple_elements() {
+                let ids = MessageIds::from_slice(&[mid(1), mid(2), mid(3)])
+                    .expect("multi-element slice should succeed");
+                assert_eq!(ids.as_slice(), &[mid(1), mid(2), mid(3)]);
+            }
+
+            #[test]
+            fn empty_returns_error() {
+                let err = MessageIds::from_slice(&[]).unwrap_err();
+                assert_eq!(err, EmptyListError);
+            }
+        }
     }
 }
