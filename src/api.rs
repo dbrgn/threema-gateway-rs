@@ -64,14 +64,11 @@ macro_rules! impl_common_functionality {
             .await
         }
 
-        /// Fetch the recipient public key for the specified Threema ID and store it
-        /// in the [`PublicKeyCache`].
+        /// Obtain the recipient public key for the specified Threema ID
+        /// from the [`PublicKeyCache`] or the network.
         ///
-        /// For the end-to-end encrypted mode, you need the public key of the recipient
-        /// in order to encrypt a message. While it's best to obtain this directly from
-        /// the recipient (extract it from the QR code), this may not be convenient,
-        /// and therefore you can also look up the key associated with a given ID from
-        /// the server.
+        /// On cache miss, the public key is fetched from the server
+        /// (see [`Self::lookup_pubkey`]) and stored in the cache.
         pub async fn lookup_pubkey_with_cache<C>(
             &self,
             id: &str,
@@ -80,15 +77,26 @@ macro_rules! impl_common_functionality {
         where
             C: PublicKeyCache,
         {
-            let pubkey = self
-                .lookup_pubkey(id)
-                .await
-                .map_err(ApiOrCacheError::ApiError)?;
-            public_key_cache
-                .store(id, &pubkey)
+            let cached_key = public_key_cache
+                .load(id)
                 .await
                 .map_err(ApiOrCacheError::CacheError)?;
-            Ok(pubkey)
+
+            if let Some(pubkey) = cached_key {
+                // Cache hit
+                Ok(pubkey)
+            } else {
+                // Cache miss
+                let pubkey = self
+                    .lookup_pubkey(id)
+                    .await
+                    .map_err(ApiOrCacheError::ApiError)?;
+                public_key_cache
+                    .store(id, &pubkey)
+                    .await
+                    .map_err(ApiOrCacheError::CacheError)?;
+                Ok(pubkey)
+            }
         }
 
         /// Lookup multiple public keys at once.
