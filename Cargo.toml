@@ -60,7 +60,7 @@ tokio-test = "0.4"
 
 [[example]]
 name = "receive"
-required-features = ["receive"]
+required-features = ["receive", "public-key-cache-inmemory"]
 
 [[example]]
 name = "decode"

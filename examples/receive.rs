@@ -7,11 +7,31 @@
     reason = "Example code"
 )]
 
+use std::time::Duration;
+
 use axum::{Router, body::Bytes, extract::State, http::StatusCode, routing::post};
 use data_encoding::HEXLOWER_PERMISSIVE;
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, E2eApi, SecretKey};
+use threema_gateway::{ApiBuilder, E2eApi, SecretKey, cache::InMemoryPublicKeyCache};
 use tokio::net::TcpListener;
+
+#[derive(Clone)]
+struct AppState {
+    api: E2eApi,
+    cache: InMemoryPublicKeyCache,
+}
+
+impl axum::extract::FromRef<AppState> for E2eApi {
+    fn from_ref(state: &AppState) -> Self {
+        state.api.clone()
+    }
+}
+
+impl axum::extract::FromRef<AppState> for InMemoryPublicKeyCache {
+    fn from_ref(state: &AppState) -> Self {
+        state.cache.clone()
+    }
+}
 
 const USAGE: &str = "
 Usage: receive [options] <our-id> <secret> <private-key> <listen-addr>
@@ -49,18 +69,24 @@ async fn main() {
         .into_e2e()
         .unwrap();
 
-    // TODO: Use in-memory public key cache
+    // Create public key cache
+    let cache = InMemoryPublicKeyCache::new(100, Duration::from_secs(300));
 
     // Set up HTTP server on `host:port`, handle incoming POST requests to /callback
+    let state = AppState { api, cache };
     let app = Router::new()
         .route("/callback", post(handle_callback))
-        .with_state(api);
+        .with_state(state);
     let listener = TcpListener::bind(&addr).await.unwrap();
     println!("Listening on {addr}");
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn handle_callback(State(api): State<E2eApi>, body: Bytes) -> StatusCode {
+async fn handle_callback(
+    State(api): State<E2eApi>,
+    State(cache): State<InMemoryPublicKeyCache>,
+    body: Bytes,
+) -> StatusCode {
     let msg = match api.decode_incoming_message(&body) {
         Ok(msg) => msg,
         Err(error) => {
@@ -77,7 +103,7 @@ async fn handle_callback(State(api): State<E2eApi>, body: Bytes) -> StatusCode {
     println!("  Sender nickname: {:?}", msg.nickname);
 
     // Fetch sender public key
-    let recipient_key = match api.lookup_pubkey(&msg.from).await {
+    let recipient_key = match api.lookup_pubkey_with_cache(&msg.from, &cache).await {
         Ok(key) => key,
         Err(error) => {
             eprintln!("Could not fetch public key for {}: {error}", &msg.from);
