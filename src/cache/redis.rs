@@ -133,21 +133,18 @@ where
         let mut conn = self.connection.clone();
         let result: Option<Vec<u8>> = conn.get(&cache_key).await?;
 
-        match result {
-            Some(key_bytes) => {
-                let recipient_key = RecipientKey::from_bytes(&key_bytes).map_err(|error| {
-                    RedisPublicKeyCacheError::CorruptedCache {
-                        identity: identity.to_owned(),
-                        error,
-                    }
-                })?;
-                log::trace!("Loaded from cache: {identity}");
-                Ok(Some(recipient_key))
-            }
-            None => {
-                log::trace!("Cache miss: {identity}");
-                Ok(None)
-            }
+        if let Some(key_bytes) = result {
+            let recipient_key = RecipientKey::from_bytes(&key_bytes).map_err(|error| {
+                RedisPublicKeyCacheError::CorruptedCache {
+                    identity: identity.to_owned(),
+                    error,
+                }
+            })?;
+            log::trace!("Loaded from cache: {identity}");
+            Ok(Some(recipient_key))
+        } else {
+            log::trace!("Cache miss: {identity}");
+            Ok(None)
         }
     }
 }

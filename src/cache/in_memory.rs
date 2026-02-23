@@ -57,21 +57,18 @@ impl PublicKeyCache for InMemoryPublicKeyCache {
     }
 
     async fn load(&self, identity: &str) -> Result<Option<RecipientKey>, Self::Error> {
-        match self.cache.get(identity).await {
-            Some(key_bytes) => {
-                let recipient_key = RecipientKey::from_bytes(&key_bytes).map_err(|error| {
-                    InMemoryPublicKeyCacheError::CorruptedCache {
-                        identity: identity.to_owned(),
-                        error,
-                    }
-                })?;
-                log::trace!("Loaded from cache: {identity}");
-                Ok(Some(recipient_key))
-            }
-            None => {
-                log::trace!("Cache miss: {identity}");
-                Ok(None)
-            }
+        if let Some(key_bytes) = self.cache.get(identity).await {
+            let recipient_key = RecipientKey::from_bytes(&key_bytes).map_err(|error| {
+                InMemoryPublicKeyCacheError::CorruptedCache {
+                    identity: identity.to_owned(),
+                    error,
+                }
+            })?;
+            log::trace!("Loaded from cache: {identity}");
+            Ok(Some(recipient_key))
+        } else {
+            log::trace!("Cache miss: {identity}");
+            Ok(None)
         }
     }
 }
