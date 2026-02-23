@@ -1,6 +1,6 @@
 //! Message ID related types.
 
-use std::{fmt, str::FromStr};
+use std::{fmt, str::FromStr, vec};
 
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -122,6 +122,41 @@ impl MessageIds {
     #[must_use]
     pub fn as_slice(&self) -> &[MessageId] {
         &self.ids
+    }
+
+    /// Return an iterator over the contained message IDs.
+    pub fn iter(&self) -> std::slice::Iter<'_, MessageId> {
+        self.ids.iter()
+    }
+}
+
+impl AsRef<[MessageId]> for MessageIds {
+    fn as_ref(&self) -> &[MessageId] {
+        &self.ids
+    }
+}
+
+impl<'ids> IntoIterator for &'ids MessageIds {
+    type Item = &'ids MessageId;
+    type IntoIter = std::slice::Iter<'ids, MessageId>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.ids.iter()
+    }
+}
+
+impl IntoIterator for MessageIds {
+    type Item = MessageId;
+    type IntoIter = vec::IntoIter<MessageId>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.ids.into_iter()
+    }
+}
+
+impl From<MessageIds> for Vec<MessageId> {
+    fn from(ids: MessageIds) -> Self {
+        ids.ids
     }
 }
 
@@ -277,6 +312,37 @@ mod tests {
                 let err = MessageIds::from_slice(&[]).unwrap_err();
                 assert_eq!(err, EmptyListError);
             }
+        }
+
+        #[test]
+        fn as_ref() {
+            let ids = MessageIds::new(mid(7));
+            let slice: &[MessageId] = ids.as_ref();
+            assert_eq!(slice, &[mid(7)]);
+        }
+
+        #[test]
+        fn into_iter_borrowed() {
+            let ids = MessageIds::from_slice(&[mid(10), mid(20), mid(30)])
+                .expect("non-empty slice should succeed");
+            let collected: Vec<&MessageId> = (&ids).into_iter().collect();
+            assert_eq!(collected, vec![&mid(10), &mid(20), &mid(30)]);
+        }
+
+        #[test]
+        fn into_iter_owned() {
+            let ids = MessageIds::from_slice(&[mid(10), mid(20), mid(30)])
+                .expect("non-empty slice should succeed");
+            let collected: Vec<MessageId> = ids.into_iter().collect();
+            assert_eq!(collected, vec![mid(10), mid(20), mid(30)]);
+        }
+
+        #[test]
+        fn into_vec() {
+            let ids =
+                MessageIds::from_slice(&[mid(5), mid(6)]).expect("non-empty slice should succeed");
+            let vec: Vec<MessageId> = ids.into();
+            assert_eq!(vec, vec![mid(5), mid(6)]);
         }
     }
 }

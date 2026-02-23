@@ -99,11 +99,10 @@ impl DeliveryReceiptMessage {
     /// little-endian message IDs.
     #[must_use]
     pub fn encode(&self) -> Vec<u8> {
-        let ids = self.message_ids.as_slice();
-        let ids_len = ids.len().saturating_mul(8);
+        let ids_len = self.message_ids.as_slice().len().saturating_mul(8);
         let mut buf = Vec::with_capacity(ids_len.saturating_add(1));
         buf.push(u8::from(self.receipt));
-        for &id in ids {
+        for &id in &self.message_ids {
             buf.extend_from_slice(&id.as_u64().to_le_bytes());
         }
         buf
