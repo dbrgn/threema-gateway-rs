@@ -2,6 +2,11 @@
 
 use thiserror::Error;
 
+use crate::{
+    errors::EmptyListError,
+    protocol::{MessageId, MessageIds},
+};
+
 /// A delivery receipt is sent by the recipient of a message when certain events happen.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DeliveryReceipt {
@@ -62,20 +67,30 @@ pub struct DeliveryReceiptMessage {
     /// The delivery receipt status
     pub receipt: DeliveryReceipt,
     /// One or more message IDs whose status should be updated
-    pub message_ids: Vec<u64>,
+    pub message_ids: MessageIds,
 }
 
 impl DeliveryReceiptMessage {
-    /// Create a new [`DeliveryReceiptMessage`].
+    /// Create a new [`DeliveryReceiptMessage`] with a single message ID.
     #[must_use]
-    pub fn new(receipt: DeliveryReceipt, message_id: u64, additional_message_ids: &[u64]) -> Self {
-        let mut message_ids = Vec::with_capacity(additional_message_ids.len().saturating_add(1));
-        message_ids.push(message_id);
-        message_ids.extend_from_slice(additional_message_ids);
+    pub fn new(receipt: DeliveryReceipt, message_id: MessageId) -> Self {
         Self {
             receipt,
-            message_ids,
+            message_ids: MessageIds::new(message_id),
         }
+    }
+
+    /// Create a new [`DeliveryReceiptMessage`] from a slice of message IDs.
+    ///
+    /// Returns an error if `message_ids` is empty.
+    pub fn from_slice(
+        receipt: DeliveryReceipt,
+        message_ids: &[MessageId],
+    ) -> Result<Self, EmptyListError> {
+        Ok(Self {
+            receipt,
+            message_ids: MessageIds::from_slice(message_ids)?,
+        })
     }
 
     /// Encode this message to its wire-format bytes.
@@ -84,11 +99,11 @@ impl DeliveryReceiptMessage {
     /// little-endian message IDs.
     #[must_use]
     pub fn encode(&self) -> Vec<u8> {
-        let ids_len = self.message_ids.len().saturating_mul(8);
+        let ids_len = self.message_ids.as_slice().len().saturating_mul(8);
         let mut buf = Vec::with_capacity(ids_len.saturating_add(1));
         buf.push(u8::from(self.receipt));
         for &id in &self.message_ids {
-            buf.extend_from_slice(&id.to_le_bytes());
+            buf.extend_from_slice(&id.as_u64().to_le_bytes());
         }
         buf
     }
@@ -117,15 +132,17 @@ impl DeliveryReceiptMessage {
         let receipt = DeliveryReceipt::from(status_byte);
 
         // Parse message IDs
-        if rest.is_empty() {
-            return Err(DeliveryReceiptMessageParseError::MissingMessageIds);
-        }
-        let message_ids = rest
+        let ids: Vec<MessageId> = rest
             .chunks_exact(8)
             .map(|chunk| {
-                u64::from_le_bytes(chunk.try_into().expect("chunks_exact(8) guarantees failed"))
+                let numeric = u64::from_le_bytes(
+                    chunk.try_into().expect("chunks_exact(8) guarantees failed"),
+                );
+                MessageId::from_u64(numeric)
             })
             .collect();
+        let message_ids = MessageIds::from_slice(&ids)
+            .map_err(|_| DeliveryReceiptMessageParseError::MissingMessageIds)?;
 
         Ok(Self {
             receipt,
@@ -174,46 +191,84 @@ mod tests {
     mod delivery_receipt_message {
         use super::*;
 
-        #[test]
-        fn new_single_id() {
-            let msg = DeliveryReceiptMessage::new(DeliveryReceipt::Received, 42, &[]);
-            assert_eq!(msg.receipt, DeliveryReceipt::Received);
-            assert_eq!(msg.message_ids, vec![42]);
+        /// Shorthand for creating a [`MessageId`] in tests.
+        fn mid(value: u64) -> MessageId {
+            MessageId::from_u64(value)
         }
 
-        #[test]
-        fn new_multiple_ids() {
-            let msg = DeliveryReceiptMessage::new(DeliveryReceipt::Read, 1, &[2, 3]);
-            assert_eq!(msg.receipt, DeliveryReceipt::Read);
-            assert_eq!(msg.message_ids, vec![1, 2, 3]);
+        mod new {
+            use super::*;
+
+            #[test]
+            fn single_id() {
+                let msg = DeliveryReceiptMessage::new(DeliveryReceipt::Received, mid(42));
+                assert_eq!(msg.receipt, DeliveryReceipt::Received);
+                assert_eq!(msg.message_ids.as_slice(), &[mid(42)]);
+            }
+        }
+
+        mod from_slice {
+            use super::*;
+
+            #[test]
+            fn multiple_ids() {
+                let msg = DeliveryReceiptMessage::from_slice(
+                    DeliveryReceipt::Read,
+                    &[mid(1), mid(2), mid(3)],
+                )
+                .expect("non-empty slice should succeed");
+                assert_eq!(msg.receipt, DeliveryReceipt::Read);
+                assert_eq!(msg.message_ids.as_slice(), &[mid(1), mid(2), mid(3)]);
+            }
+
+            #[test]
+            fn single_id() {
+                let msg = DeliveryReceiptMessage::from_slice(DeliveryReceipt::Received, &[mid(42)])
+                    .expect("non-empty slice should succeed");
+                assert_eq!(msg.receipt, DeliveryReceipt::Received);
+                assert_eq!(msg.message_ids.as_slice(), &[mid(42)]);
+            }
+
+            #[test]
+            fn empty_returns_error() {
+                let err =
+                    DeliveryReceiptMessage::from_slice(DeliveryReceipt::Received, &[]).unwrap_err();
+                assert_eq!(err, EmptyListError);
+            }
         }
 
         #[test]
         fn encode_single_id() {
             let msg =
-                DeliveryReceiptMessage::new(DeliveryReceipt::Received, 0x0102_0304_0506_0708, &[]);
+                DeliveryReceiptMessage::new(DeliveryReceipt::Received, mid(0x0102_0304_0506_0708));
             let bytes = msg.encode();
-            assert_eq!(bytes[0], 0x01); // status
-            assert_eq!(&bytes[1..], 0x0102_0304_0506_0708_u64.to_le_bytes());
+            assert_eq!(bytes[0], 0x01, "status byte");
+            assert_eq!(
+                &bytes[1..],
+                0x0102_0304_0506_0708_u64.to_le_bytes(),
+                "message ID bytes",
+            );
         }
 
         #[test]
         fn encode_multiple_ids() {
-            let msg = DeliveryReceiptMessage::new(DeliveryReceipt::Declined, 1, &[2]);
+            let msg =
+                DeliveryReceiptMessage::from_slice(DeliveryReceipt::Declined, &[mid(1), mid(2)])
+                    .expect("non-empty slice should succeed");
             let bytes = msg.encode();
-            assert_eq!(bytes.len(), 1 + 2 * 8);
-            assert_eq!(bytes[0], 0x04);
-            assert_eq!(&bytes[1..9], 1_u64.to_le_bytes());
-            assert_eq!(&bytes[9..17], 2_u64.to_le_bytes());
+            assert_eq!(bytes.len(), 1 + 2 * 8, "encoded length");
+            assert_eq!(bytes[0], 0x04, "status byte");
+            assert_eq!(&bytes[1..9], 1_u64.to_le_bytes(), "first message ID");
+            assert_eq!(&bytes[9..17], 2_u64.to_le_bytes(), "second message ID");
         }
 
         #[test]
         fn decode_single_id() {
             let mut bytes = vec![0x02]; // Read
             bytes.extend_from_slice(&42_u64.to_le_bytes());
-            let msg = DeliveryReceiptMessage::decode(&bytes).unwrap();
+            let msg = DeliveryReceiptMessage::decode(&bytes).expect("valid bytes should decode");
             assert_eq!(msg.receipt, DeliveryReceipt::Read);
-            assert_eq!(msg.message_ids, vec![42]);
+            assert_eq!(msg.message_ids.as_slice(), &[mid(42)]);
         }
 
         #[test]
@@ -222,9 +277,9 @@ mod tests {
             bytes.extend_from_slice(&100_u64.to_le_bytes());
             bytes.extend_from_slice(&200_u64.to_le_bytes());
             bytes.extend_from_slice(&300_u64.to_le_bytes());
-            let msg = DeliveryReceiptMessage::decode(&bytes).unwrap();
+            let msg = DeliveryReceiptMessage::decode(&bytes).expect("valid bytes should decode");
             assert_eq!(msg.receipt, DeliveryReceipt::Acknowledged);
-            assert_eq!(msg.message_ids, vec![100, 200, 300]);
+            assert_eq!(msg.message_ids.as_slice(), &[mid(100), mid(200), mid(300)],);
         }
 
         #[test]
@@ -239,7 +294,7 @@ mod tests {
             bytes.extend_from_slice(&1_u64.to_le_bytes());
             let msg = DeliveryReceiptMessage::decode(&bytes).unwrap();
             assert_eq!(msg.receipt, DeliveryReceipt::Other(0xff));
-            assert_eq!(msg.message_ids, vec![1]);
+            assert_eq!(msg.message_ids.as_slice(), &[mid(1)]);
         }
 
         #[test]
@@ -257,19 +312,21 @@ mod tests {
 
         #[test]
         fn round_trip_single_id() {
-            let original = DeliveryReceiptMessage::new(DeliveryReceipt::Received, 12345, &[]);
-            let decoded = DeliveryReceiptMessage::decode(&original.encode()).unwrap();
+            let original = DeliveryReceiptMessage::new(DeliveryReceipt::Received, mid(12345));
+            let decoded = DeliveryReceiptMessage::decode(&original.encode())
+                .expect("round-trip decode should succeed");
             assert_eq!(decoded, original);
         }
 
         #[test]
         fn round_trip_multiple_ids() {
-            let original = DeliveryReceiptMessage::new(
+            let original = DeliveryReceiptMessage::from_slice(
                 DeliveryReceipt::Read,
-                0,
-                &[u64::MAX, 0x0102_0304_0506_0708],
-            );
-            let decoded = DeliveryReceiptMessage::decode(&original.encode()).unwrap();
+                &[mid(0), mid(u64::MAX), mid(0x0102_0304_0506_0708)],
+            )
+            .expect("non-empty slice should succeed");
+            let decoded = DeliveryReceiptMessage::decode(&original.encode())
+                .expect("round-trip decode should succeed");
             assert_eq!(decoded, original);
         }
     }

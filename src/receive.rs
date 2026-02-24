@@ -12,6 +12,7 @@ use sha2::Sha256;
 use crate::{
     crypto::NONCE_SIZE,
     errors::{ApiError, CryptoError},
+    protocol::MessageId,
 };
 
 type HmacSha256 = Hmac<Sha256>;
@@ -47,8 +48,8 @@ pub struct IncomingMessage {
     pub from: String,
     /// Your API identity (8 characters, usually starts with '*')
     pub to: String,
-    /// Message ID assigned by the sender (8 bytes, hex encoded)
-    pub message_id: String,
+    /// Message ID assigned by the sender
+    pub message_id: MessageId,
     /// Message date set by the sender (UNIX timestamp)
     pub date: usize,
     /// Nonce used for encryption (24 bytes, hex encoded)
@@ -195,9 +196,10 @@ mod tests {
     }
 
     mod decrypt_box {
+        use crypto_box::aead::AeadCore as _;
         use crypto_secretbox::aead::OsRng;
 
-        use crypto_box::aead::AeadCore as _;
+        use crate::protocol::MessageId;
 
         use super::*;
 
@@ -223,7 +225,7 @@ mod tests {
             let msg = IncomingMessage {
                 from: "AAAAAAAA".into(),
                 to: "*BBBBBBB".into(),
-                message_id: "00112233".into(),
+                message_id: MessageId::from_u64(0x0011_2233),
                 date: 0,
                 nonce: nonce.to_vec(),
                 box_data,
@@ -246,7 +248,7 @@ mod tests {
             let msg = IncomingMessage {
                 from: "AAAAAAAA".into(),
                 to: "*BBBBBBB".into(),
-                message_id: "00112233".into(),
+                message_id: MessageId::from_u64(0x0011_2233),
                 date: 0,
                 nonce: vec![1, 2, 3, 4], // Nonce too short!
                 box_data: vec![0],
@@ -279,7 +281,7 @@ mod tests {
             let msg = IncomingMessage {
                 from: "AAAAAAAA".into(),
                 to: "*BBBBBBB".into(),
-                message_id: "00112233".into(),
+                message_id: MessageId::from_u64(0x0011_2233),
                 date: 0,
                 nonce: nonce.to_vec(),
                 box_data,
