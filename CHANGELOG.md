@@ -11,32 +11,53 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
-### Unreleased
+### v0.20.0 (unreleased)
 
-- [added] Add an `InMemoryPublicKeyCache` backed by the moka crate. Enabled through
-  the `public-key-cache-inmemory` Cargo feature.
-- [added] Add a `RedisPublicKeyCache`. Enabled through the `public-key-cache-redis`
-  Cargo feature.
+This release adds support for end-to-end message encoding and decoding. Besides
+text and file messages, implementations for location messages and delivery
+receipts are provided as well. Additionally, two optional cache implementations
+are provided: In-memory and Redis.
+
+End-to-end protocol:
+
 - [added] Add `E2eMessage` type
-- [added] Add `MessageId` type
 - [added] Add `E2eApi::decrypt_and_decode_incoming_message` method
 - [added] Add `E2eApi::encode_and_encrypt` method
-- [added] Derive `Clone`/`PartialEq` and implement `Deserialize` for FileMessage
 - [added] Add support for location messages
 - [added] Add support for delivery receipt messages
-- [changed] The `cache` module is now exposed directly. The `PublicKeyCache` trait
-  is not re-exported at top level anymore, import it from the `cache` module.
+- [changed] The type `BlobId` is not re-exported at top level anymore, import
+  it from the `protocol` module instead
+- [changed] The type `MessageType` is not re-exported at top level anymore,
+  import it from the `protocol` module instead
+- [changed] The types `FileMessage`, `FileMessageBuilder` and `RenderingType`
+  are not re-exported at top level anymore, import them from the
+  `protocol::e2e::file` module instead
+- [deprecated] In `E2eApi` the `encrypt_text_msg`, `encrypt_image_msg`,
+  `encrypt_file_msg` and `encrypt_raw` methods are deprecated and will be
+  removed in a future release
+
+File message improvements:
+
+- [added] Derive `Clone`/`PartialEq` and implement `Deserialize` for FileMessage
 - [changed] Make `FileMessage` fields and `FileMetadata` struct public
-- [changed] The `FileMessageBuilder::new` constructor is not public anymore, use `FileMessage::builder` instead
-- [changed] The type `BlobId` is not re-exported at top level anymore, import it from the `protocol` module
-  instead
-- [changed] The type `MessageType` is not re-exported at top level anymore, import it from the `protocol`
-  module instead
-- [changed] The types `FileMessage`, `FileMessageBuilder` and `RenderingType` are not re-exported at top level
-  anymore, import them from the `protocol::e2e::file` module instead
-- [changed] Change `IncomingMessage.message_id` type from `String` to `MessageId`
-- [deprecated] In `E2eApi` the `encrypt_text_msg`, `encrypt_image_msg`, `encrypt_file_msg` and `encrypt_raw`
-  methods are deprecated and will be removed in a future release
+- [changed] The `FileMessageBuilder::new` constructor is not public anymore,
+  use `FileMessage::builder` instead
+
+MessageId newtype:
+
+- [added] Add `MessageId` newtype
+- [changed] Change `IncomingMessage.message_id` type from `String` to
+  `MessageId`
+
+Cache:
+
+- [added] Add an `InMemoryPublicKeyCache` backed by the moka crate. Enabled
+  through the `public-key-cache-inmemory` Cargo feature.
+- [added] Add a `RedisPublicKeyCache`. Enabled through the
+  `public-key-cache-redis` Cargo feature.
+- [changed] The `cache` module is now exposed directly. The `PublicKeyCache`
+  trait is not re-exported at top level anymore, import it from the `cache`
+  module.
 
 ### v0.19.0 (2026-01-04)
 
