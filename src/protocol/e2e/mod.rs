@@ -163,6 +163,30 @@ impl E2eMessage {
     }
 }
 
+impl From<String> for E2eMessage {
+    fn from(value: String) -> Self {
+        E2eMessage::Text(value)
+    }
+}
+
+impl From<file::FileMessage> for E2eMessage {
+    fn from(value: file::FileMessage) -> Self {
+        E2eMessage::File(value)
+    }
+}
+
+impl From<location::LocationMessage> for E2eMessage {
+    fn from(value: location::LocationMessage) -> Self {
+        E2eMessage::Location(value)
+    }
+}
+
+impl From<delivery_receipt::DeliveryReceiptMessage> for E2eMessage {
+    fn from(value: delivery_receipt::DeliveryReceiptMessage) -> Self {
+        E2eMessage::DeliveryReceipt(value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr as _;
