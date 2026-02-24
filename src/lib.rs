@@ -31,7 +31,7 @@
 //!
 //! ```no_run
 //! # tokio_test::block_on(async {
-//! use threema_gateway::{ApiBuilder, RecipientKey};
+//! use threema_gateway::{ApiBuilder, E2eMessage, RecipientKey};
 //!
 //! let from = "*YOUR_ID";
 //! let to = "ECHOECHO";
@@ -50,8 +50,9 @@
 //! let recipient_key = api.lookup_pubkey(to).await.unwrap();
 //!
 //! // Encrypt
-//! let encrypted = api.encrypt_text_msg(text, &recipient_key)
-//!     .expect("Could not encrypt text msg");
+//! let msg = E2eMessage::Text(text.into());
+//! let encrypted = api.encode_and_encrypt(&msg, &recipient_key)
+//!     .expect("Could not encrypt message");
 //!
 //! // Send
 //! match api.send(&to, &encrypted, false).await {
@@ -86,6 +87,7 @@ pub use crate::{
         encrypt, encrypt_file_data, encrypt_raw,
     },
     lookup::{BulkIdentityPublicKey, Capabilities, LookupCriterion},
+    protocol::e2e::E2eMessage,
 };
 
 #[cfg(feature = "receive")]

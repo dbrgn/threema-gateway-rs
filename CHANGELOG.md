@@ -19,8 +19,7 @@ Possible log types:
   Cargo feature.
 - [added] Add `E2eMessage` type
 - [added] Add `E2eApi::decrypt_and_decode_incoming_message` method
-- [added] Derive `Clone` and `PartialEq` for FileMessage
-- [added] Implement `Deserialize` for FileMessage
+- [added] Add `E2eApi::encode_and_encrypt` method
 - [added] Derive `Clone`/`PartialEq` and implement `Deserialize` for FileMessage
 - [added] Add support for location messages
 - [added] Add support for delivery receipt messages
@@ -34,6 +33,8 @@ Possible log types:
   module instead
 - [changed] The types `FileMessage`, `FileMessageBuilder` and `RenderingType` are not re-exported at top level
   anymore, import them from the `protocol::e2e::file` module instead
+- [deprecated] In `E2eApi` the `encrypt_text_msg`, `encrypt_image_msg`, `encrypt_file_msg` and `encrypt_raw`
+  methods are deprecated and will be removed in a future release
 
 ### v0.19.0 (2026-01-04)
 

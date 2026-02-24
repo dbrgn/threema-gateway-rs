@@ -4,7 +4,7 @@
 use std::process;
 
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, protocol::e2e::location::LocationMessage};
+use threema_gateway::{ApiBuilder, E2eMessage, protocol::e2e::location::LocationMessage};
 
 const USAGE: &str = "
 Usage: send_e2e_location [options] <from> <to> <secret> <private-key> <latitude> <longitude>
@@ -77,7 +77,7 @@ async fn main() {
 
     // Encrypt message
     let encrypted = api
-        .encrypt_location_msg(&msg, &recipient_key)
+        .encode_and_encrypt(&E2eMessage::Location(msg), &recipient_key)
         .unwrap_or_else(|error| {
             println!("Could not encrypt location msg: {error}");
             process::exit(1);
