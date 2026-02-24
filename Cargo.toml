@@ -50,10 +50,21 @@ url = "2.5.4"
 zeroize = { version = "1", features = ["zeroize_derive"], default-features = false }
 
 [dev-dependencies]
+axum = "0.8"
 docopt = "1.1.0"
+insta = { version = "1", features = ["json"] }
 mime_guess = "2.0.0"
-tokio = { version = "1", features = ["macros", "rt"], default-features = false }
+rstest = "0.25"
+tokio = { version = "1", features = ["macros", "net", "rt"], default-features = false }
 tokio-test = "0.4"
+
+[[example]]
+name = "receive"
+required-features = ["receive", "public-key-cache-inmemory"]
+
+[[example]]
+name = "decode"
+required-features = ["receive"]
 
 [lints.rust]
 deprecated_safe = "warn"
@@ -101,6 +112,7 @@ pedantic = "warn"
 collapsible_if = { level = "allow", priority = 1 }
 collapsible_else_if = { level = "allow", priority = 1 }
 missing_errors_doc = { level = "allow", priority = 1 }
+missing_panics_doc = { level = "allow", priority = 1 }
 similar_names = { level = "allow", priority = 1 }
 too_many_lines = { level = "allow", priority = 1 }
 unnecessary_debug_formatting = { level = "allow", priority = 1 }

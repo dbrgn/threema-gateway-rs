@@ -1,45 +1,10 @@
-//! Types used throughout the codebase.
+//! File message related types.
 
-use std::{default::Default, fmt, str::FromStr};
-
-use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
 use log::warn;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use thiserror::Error;
 
-use crate::{
-    Key,
-    errors::{ApiError, FileMessageBuilderError},
-};
-
-/// A message type.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum MessageType {
-    /// Text message
-    Text,
-    /// Image message (deprecated)
-    Image,
-    /// Video message (deprecated)
-    Video,
-    /// File message
-    File,
-    /// Delivery receipt
-    DeliveryReceipt,
-    /// Another message type
-    Other(u8),
-}
-
-impl From<MessageType> for u8 {
-    fn from(val: MessageType) -> Self {
-        match val {
-            MessageType::Text => 0x01,
-            MessageType::Image => 0x02,
-            MessageType::Video => 0x13,
-            MessageType::File => 0x17,
-            MessageType::DeliveryReceipt => 0x80,
-            MessageType::Other(msgtype_byte) => msgtype_byte,
-        }
-    }
-}
+use crate::{Key, protocol::BlobId};
 
 /// The rendering type influences how a file message is displayed on the device
 /// of the recipient.
@@ -52,6 +17,8 @@ pub enum RenderingType {
     Media,
     /// Display as sticker (images with transparency, rendered without bubble)
     Sticker,
+    /// Another rendering type (unknown)
+    Other(u8),
 }
 
 impl From<RenderingType> for u8 {
@@ -60,6 +27,7 @@ impl From<RenderingType> for u8 {
             RenderingType::File => 0,
             RenderingType::Media => 1,
             RenderingType::Sticker => 2,
+            RenderingType::Other(value) => value,
         }
     }
 }
@@ -70,60 +38,93 @@ impl Serialize for RenderingType {
     }
 }
 
-/// A file message.
-#[derive(Debug, Serialize)]
-pub struct FileMessage {
-    #[serde(rename = "b")]
-    file_blob_id: BlobId,
-    #[serde(rename = "m")]
-    file_media_type: String,
+impl<'de> Deserialize<'de> for RenderingType {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = u8::deserialize(deserializer)?;
+        match value {
+            0 => Ok(RenderingType::File),
+            1 => Ok(RenderingType::Media),
+            2 => Ok(RenderingType::Sticker),
+            other => Ok(RenderingType::Other(other)),
+        }
+    }
+}
 
+/// A file message.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FileMessage {
+    /// Blob ID of encrypted file data on blob server
+    #[serde(rename = "b")]
+    pub file_blob_id: BlobId,
+    /// Media type (aka MIME type) of the file
+    #[serde(rename = "m")]
+    pub file_media_type: String,
+
+    /// Blob ID of encrypted thumbnail data on blob server
     #[serde(rename = "t")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    thumbnail_blob_id: Option<BlobId>,
+    pub thumbnail_blob_id: Option<BlobId>,
+    /// Media type (aka MIME type) of the thumbnail
     #[serde(rename = "p")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    thumbnail_media_type: Option<String>,
+    pub thumbnail_media_type: Option<String>,
 
+    /// Symmetric encryption key used for blobs
     #[serde(rename = "k")]
-    blob_encryption_key: Key,
+    pub blob_encryption_key: Key,
 
+    /// File name
     #[serde(rename = "n")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    file_name: Option<String>,
+    pub file_name: Option<String>,
+    /// File size in bytes
     #[serde(rename = "s")]
-    file_size_bytes: u32,
+    pub file_size_bytes: u32,
+    /// Caption text
     #[serde(rename = "d")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    description: Option<String>,
+    pub description: Option<String>,
 
+    /// Rendering type
+    ///
+    /// This type determines how to render the file in a chat.
     #[serde(rename = "j")]
-    rendering_type: RenderingType,
+    pub rendering_type: RenderingType,
+    /// Legacy rendering type
+    ///
+    /// Set this to 1 if the rendering type is `Media` or `Sticker`, otherwise set this to 0.
+    ///
+    /// When receiving a file message, ignore this flag.
     #[serde(rename = "i")]
-    legacy_rendering_type: u8,
+    pub legacy_rendering_type: u8,
 
+    /// Optional additional metadata
     #[serde(rename = "x")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    metadata: Option<FileMetadata>,
+    pub metadata: Option<FileMetadata>,
 }
 
 /// Metadata for a file message (depending on media type).
 ///
-/// This data is intended to enhance the layout logic.
-#[derive(Debug, Serialize, Default)]
-struct FileMetadata {
+/// This data is intended to enhance the layout logic when rendering the file in a chat.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct FileMetadata {
+    /// (For image) Image is animated (e.g. an animated GIF)
     #[serde(rename = "a")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    animated: Option<bool>,
+    pub animated: Option<bool>,
+    /// (For image or video) Height in px
     #[serde(rename = "h")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    height: Option<u32>,
+    pub height: Option<u32>,
+    /// (For image or video) Width in px
     #[serde(rename = "w")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    width: Option<u32>,
+    pub width: Option<u32>,
+    /// (For video or audio) Duration in seconds
     #[serde(rename = "d")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    duration_seconds: Option<f32>,
+    pub duration_seconds: Option<f32>,
 }
 
 impl FileMetadata {
@@ -137,7 +138,19 @@ impl FileMetadata {
 }
 
 impl FileMessage {
-    /// Shortcut for [`FileMessageBuilder::new`](struct.FileMessageBuilder.html#method.new).
+    /// Create a new [`FileMessageBuilder`].
+    ///
+    /// Before calling this function, you need to symmetrically encrypt the
+    /// file data with [`encrypt_file_data`](crate::encrypt_file_data) and
+    /// upload the ciphertext to the blob server with
+    /// [`blob_upload`](crate::E2eApi::blob_upload).
+    ///
+    /// The `file_blob_id` must point to the blob id of the uploaded file data,
+    /// encrypted with `blob_encryption_key`.
+    ///
+    /// The file size needs to be specified in bytes. Note that the size is
+    /// only used for download size displaying purposes and has no security
+    /// implications.
     pub fn builder<M: Into<String>>(
         file_blob_id: BlobId,
         blob_encryption_key: Key,
@@ -153,7 +166,15 @@ impl FileMessage {
     }
 }
 
-/// Builder for [`FileMessage`](struct.FileMessage.html).
+/// Errors when interacting with the [`FileMessageBuilder`].
+#[derive(Debug, PartialEq, Clone, Error)]
+pub enum FileMessageBuilderError {
+    /// Illegal combination of fields (e.g. setting the `animated` flag on a PDF file message).
+    #[error("illegal combination: {0}")]
+    IllegalCombination(&'static str),
+}
+
+/// Builder for [`FileMessage`]. Instantiate through [`FileMessage::builder`].
 pub struct FileMessageBuilder {
     file_blob_id: BlobId,
     file_media_type: String,
@@ -168,22 +189,7 @@ pub struct FileMessageBuilder {
 }
 
 impl FileMessageBuilder {
-    /// Create a new [`FileMessage`] builder.
-    ///
-    /// Before calling this function, you need to symmetrically encrypt the
-    /// file data with [`encrypt_file_data`](crate::encrypt_file_data) and
-    /// upload the ciphertext to the blob server with
-    /// [`blob_upload`](crate::E2eApi::blob_upload).
-    ///
-    /// The `file_blob_id` must point to the blob id of the uploaded file data,
-    /// encrypted with `blob_encryption_key`.
-    ///
-    /// The file size needs to be specified in bytes. Note that the size is
-    /// only used for download size displaying purposes and has no security
-    /// implications.
-    ///
-    /// [`FileMessage`]: struct.FileMessage.html
-    pub fn new<M: Into<String>>(
+    pub(crate) fn new<M: Into<String>>(
         file_blob_id: BlobId,
         blob_encryption_key: Key,
         media_type: M,
@@ -218,7 +224,7 @@ impl FileMessageBuilder {
     ///
     /// Before calling this function, you need to encrypt and upload the
     /// thumbnail data along with the file data (as described in
-    /// [`FileMessageBuilder::new`]).
+    /// [`FileMessage::builder`]).
     #[must_use]
     pub fn thumbnail<M: Into<String>>(self, blob_id: BlobId, media_type: M) -> Self {
         self.thumbnail_opt(Some((blob_id, media_type)))
@@ -228,7 +234,7 @@ impl FileMessageBuilder {
     ///
     /// Before calling this function, you need to encrypt and upload the
     /// thumbnail data along with the file data (as described in
-    /// [`FileMessageBuilder::new`]).
+    /// [`FileMessage::builder`]).
     #[must_use]
     pub fn thumbnail_opt<M: Into<String>>(mut self, blob: Option<(BlobId, M)>) -> Self {
         if let Some((blob_id, media_type)) = blob {
@@ -361,69 +367,11 @@ impl FileMessageBuilder {
     }
 }
 
-/// A 16-byte blob ID.
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct BlobId(pub [u8; 16]);
-
-impl BlobId {
-    /// Create a new [`BlobId`].
-    #[must_use]
-    pub fn new(id: [u8; 16]) -> Self {
-        BlobId(id)
-    }
-}
-
-impl FromStr for BlobId {
-    type Err = ApiError;
-
-    /// Create a new [`BlobId`] from a 32 character hexadecimal String.
-    fn from_str(id: &str) -> Result<Self, Self::Err> {
-        let bytes = HEXLOWER_PERMISSIVE
-            .decode(id.as_bytes())
-            .map_err(|_| ApiError::BadBlobId)?;
-        if bytes.len() != 16 {
-            return Err(ApiError::BadBlobId);
-        }
-        let mut arr = [0; 16];
-        arr[..].clone_from_slice(bytes.get(..bytes.len()).expect("Bad slice"));
-        Ok(BlobId(arr))
-    }
-}
-
-impl fmt::Display for BlobId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", HEXLOWER.encode(&self.0))
-    }
-}
-
-impl Serialize for BlobId {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&HEXLOWER.encode(&self.0))
-    }
-}
-
 #[cfg(test)]
-#[expect(clippy::default_numeric_fallback, reason = "Tests")]
 mod test {
-    use std::collections::HashMap;
-
-    use serde_json as json;
+    use std::str::FromStr as _;
 
     use super::*;
-
-    #[test]
-    fn blob_id_from_str() {
-        assert!(BlobId::from_str("0123456789abcdef0123456789abcdef").is_ok());
-        assert!(BlobId::from_str("0123456789abcdef0123456789abcdeF").is_ok());
-        assert!(BlobId::from_str("0123456789abcdef0123456789abcde").is_err());
-        assert!(BlobId::from_str("0123456789abcdef0123456789abcdef\n").is_err());
-        assert!(BlobId::from_str("0123456789abcdef0123456789abcdeg").is_err());
-
-        assert_eq!(
-            BlobId::from_str("000102030405060708090a0b0c0d0eff").unwrap(),
-            BlobId::new([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xff])
-        );
-    }
 
     #[test]
     fn serialize_to_string_minimal() {
@@ -444,25 +392,7 @@ mod test {
             legacy_rendering_type: 0,
             metadata: None,
         };
-        let data = json::to_string(&msg).unwrap();
-        let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
-
-        assert_eq!(deserialized.keys().len(), 6);
-        assert_eq!(
-            deserialized.get("b").unwrap(),
-            "0123456789abcdef0123456789abcdef"
-        );
-        assert_eq!(deserialized.get("t"), None);
-        assert_eq!(
-            deserialized.get("k").unwrap(),
-            "0102030401020304010203040102030401020304010203040102030401020304"
-        );
-        assert_eq!(deserialized.get("m").unwrap(), "application/pdf");
-        assert_eq!(deserialized.get("n"), None);
-        assert_eq!(deserialized.get("s").unwrap(), 2048);
-        assert_eq!(deserialized.get("j").unwrap(), 0);
-        assert_eq!(deserialized.get("i").unwrap(), 0);
-        assert_eq!(deserialized.get("d"), None);
+        insta::assert_json_snapshot!(msg);
     }
 
     #[test]
@@ -489,33 +419,7 @@ mod test {
                 duration_seconds: Some(12.7),
             }),
         };
-        let data = json::to_string(&msg).unwrap();
-        let deserialized: HashMap<String, json::Value> = json::from_str(&data).unwrap();
-
-        assert_eq!(deserialized.keys().len(), 11);
-        assert_eq!(
-            deserialized.get("b").unwrap(),
-            "0123456789abcdef0123456789abcdef"
-        );
-        assert_eq!(
-            deserialized.get("t").unwrap(),
-            "abcdef0123456789abcdef0123456789"
-        );
-        assert_eq!(
-            deserialized.get("k").unwrap(),
-            "0102030401020304010203040102030401020304010203040102030401020304"
-        );
-        assert_eq!(deserialized.get("m").unwrap(), "application/pdf");
-        assert_eq!(deserialized.get("p").unwrap(), "image/jpeg");
-        assert_eq!(deserialized.get("n").unwrap(), "secret.pdf");
-        assert_eq!(deserialized.get("s").unwrap(), 2048);
-        assert_eq!(deserialized.get("j").unwrap(), 2);
-        assert_eq!(deserialized.get("i").unwrap(), 1);
-        assert_eq!(deserialized.get("d").unwrap(), "This is a fancy file");
-        assert_eq!(deserialized.get("x").unwrap().get("a").unwrap(), true);
-        assert_eq!(deserialized.get("x").unwrap().get("h").unwrap(), 320);
-        assert_eq!(deserialized.get("x").unwrap().get("w").unwrap(), 240);
-        assert_eq!(deserialized.get("x").unwrap().get("d").unwrap(), 12.7);
+        insta::assert_json_snapshot!(msg);
     }
 
     #[test]

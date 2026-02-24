@@ -2,16 +2,10 @@
 
 //! # Threema Gateway SDK for Rust
 //!
-//! This library makes it easy to use the [Threema
-//! Gateway](https://gateway.threema.ch/) from Rust programs.
+//! This is the official Rust SDK for [Threema Gateway](https://threema.com/en/products/work/gateway).
 //!
 //! Documentation of the HTTP API can be found at
 //! [gateway.threema.ch](https://gateway.threema.ch/de/developer/api).
-//!
-//! **Note:** This library is fully asynchronous (because the underlying HTTP
-//! client is async as well). To call the async methods, either call them from
-//! an async context, or wrap the returned future in a `block_on` method
-//! provided by an executor like tokio, async-std or smol.
 //!
 //! ## Example: Send simple (transport encrypted) message
 //!
@@ -76,9 +70,9 @@ mod connection;
 mod crypto;
 pub mod errors;
 mod lookup;
+pub mod protocol;
 #[cfg(feature = "receive")]
 mod receive;
-mod types;
 
 pub use connection::{BulkE2eMessage, BulkE2eMessageSendStatus};
 pub use crypto_box::{PublicKey, SecretKey};
@@ -92,7 +86,6 @@ pub use crate::{
         encrypt, encrypt_file_data, encrypt_raw,
     },
     lookup::{BulkIdentityPublicKey, Capabilities, LookupCriterion},
-    types::{BlobId, FileMessage, FileMessageBuilder, MessageType, RenderingType},
 };
 
 #[cfg(feature = "receive")]

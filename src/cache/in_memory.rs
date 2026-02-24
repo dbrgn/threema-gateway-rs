@@ -24,7 +24,11 @@ pub enum InMemoryPublicKeyCacheError {
 ///
 /// The cache has a max capacity and a TTL.
 ///
+/// Note: Cloning this type is cheap and will create a shared handle to the same underlying cache (similar to
+/// an `Arc`).
+///
 /// Requires the `public-key-cache-inmemory` Cargo feature to be enabled.
+#[derive(Clone)]
 pub struct InMemoryPublicKeyCache {
     cache: Cache<String, Vec<u8>>,
 }

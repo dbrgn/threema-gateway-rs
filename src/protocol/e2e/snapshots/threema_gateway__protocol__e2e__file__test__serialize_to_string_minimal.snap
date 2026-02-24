@@ -1,0 +1,12 @@
+---
+source: src/protocol/e2e/file.rs
+expression: msg
+---
+{
+  "b": "0123456789abcdef0123456789abcdef",
+  "m": "application/pdf",
+  "k": "0102030401020304010203040102030401020304010203040102030401020304",
+  "s": 2048,
+  "j": 0,
+  "i": 0
+}

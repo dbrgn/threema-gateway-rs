@@ -1,9 +1,13 @@
 //! Error types used in this library.
 
-use std::io::Error as IoError;
+use std::{io::Error as IoError, str::Utf8Error};
 
 use reqwest::Error as ReqwestError;
 use thiserror::Error;
+
+use crate::protocol::e2e::{
+    delivery_receipt::DeliveryReceiptMessageParseError, location::LocationMessageParseError,
+};
 
 /// Errors when interacting with the API.
 #[derive(Debug, Error)]
@@ -115,6 +119,41 @@ pub enum CryptoError {
     EncryptionFailed,
 }
 
+/// Errors while decoding a message.
+#[derive(Debug, Error)]
+pub enum MessageDecodeError {
+    /// Message is empty (no type byte)
+    #[error("message is empty (no type byte)")]
+    EmptyMessage,
+
+    /// Invalid UTF-8
+    #[error("invalid utf-8: {0}")]
+    InvalidUtf8(Utf8Error),
+
+    /// JSON error
+    #[error("json error: {0}")]
+    Json(#[from] serde_json::Error),
+
+    /// Location message parse error
+    #[error("location message parse error: {0}")]
+    InvalidLocation(#[from] LocationMessageParseError),
+
+    /// Delivery receipt message parse error
+    #[error("delivery receipt message parse error: {0}")]
+    InvalidDeliveryReceipt(#[from] DeliveryReceiptMessageParseError),
+}
+
+/// Either a [`CryptoError`] or a [`MessageDecodeError`].
+#[derive(Debug, Error)]
+pub enum CryptoOrMessageDecodeError {
+    /// The inner [`CryptoError`]
+    #[error("crypto error: {0}")]
+    Crypto(#[from] CryptoError),
+    /// The [`MessageDecodeError`]
+    #[error("decode error: {0}")]
+    Decode(#[from] MessageDecodeError),
+}
+
 /// Errors when interacting with the [`ApiBuilder`](../struct.ApiBuilder.html).
 #[derive(Debug, PartialEq, Clone, Error)]
 pub enum ApiBuilderError {
@@ -125,12 +164,4 @@ pub enum ApiBuilderError {
     /// Invalid libsodium private key.
     #[error("invalid libsodium private key: {0}")]
     InvalidKey(String),
-}
-
-/// Errors when interacting with the [`FileMessageBuilder`](../struct.FileMessageBuilder.html).
-#[derive(Debug, PartialEq, Clone, Error)]
-pub enum FileMessageBuilderError {
-    /// Illegal combination of fields (e.g. setting the `animated` flag on a PDF file message).
-    #[error("illegal combination: {0}")]
-    IllegalCombination(&'static str),
 }

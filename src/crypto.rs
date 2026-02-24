@@ -20,7 +20,10 @@ use zeroize::{Zeroize, ZeroizeOnDrop};
 use crate::{
     PublicKey, SecretKey,
     errors::CryptoError,
-    types::{BlobId, FileMessage, MessageType},
+    protocol::{
+        BlobId,
+        e2e::{MessageType, file::FileMessage},
+    },
 };
 
 #[cfg(feature = "receive")]
@@ -28,7 +31,7 @@ pub(crate) const NONCE_SIZE: usize = 24;
 const KEY_SIZE: usize = 32;
 
 /// Key type used for nacl secretbox cryptography
-#[derive(PartialEq, Zeroize, ZeroizeOnDrop)]
+#[derive(PartialEq, Clone, Zeroize, ZeroizeOnDrop)]
 pub struct Key(SecretboxKey);
 
 impl AsRef<SecretboxKey> for Key {
@@ -75,6 +78,22 @@ impl TryFrom<Vec<u8>> for Key {
 impl Serialize for Key {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(&HEXLOWER.encode(&self.0))
+    }
+}
+
+impl<'de> Deserialize<'de> for Key {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let hex_string = String::deserialize(deserializer)?;
+        let bytes = HEXLOWER_PERMISSIVE
+            .decode(hex_string.as_bytes())
+            .map_err(de::Error::custom)?;
+        let arr: [u8; KEY_SIZE] = bytes.try_into().map_err(|original: Vec<u8>| {
+            de::Error::custom(format!(
+                "Key has wrong size: {} instead of {KEY_SIZE}",
+                original.len(),
+            ))
+        })?;
+        Ok(Key::from(arr))
     }
 }
 
@@ -327,7 +346,7 @@ mod test {
 
     use crate::{
         api::ApiBuilder,
-        types::{BlobId, MessageType},
+        protocol::{BlobId, e2e::MessageType},
     };
     use crypto_box::{Nonce, PublicKey, SalsaBox, SecretKey};
 
@@ -544,5 +563,50 @@ mod test {
         let decrypted = decrypt_file_data(&encrypted, &key).unwrap();
         assert_eq!(decrypted.file, &file_data);
         assert_eq!(decrypted.thumbnail.unwrap(), &thumb_data);
+    }
+
+    mod key {
+        use super::*;
+
+        #[test]
+        fn deserialize() {
+            let key: Key = serde_json::from_str(
+                "\"0102030401020304010203040102030401020304010203040102030401020304\"",
+            )
+            .unwrap();
+            assert_eq!(
+                key,
+                Key::from([
+                    1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2,
+                    3, 4, 1, 2, 3, 4,
+                ])
+            );
+        }
+
+        #[test]
+        fn serialize_roundtrip() {
+            let original = Key::from([
+                1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4,
+                1, 2, 3, 4,
+            ]);
+            let json = serde_json::to_string(&original).unwrap();
+            let deserialized: Key = serde_json::from_str(&json).unwrap();
+            assert_eq!(original, deserialized);
+        }
+
+        #[test]
+        fn deserialize_wrong_size() {
+            // Too short (only 16 bytes)
+            let result = serde_json::from_str::<Key>("\"01020304010203040102030401020304\"");
+            assert!(result.is_err(), "Should reject key with wrong size");
+        }
+
+        #[test]
+        fn deserialize_invalid_hex() {
+            let result = serde_json::from_str::<Key>(
+                "\"zz02030401020304010203040102030401020304010203040102030401020304\"",
+            );
+            assert!(result.is_err(), "Should reject invalid hex");
+        }
     }
 }

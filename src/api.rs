@@ -10,8 +10,6 @@ use data_encoding::HEXLOWER_PERMISSIVE;
 use log::{debug, warn};
 use reqwest::Client;
 
-#[cfg(feature = "receive")]
-use crate::receive::IncomingMessage;
 use crate::{
     MSGAPI_URL,
     cache::PublicKeyCache,
@@ -27,7 +25,17 @@ use crate::{
         BulkIdentityPublicKey, Capabilities, LookupCriterion, lookup_capabilities, lookup_credits,
         lookup_id, lookup_ids_bulk, lookup_pubkey, lookup_pubkeys_bulk,
     },
-    types::{BlobId, FileMessage, MessageType},
+    protocol::{
+        BlobId,
+        e2e::{
+            MessageType, delivery_receipt::DeliveryReceiptMessage, file::FileMessage,
+            location::LocationMessage,
+        },
+    },
+};
+#[cfg(feature = "receive")]
+use crate::{
+    errors::CryptoOrMessageDecodeError, protocol::e2e::E2eMessage, receive::IncomingMessage,
 };
 
 fn make_reqwest_client() -> Client {
@@ -110,10 +118,8 @@ macro_rules! impl_common_functionality {
 
         /// Look up a Threema ID in the directory.
         ///
-        /// An ID can be looked up either by a phone number or an e-mail
-        /// address, in plaintext or hashed form. You can specify one of those
-        /// criteria using the [`LookupCriterion`](enum.LookupCriterion.html)
-        /// enum.
+        /// An ID can be looked up either by a phone number or an e-mail address, in plaintext or hashed form.
+        /// You can specify one of those criteria using the [`LookupCriterion`] enum.
         pub async fn lookup_id(&self, criterion: &LookupCriterion) -> Result<String, ApiError> {
             lookup_id(
                 &self.client,
@@ -255,8 +261,7 @@ impl E2eApi {
         recipient_key: &RecipientKey,
     ) -> Result<EncryptedMessage, CryptoError> {
         let data = text.as_bytes();
-        let msgtype = MessageType::Text;
-        encrypt(data, msgtype, &recipient_key.0, &self.private_key)
+        encrypt(data, MessageType::Text, &recipient_key.0, &self.private_key)
     }
 
     /// Encrypt an image message for the specified recipient public key.
@@ -296,6 +301,38 @@ impl E2eApi {
         recipient_key: &RecipientKey,
     ) -> Result<EncryptedMessage, CryptoError> {
         encrypt_file_msg(msg, &recipient_key.0, &self.private_key)
+    }
+
+    /// Encrypt a location message for the specified recipient public key.
+    ///
+    /// To construct a [`LocationMessage`], use the [`LocationMessage::builder`] method.
+    pub fn encrypt_location_msg(
+        &self,
+        msg: &LocationMessage,
+        recipient_key: &RecipientKey,
+    ) -> Result<EncryptedMessage, CryptoError> {
+        let data = msg.encode();
+        encrypt(
+            &data,
+            MessageType::Location,
+            &recipient_key.0,
+            &self.private_key,
+        )
+    }
+
+    /// Encrypt a delivery receipt message for the specified recipient public key.
+    pub fn encrypt_delivery_receipt_msg(
+        &self,
+        msg: &DeliveryReceiptMessage,
+        recipient_key: &RecipientKey,
+    ) -> Result<EncryptedMessage, CryptoError> {
+        let data = msg.encode();
+        encrypt(
+            &data,
+            MessageType::DeliveryReceipt,
+            &recipient_key.0,
+            &self.private_key,
+        )
     }
 
     /// Encrypt an arbitrary message for the specified recipient public key.
@@ -517,11 +554,14 @@ impl E2eApi {
         IncomingMessage::from_urlencoded_bytes(bytes, &self.secret)
     }
 
-    /// Decrypt an [`IncomingMessage`] using the provided public key and our
-    /// own private key.
+    /// Decrypt an [`IncomingMessage`] using the provided public key and our own private key and return the
+    /// raw bytes.
     ///
     /// The format of the returned decrypted message bytes is documented at
     /// <https://gateway.threema.ch/de/developer/e2e>.
+    ///
+    /// **Note:** You should probably not use this directly, but instead use
+    /// [`E2eApi::decrypt_and_decode_incoming_message`]!
     #[cfg(feature = "receive")]
     pub fn decrypt_incoming_message(
         &self,
@@ -529,6 +569,18 @@ impl E2eApi {
         recipient_key: &RecipientKey,
     ) -> Result<Vec<u8>, CryptoError> {
         message.decrypt_box(&recipient_key.0, &self.private_key)
+    }
+
+    /// Decrypt and decode an [`IncomingMessage`] using the provided public key and our own private key.
+    #[cfg(feature = "receive")]
+    pub fn decrypt_and_decode_incoming_message(
+        &self,
+        message: &IncomingMessage,
+        recipient_key: &RecipientKey,
+    ) -> Result<E2eMessage, CryptoOrMessageDecodeError> {
+        let decrypted_bytes = self.decrypt_incoming_message(message, recipient_key)?;
+        let e2e_message = E2eMessage::decode_from_decrypted_bytes(&decrypted_bytes)?;
+        Ok(e2e_message)
     }
 }
 
@@ -562,13 +614,12 @@ impl E2eApi {
 ///                              .unwrap();
 /// ```
 #[derive(Debug)]
-#[expect(missing_docs, reason = "Builder pattern")]
 pub struct ApiBuilder {
-    pub id: String,
-    pub secret: String,
-    pub private_key: Option<SecretKey>,
-    pub endpoint: Cow<'static, str>,
-    pub client: Option<Client>,
+    id: String,
+    secret: String,
+    private_key: Option<SecretKey>,
+    endpoint: Cow<'static, str>,
+    client: Option<Client>,
 }
 
 impl ApiBuilder {
@@ -605,7 +656,7 @@ impl ApiBuilder {
         self
     }
 
-    /// Return a [`SimpleAPI`](struct.SimpleApi.html) instance.
+    /// Return a [`SimpleApi`] instance.
     pub fn into_simple(self) -> SimpleApi {
         SimpleApi::new(
             self.endpoint,
@@ -644,7 +695,7 @@ impl ApiBuilder {
         self.with_private_key_bytes(&private_key_bytes)
     }
 
-    /// Return a [`E2eAPI`](struct.SimpleApi.html) instance.
+    /// Return a [`E2eApi`] instance.
     ///
     /// This will fail if no private key was set.
     pub fn into_e2e(self) -> Result<E2eApi, ApiBuilderError> {

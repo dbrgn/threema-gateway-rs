@@ -1,4 +1,4 @@
-//! Example: Decrypt and decode incoming message
+//! Example: Listen on specified host/port, decrypt and decode any incoming message
 #![allow(
     clippy::print_stdout,
     clippy::print_stderr,
@@ -7,12 +7,36 @@
     reason = "Example code"
 )]
 
+use std::time::Duration;
+
+use axum::{Router, body::Bytes, extract::State, http::StatusCode, routing::post};
 use data_encoding::HEXLOWER_PERMISSIVE;
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, SecretKey};
+use threema_gateway::{ApiBuilder, E2eApi, SecretKey, cache::InMemoryPublicKeyCache};
+use tokio::net::TcpListener;
+
+#[derive(Clone)]
+struct AppState {
+    api: E2eApi,
+    cache: InMemoryPublicKeyCache,
+}
+
+impl axum::extract::FromRef<AppState> for E2eApi {
+    fn from_ref(state: &AppState) -> Self {
+        state.api.clone()
+    }
+}
+
+impl axum::extract::FromRef<AppState> for InMemoryPublicKeyCache {
+    fn from_ref(state: &AppState) -> Self {
+        state.cache.clone()
+    }
+}
 
 const USAGE: &str = "
-Usage: receive [options] <our-id> <secret> <private-key> <request-body>
+Usage: receive [options] <our-id> <secret> <private-key> <listen-addr>
+
+The <listen-addr> argument should be in `host:port` format, for example `127.0.0.1:8000`.
 
 Options:
     -h, --help    Show this help
@@ -37,7 +61,7 @@ async fn main() {
         eprintln!("Invalid private key");
         std::process::exit(1);
     });
-    let request_body = args.get_str("<request-body>");
+    let addr = args.get_str("<listen-addr>");
 
     // Create E2eApi instance
     let api = ApiBuilder::new(our_id, secret)
@@ -45,13 +69,31 @@ async fn main() {
         .into_e2e()
         .unwrap();
 
-    // Parse request body
-    let msg = api
-        .decode_incoming_message(request_body)
-        .unwrap_or_else(|error| {
+    // Create public key cache
+    let cache = InMemoryPublicKeyCache::new(100, Duration::from_secs(300));
+
+    // Set up HTTP server on `host:port`, handle incoming POST requests to /callback
+    let state = AppState { api, cache };
+    let app = Router::new()
+        .route("/callback", post(handle_callback))
+        .with_state(state);
+    let listener = TcpListener::bind(&addr).await.unwrap();
+    println!("Listening on {addr}");
+    axum::serve(listener, app).await.unwrap();
+}
+
+async fn handle_callback(
+    State(api): State<E2eApi>,
+    State(cache): State<InMemoryPublicKeyCache>,
+    body: Bytes,
+) -> StatusCode {
+    let msg = match api.decode_incoming_message(&body) {
+        Ok(msg) => msg,
+        Err(error) => {
             eprintln!("Could not decode incoming message: {error}");
-            std::process::exit(1);
-        });
+            return StatusCode::BAD_REQUEST;
+        }
+    };
 
     println!("Parsed and validated message from request:");
     println!("  From: {}", msg.from);
@@ -61,19 +103,23 @@ async fn main() {
     println!("  Sender nickname: {:?}", msg.nickname);
 
     // Fetch sender public key
-    let recipient_key = api.lookup_pubkey(&msg.from).await.unwrap_or_else(|error| {
-        eprintln!("Could not fetch public key for {}: {}", &msg.from, error);
-        std::process::exit(1);
-    });
+    let recipient_key = match api.lookup_pubkey_with_cache(&msg.from, &cache).await {
+        Ok(key) => key,
+        Err(error) => {
+            eprintln!("Could not fetch public key for {}: {error}", &msg.from);
+            return StatusCode::INTERNAL_SERVER_ERROR;
+        }
+    };
 
-    // Decrypt
-    let data = api
-        .decrypt_incoming_message(&msg, &recipient_key)
-        .unwrap_or_else(|error| {
-            println!("Could not decrypt box: {error}");
-            std::process::exit(1);
-        });
-
-    // Show result
-    println!("Decrypted box: {data:?}");
+    // Decrypt and decode
+    match api.decrypt_and_decode_incoming_message(&msg, &recipient_key) {
+        Ok(message) => {
+            println!("Decrypted message: {message:?}");
+            StatusCode::OK
+        }
+        Err(error) => {
+            eprintln!("Could not decrypt box: {error}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
 }

@@ -10,7 +10,7 @@ use std::process;
 
 use data_encoding::HEXLOWER_PERMISSIVE;
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, BlobId, EncryptedFileData, Key, decrypt_file_data};
+use threema_gateway::{ApiBuilder, EncryptedFileData, Key, decrypt_file_data, protocol::BlobId};
 
 const USAGE: &str = "
 Usage: download_blob [options] <our-id> <secret> <private-key> <blob-id> [<blob-key>]
