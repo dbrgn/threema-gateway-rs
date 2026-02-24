@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use crypto_box::SecretKey;
+use crypto_box::{PublicKey, SecretKey};
 use crypto_secretbox::Nonce;
 use data_encoding::HEXLOWER_PERMISSIVE;
 use log::{debug, warn};
@@ -582,6 +582,12 @@ impl E2eApi {
         let e2e_message = E2eMessage::decode_from_decrypted_bytes(&decrypted_bytes)?;
         Ok(e2e_message)
     }
+
+    /// Return own public key.
+    #[must_use]
+    pub fn public_key(&self) -> PublicKey {
+        self.private_key.public_key()
+    }
 }
 
 /// A convenient way to set up the API object.
@@ -708,6 +714,43 @@ impl ApiBuilder {
                 self.client.unwrap_or_else(make_reqwest_client),
             )),
             None => Err(ApiBuilderError::MissingKey),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    mod public_key {
+        use super::*;
+
+        #[rstest]
+        #[case(
+            "788433c173964f725b83d33676c5c25d623783ad22a3d50a8573bf5d2a4e6bac",
+            "caea70eb4fde41591d6454006322d65b8c57a6b40e2292c87954a539bc8e326f"
+        )]
+        #[case(
+            "ecf5e324131eab54d4b35d912593fe946b889309f77c2e6e8eec1071a600b468",
+            "820e358d85606e36c306548da4f25da571a39715959bb796d6b4ea10f9652b59"
+        )]
+        fn correct_public_key(#[case] private: String, #[case] public: String) {
+            let private_bytes = data_encoding::HEXLOWER.decode(private.as_bytes()).unwrap();
+            let public_bytes = data_encoding::HEXLOWER.decode(public.as_bytes()).unwrap();
+
+            let api = E2eApi::new(
+                "endpoint".into(),
+                "HELOWRLD",
+                "fakescrt",
+                SecretKey::from_slice(&private_bytes).unwrap(),
+                Client::new(),
+            );
+            assert_eq!(
+                api.public_key(),
+                PublicKey::from_slice(&public_bytes).unwrap()
+            );
         }
     }
 }
