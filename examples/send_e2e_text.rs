@@ -41,7 +41,7 @@ async fn main() {
 
     // Encrypt and send
     let encrypted = api
-        .encrypt_text_msg(&text, &recipient_key)
+        .encode_and_encrypt(&text.into(), &recipient_key)
         .unwrap_or_else(|error| {
             println!("Could not encrypt text msg: {error}");
             process::exit(1);
