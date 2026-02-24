@@ -7,6 +7,7 @@ use thiserror::Error;
 
 use crate::protocol::e2e::{
     delivery_receipt::DeliveryReceiptMessageParseError, location::LocationMessageParseError,
+    typing_indicator::TypingIndicatorMessageParseError,
 };
 
 /// Errors when interacting with the API.
@@ -141,6 +142,10 @@ pub enum MessageDecodeError {
     /// Delivery receipt message parse error
     #[error("delivery receipt message parse error: {0}")]
     InvalidDeliveryReceipt(#[from] DeliveryReceiptMessageParseError),
+
+    /// Typing indicator message parse error
+    #[error("typing indicator message parse error: {0}")]
+    InvalidTypingIndicator(#[from] TypingIndicatorMessageParseError),
 }
 
 /// Either a [`CryptoError`] or a [`MessageDecodeError`].

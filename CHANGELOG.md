@@ -25,6 +25,7 @@ End-to-end protocol:
 - [added] Add `E2eApi::encode_and_encrypt` method
 - [added] Add support for location messages
 - [added] Add support for delivery receipt messages
+- [added] Add support for typing indicator messages
 - [changed] The type `BlobId` is not re-exported at top level anymore, import
   it from the `protocol` module instead
 - [changed] The type `MessageType` is not re-exported at top level anymore,
