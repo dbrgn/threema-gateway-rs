@@ -6,8 +6,8 @@ use reqwest::Error as ReqwestError;
 use thiserror::Error;
 
 use crate::protocol::e2e::{
-    delivery_receipt::DeliveryReceiptMessageParseError, location::LocationMessageParseError,
-    typing_indicator::TypingIndicatorMessageParseError,
+    delivery_receipt::DeliveryReceiptMessageParseError, edit_delete::DeleteMessageParseError,
+    location::LocationMessageParseError, typing_indicator::TypingIndicatorMessageParseError,
 };
 
 /// Errors when interacting with the API.
@@ -146,6 +146,10 @@ pub enum MessageDecodeError {
     /// Typing indicator message parse error
     #[error("typing indicator message parse error: {0}")]
     InvalidTypingIndicator(#[from] TypingIndicatorMessageParseError),
+
+    /// Delete message parse error
+    #[error("delete message parse error: {0}")]
+    InvalidDeleteMessage(#[from] DeleteMessageParseError),
 }
 
 /// Either a [`CryptoError`] or a [`MessageDecodeError`].
