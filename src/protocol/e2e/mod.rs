@@ -1,6 +1,6 @@
 //! Types used in the Threema end-to-end protocol.
 
-use crate::{errors::MessageDecodeError, protocol::MessageId};
+use crate::errors::MessageDecodeError;
 
 pub mod delivery_receipt;
 pub mod edit_delete;
@@ -25,6 +25,8 @@ pub enum MessageType {
     DeliveryReceipt,
     /// Typing indicator
     TypingIndicator,
+    /// Edit message
+    Edit,
     /// Delete message
     Delete,
     /// Another message type
@@ -41,6 +43,7 @@ impl From<MessageType> for u8 {
             MessageType::Location => 0x10,
             MessageType::DeliveryReceipt => 0x80,
             MessageType::TypingIndicator => 0x90,
+            MessageType::Edit => 0x91,
             MessageType::Delete => 0x92,
             MessageType::Other(msgtype_byte) => msgtype_byte,
         }
@@ -57,6 +60,7 @@ impl From<u8> for MessageType {
             0x17 => MessageType::File,
             0x80 => MessageType::DeliveryReceipt,
             0x90 => MessageType::TypingIndicator,
+            0x91 => MessageType::Edit,
             0x92 => MessageType::Delete,
             other => MessageType::Other(other),
         }
@@ -84,6 +88,8 @@ pub enum E2eMessage {
     DeliveryReceipt(delivery_receipt::DeliveryReceiptMessage),
     /// Typing indicator message
     TypingIndicator(typing_indicator::TypingIndicatorMessage),
+    /// Edit message
+    Edit(edit_delete::EditMessage),
     /// Delete message
     Delete(edit_delete::DeleteMessage),
     /// Another message
@@ -120,6 +126,10 @@ impl E2eMessage {
             Self::TypingIndicator(typing_indicator_message) => EncodedE2eMessage {
                 message_type: MessageType::TypingIndicator,
                 message_bytes: typing_indicator_message.encode(),
+            },
+            Self::Edit(edit_message) => EncodedE2eMessage {
+                message_type: MessageType::Edit,
+                message_bytes: edit_message.encode(),
             },
             Self::Delete(delete_message) => EncodedE2eMessage {
                 message_type: MessageType::Delete,
@@ -169,6 +179,10 @@ impl E2eMessage {
                     typing_indicator::TypingIndicatorMessage::decode(message_bytes)?;
                 Ok(Self::TypingIndicator(typing_indicator_message))
             }
+            MessageType::Edit => {
+                let edit_message = edit_delete::EditMessage::decode(message_bytes)?;
+                Ok(Self::Edit(edit_message))
+            }
             MessageType::Delete => {
                 let delete_message = edit_delete::DeleteMessage::decode(message_bytes)?;
                 Ok(Self::Delete(delete_message))
@@ -202,6 +216,8 @@ impl E2eMessage {
             E2eMessage::Location(_) => MessageType::Location,
             E2eMessage::DeliveryReceipt(_) => MessageType::DeliveryReceipt,
             E2eMessage::TypingIndicator(_) => MessageType::TypingIndicator,
+            E2eMessage::Edit(_) => MessageType::Edit,
+            E2eMessage::Delete(_) => MessageType::Delete,
             E2eMessage::Other { message_type, .. } => *message_type,
         }
     }
@@ -237,6 +253,12 @@ impl From<typing_indicator::TypingIndicatorMessage> for E2eMessage {
     }
 }
 
+impl From<edit_delete::EditMessage> for E2eMessage {
+    fn from(value: edit_delete::EditMessage) -> Self {
+        E2eMessage::Edit(value)
+    }
+}
+
 impl From<edit_delete::DeleteMessage> for E2eMessage {
     fn from(value: edit_delete::DeleteMessage) -> Self {
         E2eMessage::Delete(value)
@@ -247,7 +269,10 @@ impl From<edit_delete::DeleteMessage> for E2eMessage {
 mod tests {
     use std::str::FromStr as _;
 
-    use crate::{Key, protocol::BlobId};
+    use crate::{
+        Key,
+        protocol::{BlobId, MessageId},
+    };
 
     use super::*;
 
@@ -276,6 +301,7 @@ mod tests {
         #[case::location(0x10, MessageType::Location)]
         #[case::video(0x13, MessageType::Video)]
         #[case::file(0x17, MessageType::File)]
+        #[case::edit(0x91, MessageType::Edit)]
         #[case::delete(0x92, MessageType::Delete)]
         #[case::other(0x42, MessageType::Other(0x42))]
         fn from_u8(#[case] byte: u8, #[case] expected: MessageType) {
@@ -288,6 +314,7 @@ mod tests {
         #[case::video(MessageType::Video, 0x13)]
         #[case::file(MessageType::File, 0x17)]
         #[case::location(MessageType::Location, 0x10)]
+        #[case::edit(MessageType::Edit, 0x91)]
         #[case::delete(MessageType::Delete, 0x92)]
         #[case::other(MessageType::Other(0x42), 0x42)]
         fn to_u8(#[case] msgtype: MessageType, #[case] expected: u8) {
@@ -342,6 +369,20 @@ mod tests {
             .encode();
             assert_eq!(encoded.message_type, MessageType::Other(0x42));
             assert_eq!(encoded.message_bytes, vec![1, 2, 3]);
+        }
+
+        #[test]
+        fn edit_message() {
+            let message_id = MessageId::from_u64(0x0123_4567_89ab_cdef);
+            let encoded =
+                E2eMessage::Edit(edit_delete::EditMessage::new(message_id, "updated".into()))
+                    .encode();
+            assert_eq!(encoded.message_type, MessageType::Edit);
+            // Verify it's valid protobuf encoding
+            let proto_message: crate::protobuf::csp_e2e::EditMessage =
+                prost::Message::decode(&*encoded.message_bytes).unwrap();
+            assert_eq!(proto_message.message_id, 0x0123_4567_89ab_cdef);
+            assert_eq!(proto_message.text, "updated");
         }
 
         #[test]

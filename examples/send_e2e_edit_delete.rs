@@ -1,5 +1,10 @@
 //! Example: Send E2EE text, edit after 2s and delete after 4s.
-#![allow(clippy::print_stdout, clippy::unwrap_used, reason = "Example code")]
+#![allow(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    clippy::unwrap_used,
+    reason = "Example code"
+)]
 
 use std::{process, time::Duration};
 
@@ -8,10 +13,7 @@ use threema_gateway::{
     ApiBuilder, EncryptedMessage,
     protocol::{
         MessageId,
-        e2e::{
-            edit_delete::DeleteMessage,
-            typing_indicator::{TypingIndicatorMessage, TypingStatus},
-        },
+        e2e::edit_delete::{DeleteMessage, EditMessage},
     },
 };
 use tokio::time::sleep;
@@ -65,13 +67,20 @@ async fn main() {
     };
 
     // Send text message
-    let text = api
-        .encode_and_encrypt(&text.into(), &recipient_key)
+    let text_message = api
+        .encode_and_encrypt(&text.clone().into(), &recipient_key)
         .expect("encoding text message failed");
-    let text_message_id = send(text, "text").await;
+    let text_message_id = send(text_message, "text").await;
 
-    // TODO: Edit after 2s
+    // Edit after 2s
     sleep(Duration::from_secs(2)).await;
+    let edit = api
+        .encode_and_encrypt(
+            &EditMessage::new(text_message_id, format!("{text} (edited version)")).into(),
+            &recipient_key,
+        )
+        .expect("encoding edit message failed");
+    send(edit, "edit").await;
 
     // Delete after 4s
     sleep(Duration::from_secs(2)).await;

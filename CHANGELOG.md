@@ -26,7 +26,7 @@ End-to-end protocol:
 - [added] Add support for location messages
 - [added] Add support for delivery receipt messages
 - [added] Add support for typing indicator messages
-- [added] Add support for delete messages
+- [added] Add support for edit and delete messages
 - [changed] The type `BlobId` is not re-exported at top level anymore, import
   it from the `protocol` module instead
 - [changed] The type `MessageType` is not re-exported at top level anymore,
