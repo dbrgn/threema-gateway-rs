@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package csp_e2e;
+
+// Edit an existing message (e.g. a text message or a media message caption).
+message EditMessage {
+  // Unique ID of the referred message to be edited.
+  fixed64 message_id = 1;
+
+  // Text (or caption) to update the referred message with. Should be ≤ 6000
+  // bytes.
+  string text = 2;
+}
+
+// Remove an existing message.
+//
+// Note: This is a soft-security feature at best and it applies a best effort
+// approach, meaning that it relies on some level of good will on the receiving
+// end. A malicious receiver can easily persist a message prior to removal by
+// e.g. making a screenshot, forwarding it, changing the date, explicitly saving
+// it (if it contains media), etc.
+message DeleteMessage {
+  // Unique ID of the referred message to be removed.
+  fixed64 message_id = 1;
+}

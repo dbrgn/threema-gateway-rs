@@ -71,6 +71,7 @@ mod connection;
 mod crypto;
 pub mod errors;
 mod lookup;
+pub(crate) mod protobuf;
 pub mod protocol;
 #[cfg(feature = "receive")]
 mod receive;
