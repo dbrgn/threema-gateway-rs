@@ -50,9 +50,6 @@ thiserror = "2"
 url = "2.5.4"
 zeroize = { version = "1", features = ["zeroize_derive"], default-features = false }
 
-[build-dependencies]
-prost-build = "0.14"
-
 [dev-dependencies]
 axum = "0.8"
 docopt = "1.1.0"

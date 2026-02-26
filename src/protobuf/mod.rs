@@ -2,5 +2,5 @@
 
 #[expect(unreachable_pub, reason = "Generated code")]
 pub(crate) mod csp_e2e {
-    include!(concat!(env!("OUT_DIR"), "/csp_e2e.rs"));
+    include!("csp_e2e.rs");
 }
