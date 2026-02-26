@@ -1,18 +1,23 @@
-//! Example: Send E2EE image
+//! Example: Send E2EE image (as a file message with media rendering type)
 #![allow(
     clippy::print_stdout,
-    clippy::use_debug,
+    clippy::print_stderr,
     clippy::unwrap_used,
+    clippy::use_debug,
     reason = "Example code"
 )]
 
 use std::{ffi::OsStr, fs, path::Path, process};
 
 use docopt::Docopt;
-use threema_gateway::ApiBuilder;
+use imagesize::ImageType;
+use threema_gateway::{
+    ApiBuilder, FileData, encrypt_file_data,
+    protocol::e2e::file::{FileMessage, RenderingType},
+};
 
 const USAGE: &str = "
-Usage: send_e2e_image [options] <from> <to> <secret> <private-key> <path-to-jpegfile>
+Usage: send_e2e_image [options] <from> <to> <secret> <private-key> <path-to-image-file>
 
 Options:
     -h, --help    Show this help
@@ -39,17 +44,45 @@ async fn main() {
     let to = args.get_str("<to>");
     let secret = args.get_str("<secret>");
     let private_key = args.get_str("<private-key>");
-    let path = Path::new(args.get_str("<path-to-jpegfile>"));
+    let path = Path::new(args.get_str("<path-to-image-file>"));
 
     // Make sure that the file exists
     if !path.exists() {
-        println!("File at {path:?} does not exist");
+        eprintln!("File at {path:?} does not exist");
         process::exit(1);
     }
-    if path.extension() != Some(OsStr::new("jpg")) {
-        println!("File at {path:?} must end with .jpg");
-        process::exit(1);
-    }
+
+    // Read image file
+    let img_data = etry!(fs::read(path), "Could not read file");
+    let file_size_bytes =
+        u32::try_from(img_data.len()).expect("Image data length does not fit in u32");
+
+    // Ensure that file is a JPEG or PNG file
+    let media_type = match imagesize::image_type(&img_data) {
+        Ok(ImageType::Jpeg) => "image/jpeg",
+        Ok(ImageType::Png) => "image/png",
+        Ok(_other) => {
+            eprintln!("File at {path:?} must be a JPG or PNG image");
+            process::exit(1);
+        }
+        Err(_) => {
+            eprintln!("Could not determine image type for file {path:?}");
+            process::exit(1);
+        }
+    };
+
+    // Extract image dimensions
+    let dimensions = match imagesize::blob_size(&img_data) {
+        Ok(size) => {
+            let width = u32::try_from(size.width).expect("Image width does not fit in u32");
+            let height = u32::try_from(size.height).expect("Image height does not fit in u32");
+            Some((width, height))
+        }
+        Err(error) => {
+            eprintln!("Warning: Could not determine image dimensions: {error}");
+            None
+        }
+    };
 
     // Create E2eApi instance
     let api = ApiBuilder::new(from, secret)
@@ -59,44 +92,43 @@ async fn main() {
 
     // Fetch recipient public key
     // Note: In a real application, you should cache the public key
-    let recipient_key = api.lookup_pubkey(to).await.unwrap_or_else(|error| {
-        println!("Could not fetch public key: {error}");
-        process::exit(1);
-    });
+    let recipient_key = etry!(api.lookup_pubkey(to).await, "Could not fetch public key");
 
-    // Encrypt image
-    let img_data = etry!(fs::read(path), "Could not read file");
-    let encrypted_image = api
-        .encrypt_raw(&img_data, &recipient_key)
-        .unwrap_or_else(|_| {
-            println!("Could encrypt raw msg");
-            process::exit(1);
-        });
+    // Encrypt file data
+    //
+    // NOTE: In real world code you should use a thumbnail re-scaled to
+    // 512x512px. In this example, we skip the thumbnail to avoid having
+    // to pull in an image downscaling dependency and re-use the full
+    // sized file,
+    let file_data = FileData {
+        file: img_data.clone(),
+        thumbnail: None,
+    };
+    let (encrypted, key) = etry!(encrypt_file_data(&file_data), "Could not encrypt file data");
 
-    // Upload image to blob server
-    let blob_id = api
-        .blob_upload(&encrypted_image, false)
-        .await
-        .unwrap_or_else(|error| {
-            println!("Could not upload image to blob server: {error}");
-            process::exit(1);
-        });
+    // Upload encrypted image to blob server
+    let blob_id = etry!(
+        api.blob_upload_raw(&encrypted.file, false).await,
+        "Could not upload image to blob server"
+    );
 
-    // Create image message
-    let msg = api
-        .encrypt_image_msg(
-            &blob_id,
-            u32::try_from(img_data.len()).expect("Image data length does not fit in u32"),
-            &encrypted_image.nonce,
-            &recipient_key,
-        )
-        .unwrap_or_else(|error| {
-            println!("Could not encrypt image msg: {error}");
-            process::exit(1);
-        });
+    // Build file message with media rendering type
+    let file_name = path.file_name().and_then(OsStr::to_str);
+    let mut builder = FileMessage::builder(blob_id, key, media_type, file_size_bytes)
+        .file_name_opt(file_name)
+        .rendering_type(RenderingType::Media)
+        .animated(false);
+    if let Some((width, height)) = dimensions {
+        builder = builder.dimensions(height, width);
+    }
+    let msg = etry!(builder.build(), "Could not build FileMessage");
 
-    // Send
-    let msg_id = api.send(to, &msg, false).await;
+    // Encrypt and send
+    let encrypted = etry!(
+        api.encode_and_encrypt(&msg.into(), &recipient_key),
+        "Could not encrypt message"
+    );
+    let msg_id = api.send(to, &encrypted, false).await;
     match msg_id {
         Ok(id) => println!("Sent. Message id is {id}."),
         Err(error) => println!("Could not send message: {error}"),

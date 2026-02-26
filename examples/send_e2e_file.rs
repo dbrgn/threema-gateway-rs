@@ -127,7 +127,7 @@ async fn main() {
         .build()
         .expect("Could not build FileMessage");
     let encrypted = etry!(
-        api.encrypt_file_msg(&msg, &recipient_key),
+        api.encode_and_encrypt(&msg.into(), &recipient_key),
         "Could not encrypt file msg"
     );
 
