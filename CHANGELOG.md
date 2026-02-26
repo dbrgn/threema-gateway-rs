@@ -43,12 +43,6 @@ File message improvements:
 - [changed] The `FileMessageBuilder::new` constructor is not public anymore,
   use `FileMessage::builder` instead
 
-MessageId newtype:
-
-- [added] Add `MessageId` newtype
-- [changed] Change `IncomingMessage.message_id` type from `String` to
-  `MessageId`
-
 Cache:
 
 - [added] Add an `InMemoryPublicKeyCache` backed by the moka crate. Enabled
@@ -58,6 +52,13 @@ Cache:
 - [changed] The `cache` module is now exposed directly. The `PublicKeyCache`
   trait is not re-exported at top level anymore, import it from the `cache`
   module.
+
+Other:
+
+- [added] Expose own public key through `E2eApi::public_key`
+- [added] Add `MessageId` newtype
+- [changed] Change `IncomingMessage.message_id` type from `String` to
+  `MessageId`
 
 ### v0.19.0 (2026-01-04)
 
