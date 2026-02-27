@@ -5,6 +5,7 @@ use crate::errors::MessageDecodeError;
 pub mod delivery_receipt;
 pub mod file;
 pub mod location;
+pub mod typing_indicator;
 
 /// A message type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -21,6 +22,8 @@ pub enum MessageType {
     Location,
     /// Delivery receipt (received / read)
     DeliveryReceipt,
+    /// Typing indicator
+    TypingIndicator,
     /// Another message type
     Other(u8),
 }
@@ -34,6 +37,7 @@ impl From<MessageType> for u8 {
             MessageType::File => 0x17,
             MessageType::Location => 0x10,
             MessageType::DeliveryReceipt => 0x80,
+            MessageType::TypingIndicator => 0x90,
             MessageType::Other(msgtype_byte) => msgtype_byte,
         }
     }
@@ -48,6 +52,7 @@ impl From<u8> for MessageType {
             0x13 => MessageType::Video,
             0x17 => MessageType::File,
             0x80 => MessageType::DeliveryReceipt,
+            0x90 => MessageType::TypingIndicator,
             other => MessageType::Other(other),
         }
     }
@@ -72,6 +77,8 @@ pub enum E2eMessage {
     Location(location::LocationMessage),
     /// Delivery receipt message
     DeliveryReceipt(delivery_receipt::DeliveryReceiptMessage),
+    /// Typing indicator message
+    TypingIndicator(typing_indicator::TypingIndicatorMessage),
     /// Another message
     Other {
         /// The message type
@@ -102,6 +109,10 @@ impl E2eMessage {
             Self::DeliveryReceipt(delivery_receipt_message) => EncodedE2eMessage {
                 message_type: MessageType::DeliveryReceipt,
                 message_bytes: delivery_receipt_message.encode(),
+            },
+            Self::TypingIndicator(typing_indicator_message) => EncodedE2eMessage {
+                message_type: MessageType::TypingIndicator,
+                message_bytes: typing_indicator_message.encode(),
             },
             Self::Other {
                 message_type,
@@ -141,6 +152,11 @@ impl E2eMessage {
                 let delivery_receipt_message =
                     delivery_receipt::DeliveryReceiptMessage::decode(message_bytes)?;
                 Ok(Self::DeliveryReceipt(delivery_receipt_message))
+            }
+            MessageType::TypingIndicator => {
+                let typing_indicator_message =
+                    typing_indicator::TypingIndicatorMessage::decode(message_bytes)?;
+                Ok(Self::TypingIndicator(typing_indicator_message))
             }
             other => Ok(Self::Other {
                 message_type: other,
@@ -184,6 +200,12 @@ impl From<location::LocationMessage> for E2eMessage {
 impl From<delivery_receipt::DeliveryReceiptMessage> for E2eMessage {
     fn from(value: delivery_receipt::DeliveryReceiptMessage) -> Self {
         E2eMessage::DeliveryReceipt(value)
+    }
+}
+
+impl From<typing_indicator::TypingIndicatorMessage> for E2eMessage {
+    fn from(value: typing_indicator::TypingIndicatorMessage) -> Self {
+        E2eMessage::TypingIndicator(value)
     }
 }
 
