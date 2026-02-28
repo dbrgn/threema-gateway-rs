@@ -7,7 +7,11 @@ use log::{debug, trace};
 use reqwest::{Client, multipart};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::{EncryptedMessage, SDK_HEADER, SDK_USER_AGENT, errors::ApiError, protocol::BlobId};
+use crate::{
+    EncryptedMessage, SDK_HEADER, SDK_USER_AGENT,
+    errors::ApiError,
+    protocol::{BlobId, MessageId},
+};
 
 /// Map HTTP response status code to an [`ApiError`] if it isn't "200".
 ///
@@ -88,7 +92,7 @@ pub(crate) async fn send_simple(
     to: &Recipient<'_>,
     secret: &str,
     text: &str,
-) -> Result<String, ApiError> {
+) -> Result<MessageId, ApiError> {
     debug!("Sending transport encrypted message from {from} to {to:?}");
 
     // Check text length (max 3500 bytes)
@@ -120,8 +124,11 @@ pub(crate) async fn send_simple(
     trace!("Received HTTP response");
     map_response_code(res.status().as_u16(), Some(ApiError::BadSenderOrRecipient))?;
 
-    // Read and return response body
-    Ok(res.text().await?)
+    // Read and parse response body as message ID
+    let body = res.text().await?;
+    body.trim()
+        .parse()
+        .map_err(|err| ApiError::ParseError(format!("invalid message ID: {err}")))
 }
 
 /// Send an encrypted E2E message to the specified recipient.
@@ -136,7 +143,7 @@ pub(crate) async fn send_e2e(
     ciphertext: &[u8],
     delivery_receipts: bool,
     additional_params: Option<HashMap<String, String>>,
-) -> Result<String, ApiError> {
+) -> Result<MessageId, ApiError> {
     debug!("Sending e2e encrypted message from {from} to {to}");
 
     // Prepare POST data
@@ -162,8 +169,11 @@ pub(crate) async fn send_e2e(
     trace!("Received HTTP response");
     map_response_code(res.status().as_u16(), Some(ApiError::BadSenderOrRecipient))?;
 
-    // Read and return response body
-    Ok(res.text().await?)
+    // Read and parse response body as message ID
+    let body = res.text().await?;
+    body.trim()
+        .parse()
+        .map_err(|err| ApiError::ParseError(format!("invalid message ID: {err}")))
 }
 
 /// An end-to-end encrypted message for a specific recipient.
@@ -236,7 +246,7 @@ pub enum BulkE2eMessageSendStatus {
     Success {
         /// The message ID of the sent message
         #[serde(rename = "messageId")]
-        message_id: String,
+        message_id: MessageId,
     },
     /// Error response with error code
     Error {
@@ -261,9 +271,9 @@ impl BulkE2eMessageSendStatus {
 
     /// Returns the message ID if the message was sent successfully, or `None` if it failed.
     #[must_use]
-    pub fn message_id(&self) -> Option<&str> {
+    pub fn message_id(&self) -> Option<MessageId> {
         match self {
-            BulkE2eMessageSendStatus::Success { message_id } => Some(message_id),
+            BulkE2eMessageSendStatus::Success { message_id } => Some(*message_id),
             BulkE2eMessageSendStatus::Error { .. } => None,
         }
     }
@@ -402,7 +412,7 @@ pub(crate) async fn blob_download(
 mod tests {
     use super::*;
 
-    use crate::{MSGAPI_URL, errors::ApiError};
+    use crate::{MSGAPI_URL, errors::ApiError, protocol::MessageId};
 
     #[tokio::test]
     async fn simple_max_length_ok() {
@@ -445,10 +455,13 @@ mod tests {
     #[test]
     fn bulk_e2e_send_status_json_parsing() {
         // Test success status with messageId
-        let success_json = r#"{"messageId": "abc123def456"}"#;
+        let success_json = r#"{"messageId": "0102030405060708"}"#;
         let success_status: BulkE2eMessageSendStatus = serde_json::from_str(success_json).unwrap();
         if let BulkE2eMessageSendStatus::Success { message_id } = success_status {
-            assert_eq!(message_id, "abc123def456");
+            assert_eq!(
+                message_id,
+                MessageId::from_hex_le("0102030405060708").unwrap()
+            );
         } else {
             panic!("Expected Success variant");
         }
@@ -463,11 +476,15 @@ mod tests {
         }
 
         // Test success status with extra fields (should still work)
-        let success_with_extra_json = r#"{"messageId": "xyz789", "extraField": "ignored"}"#;
+        let success_with_extra_json =
+            r#"{"messageId": "a1b2c3d4e5f60718", "extraField": "ignored"}"#;
         let success_with_extra: BulkE2eMessageSendStatus =
             serde_json::from_str(success_with_extra_json).unwrap();
         if let BulkE2eMessageSendStatus::Success { message_id } = success_with_extra {
-            assert_eq!(message_id, "xyz789");
+            assert_eq!(
+                message_id,
+                MessageId::from_hex_le("a1b2c3d4e5f60718").unwrap()
+            );
         } else {
             panic!("Expected Success variant");
         }
@@ -497,11 +514,14 @@ mod tests {
     #[test]
     fn bulk_e2e_status_convenience_methods() {
         // Test success status convenience methods
-        let success_json = r#"{"messageId": "test123"}"#;
+        let success_json = r#"{"messageId": "0807060504030201"}"#;
         let success_status: BulkE2eMessageSendStatus = serde_json::from_str(success_json).unwrap();
         assert!(success_status.is_success());
         assert!(!success_status.is_error());
-        assert_eq!(success_status.message_id(), Some("test123"));
+        assert_eq!(
+            success_status.message_id(),
+            Some(MessageId::from_hex_le("0807060504030201").unwrap()),
+        );
         assert!(success_status.error().is_none());
 
         // Test error status convenience methods

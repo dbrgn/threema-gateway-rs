@@ -24,7 +24,7 @@ use crate::{
         lookup_id, lookup_ids_bulk, lookup_pubkey, lookup_pubkeys_bulk,
     },
     protocol::{
-        BlobId,
+        BlobId, MessageId,
         e2e::{E2eMessage, MessageType, file::FileMessage},
     },
 };
@@ -211,7 +211,7 @@ impl SimpleApi {
     /// Gateway server.
     ///
     /// Cost: 1 credit.
-    pub async fn send(&self, to: &Recipient<'_>, text: &str) -> Result<String, ApiError> {
+    pub async fn send(&self, to: &Recipient<'_>, text: &str) -> Result<MessageId, ApiError> {
         send_simple(
             &self.client,
             self.endpoint.borrow(),
@@ -376,7 +376,7 @@ impl E2eApi {
         to: &str,
         message: &EncryptedMessage,
         delivery_receipts: bool,
-    ) -> Result<String, ApiError> {
+    ) -> Result<MessageId, ApiError> {
         send_e2e(
             &self.client,
             self.endpoint.borrow(),
@@ -426,7 +426,7 @@ impl E2eApi {
         message: &EncryptedMessage,
         delivery_receipts: bool,
         additional_params: HashMap<String, String>,
-    ) -> Result<String, ApiError> {
+    ) -> Result<MessageId, ApiError> {
         send_e2e(
             &self.client,
             self.endpoint.borrow(),
