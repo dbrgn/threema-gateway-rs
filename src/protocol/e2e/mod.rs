@@ -177,6 +177,19 @@ impl E2eMessage {
             .ok_or(MessageDecodeError::EmptyMessage)?;
         Self::decode(MessageType::from(type_byte), payload)
     }
+
+    /// Return the associated message type.
+    #[must_use]
+    pub fn message_type(&self) -> MessageType {
+        match self {
+            E2eMessage::Text(_) => MessageType::Text,
+            E2eMessage::File(_) => MessageType::File,
+            E2eMessage::Location(_) => MessageType::Location,
+            E2eMessage::DeliveryReceipt(_) => MessageType::DeliveryReceipt,
+            E2eMessage::TypingIndicator(_) => MessageType::TypingIndicator,
+            E2eMessage::Other { message_type, .. } => *message_type,
+        }
+    }
 }
 
 impl From<String> for E2eMessage {
@@ -527,6 +540,26 @@ mod tests {
                 panic!("expected Text variant");
             };
             assert_eq!(text, "");
+        }
+    }
+
+    mod e2e_message_type {
+        use crate::{E2eMessage, protocol::e2e::MessageType};
+
+        #[test]
+        fn message_type_text() {
+            let message_type = E2eMessage::Text("hello".into()).message_type();
+            assert_eq!(message_type, MessageType::Text);
+        }
+
+        #[test]
+        fn message_type_other() {
+            let message_type = E2eMessage::Other {
+                message_type: MessageType::Video,
+                message_bytes: vec![],
+            }
+            .message_type();
+            assert_eq!(message_type, MessageType::Video);
         }
     }
 }
