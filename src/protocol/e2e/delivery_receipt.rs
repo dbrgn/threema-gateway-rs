@@ -60,8 +60,7 @@ pub enum DeliveryReceiptMessageParseError {
 
 /// A delivery receipt message.
 ///
-/// Contains a [`DeliveryReceipt`] status and one or more message IDs (as
-/// `u64`) whose status should be updated.
+/// Contains a [`DeliveryReceipt`] status and one or more message IDs whose status should be updated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DeliveryReceiptMessage {
     /// The delivery receipt status

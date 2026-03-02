@@ -18,6 +18,13 @@ text and file messages, implementations for location messages and delivery
 receipts are provided as well. Additionally, two optional cache implementations
 are provided: In-memory and Redis.
 
+Message ID:
+
+- [added] Add `MessageId` newtype
+- [changed] Change `IncomingMessage.message_id` type from `String` to
+  `MessageId`
+- [changed] Change return type of sending methods from `String` to `MessageId`
+
 End-to-end protocol:
 
 - [added] Add `E2eMessage` type
@@ -58,9 +65,6 @@ Cache:
 Other:
 
 - [added] Expose own public key through `E2eApi::public_key`
-- [added] Add `MessageId` newtype
-- [changed] Change `IncomingMessage.message_id` type from `String` to
-  `MessageId`
 
 ### v0.19.0 (2026-01-04)
 

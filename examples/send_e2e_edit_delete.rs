@@ -11,10 +11,7 @@ use std::{process, time::Duration};
 use docopt::Docopt;
 use threema_gateway::{
     ApiBuilder, EncryptedMessage,
-    protocol::{
-        MessageId,
-        e2e::edit_delete::{DeleteMessage, EditMessage},
-    },
+    protocol::e2e::edit_delete::{DeleteMessage, EditMessage},
 };
 use tokio::time::sleep;
 
@@ -57,7 +54,7 @@ async fn main() {
         match msg_id {
             Ok(id) => {
                 println!("Sent {msgtype} message. Message id is {id}.");
-                MessageId::from_hex_le(&id).expect("message id returned by server should be valid")
+                id
             }
             Err(error) => {
                 eprintln!("Could not send message: {error}");
