@@ -8,6 +8,7 @@ RUN apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
     build-essential pkg-config musl-tools ca-certificates \
     neovim less git curl ripgrep locales \
+    protobuf-compiler \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Locale setup
