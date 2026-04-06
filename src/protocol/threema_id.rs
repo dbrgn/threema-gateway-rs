@@ -2,7 +2,7 @@
 
 use std::{fmt, str, str::FromStr};
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de};
 use thiserror::Error;
 
 /// Invalid [`ThreemaId`].
@@ -18,8 +18,7 @@ pub enum ThreemaIdError {
 }
 
 /// A valid Threema ID.
-#[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
-#[serde(try_from = "&str", into = "String")]
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize)]
 pub struct ThreemaId([u8; Self::LENGTH]);
 
 impl ThreemaId {
@@ -65,6 +64,26 @@ impl fmt::Debug for ThreemaId {
 impl From<ThreemaId> for String {
     fn from(id: ThreemaId) -> Self {
         id.as_str().to_owned()
+    }
+}
+
+impl<'de> Deserialize<'de> for ThreemaId {
+    fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct ThreemaIdVisitor;
+
+        impl de::Visitor<'_> for ThreemaIdVisitor {
+            type Value = ThreemaId;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                formatter.write_str("a string of exactly 8 ASCII characters")
+            }
+
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                ThreemaId::try_from(v).map_err(E::custom)
+            }
+        }
+
+        deserializer.deserialize_str(ThreemaIdVisitor)
     }
 }
 
@@ -155,5 +174,24 @@ mod tests {
             ThreemaId::try_from(input),
             Err(ThreemaIdError::InvalidSymbols)
         ));
+    }
+
+    mod deserialize {
+        use super::ThreemaId;
+
+        /// Deserialize from borrowed `&str` (e.g. `serde_json::from_str`).
+        #[test]
+        fn from_borrowed_str() {
+            let id: ThreemaId = serde_json::from_str("\"ECHOECHO\"").unwrap();
+            assert_eq!(id.as_str(), "ECHOECHO");
+        }
+
+        /// Deserialize from owned `String` (e.g. `serde_json::from_value`).
+        #[test]
+        fn from_owned_string() {
+            let value = serde_json::Value::String("ECHOECHO".to_owned());
+            let id: ThreemaId = serde_json::from_value(value).unwrap();
+            assert_eq!(id.as_str(), "ECHOECHO");
+        }
     }
 }
