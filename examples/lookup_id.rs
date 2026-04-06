@@ -1,10 +1,15 @@
 //! Example: Lookup ID
-#![allow(clippy::print_stdout, clippy::panic, reason = "Example code")]
+#![allow(
+    clippy::print_stdout,
+    clippy::panic,
+    clippy::unwrap_used,
+    reason = "Example code"
+)]
 
 use std::process;
 
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, LookupCriterion};
+use threema_gateway::{ApiBuilder, LookupCriterion, ThreemaId};
 
 const USAGE: &str = "
 Usage: lookup_id [options] by_phone <from> <secret> <phone>
@@ -23,7 +28,7 @@ async fn main() {
         .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
-    let from = args.get_str("<from>");
+    let from = ThreemaId::try_from(args.get_str("<from>")).unwrap();
     let secret = args.get_str("<secret>");
     let criterion = if args.get_bool("by_phone") {
         LookupCriterion::Phone(args.get_str("<phone>").to_owned())

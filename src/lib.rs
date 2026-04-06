@@ -11,9 +11,9 @@
 //!
 //! ```no_run
 //! # tokio_test::block_on(async {
-//! use threema_gateway::{ApiBuilder, Recipient};
+//! use threema_gateway::{ApiBuilder, Recipient, ThreemaId};
 //!
-//! let from = "*YOUR_ID";
+//! let from = ThreemaId::try_from("*YOUR0ID").unwrap();
 //! let to = Recipient::new_email("user@example.com");
 //! let secret = "your-gateway-secret";
 //! let text = "Very secret message!";
@@ -31,10 +31,10 @@
 //!
 //! ```no_run
 //! # tokio_test::block_on(async {
-//! use threema_gateway::{ApiBuilder, E2eMessage, RecipientKey};
+//! use threema_gateway::{ApiBuilder, E2eMessage, RecipientKey, ThreemaId};
 //!
-//! let from = "*YOUR_ID";
-//! let to = "ECHOECHO";
+//! let from = ThreemaId::try_from("*YOUR0ID").unwrap();
+//! let to = ThreemaId::try_from("ECHOECHO").unwrap();
 //! let secret = "your-gateway-secret";
 //! let private_key = "your-private-key";
 //! let text = "Very secret message!";
@@ -47,7 +47,7 @@
 //!
 //! // Fetch recipient public key
 //! // Note: In a real application, you should cache the public key
-//! let recipient_key = api.lookup_pubkey(to).await.unwrap();
+//! let recipient_key = api.lookup_pubkey(&to).await.unwrap();
 //!
 //! // Encrypt
 //! let msg = E2eMessage::Text(text.into());

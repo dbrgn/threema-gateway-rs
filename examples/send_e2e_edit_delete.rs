@@ -10,7 +10,7 @@ use std::{process, time::Duration};
 
 use docopt::Docopt;
 use threema_gateway::{
-    ApiBuilder, EncryptedMessage,
+    ApiBuilder, EncryptedMessage, ThreemaId,
     protocol::e2e::edit_delete::{DeleteMessage, EditMessage},
 };
 use tokio::time::sleep;
@@ -29,8 +29,8 @@ async fn main() {
         .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
-    let from = args.get_str("<from>");
-    let to = args.get_str("<to>");
+    let from = ThreemaId::try_from(args.get_str("<from>")).unwrap();
+    let to = ThreemaId::try_from(args.get_str("<to>")).unwrap();
     let secret = args.get_str("<secret>");
     let private_key = args.get_str("<private-key>");
     let text = args.get_vec("<text>").join(" ");
@@ -43,14 +43,14 @@ async fn main() {
 
     // Fetch recipient public key
     // Note: In a real application, you should cache the public key
-    let recipient_key = api.lookup_pubkey(to).await.unwrap_or_else(|error| {
+    let recipient_key = api.lookup_pubkey(&to).await.unwrap_or_else(|error| {
         eprintln!("Could not fetch public key: {error}");
         process::exit(1);
     });
 
     // Helper function
     let send = async |encrypted: EncryptedMessage, msgtype: &'static str| {
-        let msg_id = api.send(to, &encrypted, false).await;
+        let msg_id = api.send(&to, &encrypted, false).await;
         match msg_id {
             Ok(id) => {
                 println!("Sent {msgtype} message. Message id is {id}.");

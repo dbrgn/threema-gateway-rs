@@ -4,7 +4,7 @@
 use std::process;
 
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, protocol::e2e::location::LocationMessage};
+use threema_gateway::{ApiBuilder, ThreemaId, protocol::e2e::location::LocationMessage};
 
 const USAGE: &str = "
 Usage: send_e2e_location [options] <from> <to> <secret> <private-key> <latitude> <longitude>
@@ -24,8 +24,8 @@ async fn main() {
         .and_then(|docopt| docopt.parse())
         .unwrap_or_else(|error| error.exit());
 
-    let from = args.get_str("<from>");
-    let to = args.get_str("<to>");
+    let from = ThreemaId::try_from(args.get_str("<from>")).unwrap();
+    let to = ThreemaId::try_from(args.get_str("<to>")).unwrap();
     let secret = args.get_str("<secret>");
     let private_key = args.get_str("<private-key>");
     let latitude: f64 = args.get_str("<latitude>").parse().unwrap_or_else(|error| {
@@ -70,7 +70,7 @@ async fn main() {
         });
 
     // Fetch public key
-    let recipient_key = api.lookup_pubkey(to).await.unwrap_or_else(|error| {
+    let recipient_key = api.lookup_pubkey(&to).await.unwrap_or_else(|error| {
         println!("Could not fetch public key: {error}");
         process::exit(1);
     });
@@ -82,7 +82,7 @@ async fn main() {
             println!("Could not encrypt location msg: {error}");
             process::exit(1);
         });
-    let msg_id = api.send(to, &encrypted, false).await;
+    let msg_id = api.send(&to, &encrypted, false).await;
     match msg_id {
         Ok(id) => println!("Sent. Message id is {id}."),
         Err(error) => println!("Could not send message: {error}"),

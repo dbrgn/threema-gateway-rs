@@ -12,6 +12,7 @@ use sha2::Sha256;
 
 use crate::{
     RecipientKey, SDK_HEADER, SDK_USER_AGENT, connection::map_response_code, errors::ApiError,
+    protocol::ThreemaId,
 };
 
 type HmacSha256 = Hmac<Sha256>;
@@ -164,13 +165,13 @@ impl fmt::Display for Capabilities {
 pub(crate) async fn lookup_pubkey(
     client: &Client,
     endpoint: &str,
-    our_id: &str,
-    their_id: &str,
+    our_id: &ThreemaId,
+    their_id: &ThreemaId,
     secret: &str,
 ) -> Result<RecipientKey, ApiError> {
     let url = reqwest::Url::parse(endpoint)?
         .join("pubkeys/")?
-        .join(their_id)?;
+        .join(their_id.as_str())?;
 
     debug!("Looking up public key for {their_id}");
 
@@ -178,7 +179,7 @@ pub(crate) async fn lookup_pubkey(
     let res = client
         .get(url)
         .header(SDK_HEADER, SDK_USER_AGENT)
-        .query(&[("from", our_id), ("secret", secret)])
+        .query(&[("from", our_id.as_str()), ("secret", secret)])
         .send()
         .await?;
     map_response_code(res.status().as_u16(), None)?;
@@ -205,7 +206,7 @@ pub(crate) async fn lookup_pubkey(
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct IdentityPublicKey {
-    identity: String,
+    identity: ThreemaId,
     public_key: RecipientKey,
 }
 
@@ -213,10 +214,10 @@ struct IdentityPublicKey {
 pub(crate) async fn lookup_pubkeys_bulk(
     client: &Client,
     endpoint: &str,
-    our_id: &str,
-    their_ids: &[&str],
+    our_id: &ThreemaId,
+    their_ids: &[ThreemaId],
     secret: &str,
-) -> Result<HashMap<String, RecipientKey>, ApiError> {
+) -> Result<HashMap<ThreemaId, RecipientKey>, ApiError> {
     // Build URL
     let url = format!("{endpoint}/pubkeys/bulk");
 
@@ -228,7 +229,7 @@ pub(crate) async fn lookup_pubkeys_bulk(
     let res = client
         .post(&url)
         .header(SDK_HEADER, SDK_USER_AGENT)
-        .query(&[("from", our_id), ("secret", secret)])
+        .query(&[("from", our_id.as_str()), ("secret", secret)])
         .json(&json)
         .send()
         .await?;
@@ -248,9 +249,9 @@ pub(crate) async fn lookup_id(
     client: &Client,
     endpoint: &str,
     criterion: &LookupCriterion,
-    our_id: &str,
+    our_id: &ThreemaId,
     secret: &str,
-) -> Result<String, ApiError> {
+) -> Result<ThreemaId, ApiError> {
     // Build URL
     let url = match criterion {
         LookupCriterion::Phone(val) => format!("{endpoint}/lookup/phone/{val}"),
@@ -265,13 +266,15 @@ pub(crate) async fn lookup_id(
     let res = client
         .get(url)
         .header(SDK_HEADER, SDK_USER_AGENT)
-        .query(&[("from", our_id), ("secret", secret)])
+        .query(&[("from", our_id.as_str()), ("secret", secret)])
         .send()
         .await?;
     map_response_code(res.status().as_u16(), Some(ApiError::BadHashLength))?;
 
-    // Read and return response body
-    Ok(res.text().await?)
+    // Read and parse response body as Threema ID
+    let body = res.text().await?;
+    ThreemaId::try_from(body.trim())
+        .map_err(|err| ApiError::ParseError(format!("invalid Threema ID: {err}")))
 }
 
 #[derive(Serialize, Default)]
@@ -286,7 +289,7 @@ struct BulkIdLookupRequest {
 #[serde(rename_all = "camelCase")]
 pub struct BulkIdentityPublicKey {
     /// The identity
-    pub identity: String,
+    pub identity: ThreemaId,
     /// Public key belonging to the identity
     pub public_key: RecipientKey,
     /// Phone hash belonging to the identity (if any)
@@ -304,7 +307,7 @@ pub(crate) async fn lookup_ids_bulk(
     client: &Client,
     endpoint: &str,
     criteria: &[&LookupCriterion],
-    our_id: &str,
+    our_id: &ThreemaId,
     secret: &str,
 ) -> Result<Vec<BulkIdentityPublicKey>, ApiError> {
     let mut ids = BulkIdLookupRequest::default();
@@ -333,7 +336,7 @@ pub(crate) async fn lookup_ids_bulk(
     let res = client
         .post(&url)
         .header(SDK_HEADER, SDK_USER_AGENT)
-        .query(&[("from", our_id), ("secret", secret)])
+        .query(&[("from", our_id.as_str()), ("secret", secret)])
         .json(&ids)
         .send()
         .await?;
@@ -347,7 +350,7 @@ pub(crate) async fn lookup_ids_bulk(
 pub(crate) async fn lookup_credits(
     client: &Client,
     endpoint: &str,
-    our_id: &str,
+    our_id: &ThreemaId,
     secret: &str,
 ) -> Result<i64, ApiError> {
     let url = format!("{endpoint}/credits");
@@ -358,7 +361,7 @@ pub(crate) async fn lookup_credits(
     let res = client
         .get(url)
         .header(SDK_HEADER, SDK_USER_AGENT)
-        .query(&[("from", our_id), ("secret", secret)])
+        .query(&[("from", our_id.as_str()), ("secret", secret)])
         .send()
         .await?;
     map_response_code(res.status().as_u16(), None)?;
@@ -374,13 +377,13 @@ pub(crate) async fn lookup_credits(
 pub(crate) async fn lookup_capabilities(
     client: &Client,
     endpoint: &str,
-    our_id: &str,
-    their_id: &str,
+    our_id: &ThreemaId,
+    their_id: &ThreemaId,
     secret: &str,
 ) -> Result<Capabilities, ApiError> {
     let url = reqwest::Url::parse(endpoint)?
         .join("capabilities/")?
-        .join(their_id)?;
+        .join(their_id.as_str())?;
 
     debug!("Looking up capabilities for {their_id}");
 
@@ -388,7 +391,7 @@ pub(crate) async fn lookup_capabilities(
     let res = client
         .get(url)
         .header(SDK_HEADER, SDK_USER_AGENT)
-        .query(&[("from", our_id), ("secret", secret)])
+        .query(&[("from", our_id.as_str()), ("secret", secret)])
         .send()
         .await?;
     map_response_code(res.status().as_u16(), Some(ApiError::BadHashLength))?;

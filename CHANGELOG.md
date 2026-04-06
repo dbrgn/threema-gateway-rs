@@ -15,15 +15,23 @@ Possible log types:
 
 This release adds support for end-to-end message encoding and decoding. Besides
 text and file messages, implementations for location messages and delivery
-receipts are provided as well. Additionally, two optional cache implementations
-are provided: In-memory and Redis.
+receipts are provided as well.
 
-Message ID:
+Additionally, `ThreemaId` and `MessageId` newtypes are provided. All APIs are
+updated to use these newtypes. This is a breaking change that will probably
+affect all consumers of this library.
+
+For consumers that make use of the `PublicKeyCache` trait, two optional cache
+implementations are provided: In-memory and Redis.
+
+Newtypes:
 
 - [added] Add `MessageId` newtype
+- [added] Add `ThreemaId` newtype
 - [changed] Change `IncomingMessage.message_id` type from `String` to
   `MessageId`
 - [changed] Change return type of sending methods from `String` to `MessageId`
+- [changed] Change all usages of string based Threema IDs to use `ThreemaId`
 
 End-to-end protocol:
 

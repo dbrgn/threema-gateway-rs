@@ -12,7 +12,7 @@ use std::{ffi::OsStr, fs, path::Path, process};
 use docopt::Docopt;
 use imagesize::ImageType;
 use threema_gateway::{
-    ApiBuilder, FileData, encrypt_file_data,
+    ApiBuilder, FileData, ThreemaId, encrypt_file_data,
     protocol::e2e::file::{FileMessage, RenderingType},
 };
 
@@ -40,8 +40,8 @@ async fn main() {
         .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
-    let from = args.get_str("<from>");
-    let to = args.get_str("<to>");
+    let from = ThreemaId::try_from(args.get_str("<from>")).unwrap();
+    let to = ThreemaId::try_from(args.get_str("<to>")).unwrap();
     let secret = args.get_str("<secret>");
     let private_key = args.get_str("<private-key>");
     let path = Path::new(args.get_str("<path-to-image-file>"));
@@ -92,7 +92,7 @@ async fn main() {
 
     // Fetch recipient public key
     // Note: In a real application, you should cache the public key
-    let recipient_key = etry!(api.lookup_pubkey(to).await, "Could not fetch public key");
+    let recipient_key = etry!(api.lookup_pubkey(&to).await, "Could not fetch public key");
 
     // Encrypt file data
     //
@@ -128,7 +128,7 @@ async fn main() {
         api.encode_and_encrypt(&msg.into(), &recipient_key),
         "Could not encrypt message"
     );
-    let msg_id = api.send(to, &encrypted, false).await;
+    let msg_id = api.send(&to, &encrypted, false).await;
     match msg_id {
         Ok(id) => println!("Sent. Message id is {id}."),
         Err(error) => println!("Could not send message: {error}"),

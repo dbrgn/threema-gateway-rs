@@ -10,7 +10,9 @@ use std::process;
 
 use data_encoding::HEXLOWER_PERMISSIVE;
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, EncryptedFileData, Key, decrypt_file_data, protocol::BlobId};
+use threema_gateway::{
+    ApiBuilder, EncryptedFileData, Key, ThreemaId, decrypt_file_data, protocol::BlobId,
+};
 
 const USAGE: &str = "
 Usage: download_blob [options] <our-id> <secret> <private-key> <blob-id> [<blob-key>]
@@ -26,7 +28,7 @@ async fn main() {
         .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
-    let our_id = args.get_str("<our-id>");
+    let our_id = ThreemaId::try_from(args.get_str("<our-id>")).unwrap();
     let secret = args.get_str("<secret>");
     let private_key = args.get_str("<private-key>");
     let blob_id: BlobId = match args.get_str("<blob-id>").parse() {

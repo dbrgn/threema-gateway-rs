@@ -373,7 +373,7 @@ mod test {
         ]);
 
         // Set up API
-        let api = ApiBuilder::new("*3MAGWID", "1234")
+        let api = ApiBuilder::new("*3MAGWID".try_into().unwrap(), "1234")
             .with_private_key(own_sec.clone())
             .into_e2e()
             .unwrap();

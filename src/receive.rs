@@ -12,7 +12,7 @@ use sha2::Sha256;
 use crate::{
     crypto::NONCE_SIZE,
     errors::{ApiError, CryptoError},
-    protocol::MessageId,
+    protocol::{MessageId, ThreemaId},
 };
 
 type HmacSha256 = Hmac<Sha256>;
@@ -45,9 +45,9 @@ where
 #[serde(rename_all = "camelCase")]
 pub struct IncomingMessage {
     /// Sender identity (8 characters)
-    pub from: String,
+    pub from: ThreemaId,
     /// Your API identity (8 characters, usually starts with '*')
-    pub to: String,
+    pub to: ThreemaId,
     /// Message ID assigned by the sender
     pub message_id: MessageId,
     /// Message date set by the sender (UNIX timestamp)
@@ -179,8 +179,8 @@ mod tests {
         fn success() {
             let msg =
                 IncomingMessage::from_urlencoded_bytes(TEST_PAYLOAD, TEST_MAC_SECRET).unwrap();
-            assert_eq!(msg.from, "ECHOECHO");
-            assert_eq!(msg.to, "*TESTTST");
+            assert_eq!(msg.from, "ECHOECHO".try_into().unwrap());
+            assert_eq!(msg.to, "*TESTTST".try_into().unwrap());
             assert_eq!(msg.nonce, vec![0xff; 24]);
             assert_eq!(msg.box_data, vec![0x01, 0x23, 0x45, 0xab, 0xcd, 0xef]);
             assert_eq!(msg.nickname, None);
@@ -223,8 +223,8 @@ mod tests {
                 .expect("Failed to encrypt data");
 
             let msg = IncomingMessage {
-                from: "AAAAAAAA".into(),
-                to: "*BBBBBBB".into(),
+                from: "AAAAAAAA".try_into().unwrap(),
+                to: "*BBBBBBB".try_into().unwrap(),
                 message_id: MessageId::from_u64(0x0011_2233),
                 date: 0,
                 nonce: nonce.to_vec(),
@@ -246,8 +246,8 @@ mod tests {
             let sk = SecretKey::generate(&mut OsRng);
             let pk = sk.public_key();
             let msg = IncomingMessage {
-                from: "AAAAAAAA".into(),
-                to: "*BBBBBBB".into(),
+                from: "AAAAAAAA".try_into().unwrap(),
+                to: "*BBBBBBB".try_into().unwrap(),
                 message_id: MessageId::from_u64(0x0011_2233),
                 date: 0,
                 nonce: vec![1, 2, 3, 4], // Nonce too short!
@@ -279,8 +279,8 @@ mod tests {
                 .expect("Failed to encrypt data");
 
             let msg = IncomingMessage {
-                from: "AAAAAAAA".into(),
-                to: "*BBBBBBB".into(),
+                from: "AAAAAAAA".try_into().unwrap(),
+                to: "*BBBBBBB".try_into().unwrap(),
                 message_id: MessageId::from_u64(0x0011_2233),
                 date: 0,
                 nonce: nonce.to_vec(),

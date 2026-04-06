@@ -12,7 +12,7 @@ use std::time::Duration;
 use axum::{Router, body::Bytes, extract::State, http::StatusCode, routing::post};
 use data_encoding::HEXLOWER_PERMISSIVE;
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, E2eApi, SecretKey, cache::InMemoryPublicKeyCache};
+use threema_gateway::{ApiBuilder, E2eApi, SecretKey, ThreemaId, cache::InMemoryPublicKeyCache};
 use tokio::net::TcpListener;
 
 #[derive(Clone)]
@@ -49,7 +49,7 @@ async fn main() {
         .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
-    let our_id = args.get_str("<our-id>");
+    let our_id = ThreemaId::try_from(args.get_str("<our-id>")).unwrap();
     let secret = args.get_str("<secret>");
     let key_bytes = HEXLOWER_PERMISSIVE
         .decode(args.get_str("<private-key>").as_bytes())

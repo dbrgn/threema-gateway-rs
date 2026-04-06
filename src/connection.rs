@@ -10,7 +10,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use crate::{
     EncryptedMessage, SDK_HEADER, SDK_USER_AGENT,
     errors::ApiError,
-    protocol::{BlobId, MessageId},
+    protocol::{BlobId, MessageId, ThreemaId},
 };
 
 /// Map HTTP response status code to an [`ApiError`] if it isn't "200".
@@ -60,7 +60,7 @@ pub(crate) fn map_response_error_code(
 #[derive(Debug)]
 pub enum Recipient<'cow> {
     /// Recipient identity (8 characters)
-    Id(Cow<'cow, str>),
+    Id(ThreemaId),
     /// Recipient phone number (E.164), without leading +
     Phone(Cow<'cow, str>),
     /// Recipient e-mail address
@@ -69,8 +69,9 @@ pub enum Recipient<'cow> {
 
 impl<'cow> Recipient<'cow> {
     /// Create a `Recipient` from an identity.
-    pub fn new_id<T: Into<Cow<'cow, str>>>(id: T) -> Self {
-        Recipient::Id(id.into())
+    #[must_use]
+    pub fn new_id(id: ThreemaId) -> Self {
+        Recipient::Id(id)
     }
 
     /// Create a `Recipient` from a phone number.
@@ -88,7 +89,7 @@ impl<'cow> Recipient<'cow> {
 pub(crate) async fn send_simple(
     client: &Client,
     endpoint: &str,
-    from: &str,
+    from: &ThreemaId,
     to: &Recipient<'_>,
     secret: &str,
     text: &str,
@@ -103,11 +104,11 @@ pub(crate) async fn send_simple(
 
     // Prepare POST data
     let mut params = HashMap::new();
-    params.insert("from", from);
+    params.insert("from", from.as_str());
     params.insert("text", text);
     params.insert("secret", secret);
     match to {
-        Recipient::Id(id) => params.insert("to", id),
+        Recipient::Id(id) => params.insert("to", id.as_str()),
         Recipient::Phone(phone) => params.insert("phone", phone),
         Recipient::Email(email) => params.insert("email", email),
     };
@@ -136,8 +137,8 @@ pub(crate) async fn send_simple(
 pub(crate) async fn send_e2e(
     client: &Client,
     endpoint: &str,
-    from: &str,
-    to: &str,
+    from: &ThreemaId,
+    to: &ThreemaId,
     secret: &str,
     nonce: &[u8],
     ciphertext: &[u8],
@@ -148,8 +149,8 @@ pub(crate) async fn send_e2e(
 
     // Prepare POST data
     let mut params = additional_params.unwrap_or_default();
-    params.insert("from".into(), from.into());
-    params.insert("to".into(), to.into());
+    params.insert("from".into(), from.to_string());
+    params.insert("to".into(), to.to_string());
     params.insert("secret".into(), secret.into());
     params.insert("nonce".into(), HEXLOWER.encode(nonce));
     params.insert("box".into(), HEXLOWER.encode(ciphertext));
@@ -181,7 +182,7 @@ pub(crate) async fn send_e2e(
 /// Used in the context of bulk sending.
 pub struct BulkE2eMessage {
     /// Recipient Threema ID
-    pub to: String,
+    pub to: ThreemaId,
     /// Encrypted message to send to the recipient above
     pub message: EncryptedMessage,
     /// When set to `false`, the recipient is requested not to send delivery
@@ -219,7 +220,7 @@ impl From<&BulkE2eMessage> for JsonE2eMessage {
         let no_push = msg.push.not().then_some(true);
         let group = msg.is_group_message.then_some(true);
         JsonE2eMessage {
-            to: msg.to.clone(),
+            to: msg.to.to_string(),
             nonce: BASE64.encode(&msg.message.nonce),
             r#box: BASE64.encode(&msg.message.ciphertext),
             no_delivery_receipts,
@@ -292,7 +293,7 @@ impl BulkE2eMessageSendStatus {
 pub(crate) async fn send_e2e_bulk(
     client: &Client,
     endpoint: &str,
-    from: &str,
+    from: &ThreemaId,
     secret: &str,
     messages: &[&BulkE2eMessage],
     same_message_id: bool,
@@ -305,7 +306,7 @@ pub(crate) async fn send_e2e_bulk(
 
     // Prepare POST data
     let mut params: HashMap<&str, String> = HashMap::new();
-    params.insert("from", from.into());
+    params.insert("from", from.to_string());
     params.insert("secret", secret.into());
     if same_message_id {
         params.insert("sameMessageId", "1".to_owned());
@@ -336,7 +337,7 @@ pub(crate) async fn send_e2e_bulk(
 pub(crate) async fn blob_upload(
     client: &Client,
     endpoint: &str,
-    from: &str,
+    from: &ThreemaId,
     secret: &str,
     data: &[u8],
     persist: bool,
@@ -344,7 +345,7 @@ pub(crate) async fn blob_upload(
 ) -> Result<BlobId, ApiError> {
     // Build URL
     let url = format!("{endpoint}/upload_blob");
-    let mut params = vec![("from", from), ("secret", secret)];
+    let mut params = vec![("from", from.as_str()), ("secret", secret)];
     if persist {
         params.push(("persist", "1"));
     }
@@ -382,7 +383,7 @@ pub(crate) async fn blob_upload(
 pub(crate) async fn blob_download(
     client: &Client,
     endpoint: &str,
-    from: &str,
+    from: &ThreemaId,
     secret: &str,
     blob_id: &BlobId,
 ) -> Result<Vec<u8>, ApiError> {
@@ -394,7 +395,7 @@ pub(crate) async fn blob_download(
     let res = client
         .get(url)
         .header(SDK_HEADER, SDK_USER_AGENT)
-        .query(&[("from", from), ("secret", secret)])
+        .query(&[("from", from.as_str()), ("secret", secret)])
         .send()
         .await?;
     map_response_code(res.status().as_u16(), Some(ApiError::BadBlob))?;
@@ -418,11 +419,13 @@ mod tests {
     async fn simple_max_length_ok() {
         let text = "à".repeat(3500 / 2);
         let client = Client::new();
+        let from = "TESTTEST".try_into().unwrap();
+        let to_id = "ECHOECHO".try_into().unwrap();
         let result = send_simple(
             &client,
             MSGAPI_URL,
-            "TESTTEST",
-            &Recipient::new_id("ECHOECHO"),
+            &from,
+            &Recipient::new_id(to_id),
             "secret",
             &text,
         )
@@ -437,11 +440,13 @@ mod tests {
         let mut text = "à".repeat(3500 / 2);
         text.push('x');
         let client = Client::new();
+        let from = "TESTTEST".try_into().unwrap();
+        let to_id = "ECHOECHO".try_into().unwrap();
         let result = send_simple(
             &client,
             MSGAPI_URL,
-            "TESTTEST",
-            &Recipient::new_id("ECHOECHO"),
+            &from,
+            &Recipient::new_id(to_id),
             "secret",
             &text,
         )
@@ -575,7 +580,7 @@ mod tests {
             let nonce = XSalsa20Poly1305::generate_nonce(&mut OsRng);
             let ciphertext = vec![10, 20, 30, 40];
             let bulk_msg = BulkE2eMessage {
-                to: "ABCD1234".to_owned(),
+                to: "ABCD1234".try_into().unwrap(),
                 message: EncryptedMessage {
                     nonce,
                     ciphertext: ciphertext.clone(),
@@ -602,7 +607,7 @@ mod tests {
             let nonce = XSalsa20Poly1305::generate_nonce(&mut OsRng);
             let ciphertext = vec![0xdd, 0xee, 0xff];
             let bulk_msg = BulkE2eMessage {
-                to: "WXYZ9876".to_owned(),
+                to: "WXYZ9876".try_into().unwrap(),
                 message: EncryptedMessage {
                     nonce,
                     ciphertext: ciphertext.clone(),
