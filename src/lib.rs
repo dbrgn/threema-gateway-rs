@@ -88,7 +88,7 @@ pub use crate::{
         encrypt, encrypt_file_data, encrypt_raw,
     },
     lookup::{BulkIdentityPublicKey, Capabilities, LookupCriterion},
-    protocol::e2e::E2eMessage,
+    protocol::{ThreemaId, ThreemaIdError, e2e::E2eMessage},
 };
 
 #[cfg(feature = "receive")]
