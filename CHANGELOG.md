@@ -11,7 +11,7 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
-### v0.20.0 (unreleased)
+### v0.20.0 (2026-04-07)
 
 This release adds support for end-to-end message encoding and decoding. Besides
 text and file messages, implementations for location messages and delivery
@@ -19,7 +19,8 @@ receipts are provided as well.
 
 Additionally, `ThreemaId` and `MessageId` newtypes are provided. All APIs are
 updated to use these newtypes. This is a breaking change that will probably
-affect all consumers of this library.
+affect all consumers of this library. To convert a string based ID to
+`ThreemaId`, use `ThreemaId::try_from(...)`.
 
 For consumers that make use of the `PublicKeyCache` trait, two optional cache
 implementations are provided: In-memory and Redis.

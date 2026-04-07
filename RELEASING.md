@@ -3,7 +3,7 @@
 Set variables:
 
     $ export VERSION=X.Y.Z
-    $ export GPG_KEY=20EE002D778AE197EF7D0D2CB993FF98A90C9AB1
+    $ export GPG_KEY=E7ADD9914E260E8B35DFB50665FDE935573ACDA6
 
 Update version numbers:
 
