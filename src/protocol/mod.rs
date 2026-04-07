@@ -9,8 +9,10 @@ use crate::errors::ApiError;
 
 pub mod e2e;
 mod message_id;
+mod threema_id;
 
 pub use message_id::{MessageId, MessageIdParseError, MessageIds};
+pub use threema_id::{ThreemaId, ThreemaIdError};
 
 /// A 16-byte blob ID.
 #[derive(Debug, PartialEq, Eq, Clone)]

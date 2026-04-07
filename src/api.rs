@@ -24,7 +24,7 @@ use crate::{
         lookup_id, lookup_ids_bulk, lookup_pubkey, lookup_pubkeys_bulk,
     },
     protocol::{
-        BlobId, MessageId,
+        BlobId, MessageId, ThreemaId,
         e2e::{E2eMessage, MessageType, file::FileMessage},
     },
 };
@@ -53,7 +53,7 @@ macro_rules! impl_common_functionality {
         /// **Note:** It is strongly recommended that you cache the public keys to avoid
         /// querying the API for each message. To simplify this, the
         /// `lookup_pubkey_with_cache` method can be used instead.
-        pub async fn lookup_pubkey(&self, id: &str) -> Result<RecipientKey, ApiError> {
+        pub async fn lookup_pubkey(&self, id: &ThreemaId) -> Result<RecipientKey, ApiError> {
             lookup_pubkey(
                 &self.client,
                 self.endpoint.borrow(),
@@ -71,7 +71,7 @@ macro_rules! impl_common_functionality {
         /// (see [`Self::lookup_pubkey`]) and stored in the cache.
         pub async fn lookup_pubkey_with_cache<C>(
             &self,
-            id: &str,
+            id: &ThreemaId,
             public_key_cache: &C,
         ) -> Result<RecipientKey, ApiOrCacheError<C::Error>>
         where
@@ -105,8 +105,8 @@ macro_rules! impl_common_functionality {
         /// multiple IDs in a single request.
         pub async fn lookup_pubkeys_bulk(
             &self,
-            ids: &[&str],
-        ) -> Result<HashMap<String, RecipientKey>, ApiError> {
+            ids: &[ThreemaId],
+        ) -> Result<HashMap<ThreemaId, RecipientKey>, ApiError> {
             lookup_pubkeys_bulk(
                 &self.client,
                 self.endpoint.borrow(),
@@ -121,7 +121,7 @@ macro_rules! impl_common_functionality {
         ///
         /// An ID can be looked up either by a phone number or an e-mail address, in plaintext or hashed form.
         /// You can specify one of those criteria using the [`LookupCriterion`] enum.
-        pub async fn lookup_id(&self, criterion: &LookupCriterion) -> Result<String, ApiError> {
+        pub async fn lookup_id(&self, criterion: &LookupCriterion) -> Result<ThreemaId, ApiError> {
             lookup_id(
                 &self.client,
                 self.endpoint.borrow(),
@@ -161,7 +161,7 @@ macro_rules! impl_common_functionality {
         /// Threema version that supports receiving files. The receiver may be
         /// using an old version, or a platform where file reception is not
         /// supported.
-        pub async fn lookup_capabilities(&self, id: &str) -> Result<Capabilities, ApiError> {
+        pub async fn lookup_capabilities(&self, id: &ThreemaId) -> Result<Capabilities, ApiError> {
             lookup_capabilities(
                 &self.client,
                 self.endpoint.borrow(),
@@ -182,7 +182,7 @@ macro_rules! impl_common_functionality {
 /// Struct to talk to the simple API (without end-to-end encryption).
 #[derive(Debug, Clone)]
 pub struct SimpleApi {
-    id: String,
+    id: ThreemaId,
     secret: String,
     endpoint: Cow<'static, str>,
     client: Client,
@@ -190,14 +190,14 @@ pub struct SimpleApi {
 
 impl SimpleApi {
     /// Initialize the simple API with the Gateway ID and the Gateway Secret.
-    pub(crate) fn new<I: Into<String>, S: Into<String>>(
+    pub(crate) fn new<S: Into<String>>(
         endpoint: Cow<'static, str>,
-        id: I,
+        id: ThreemaId,
         secret: S,
         client: Client,
     ) -> Self {
         SimpleApi {
-            id: id.into(),
+            id,
             secret: secret.into(),
             endpoint,
             client,
@@ -229,7 +229,7 @@ impl SimpleApi {
 /// Struct to talk to the E2E API (with end-to-end encryption).
 #[derive(Debug, Clone)]
 pub struct E2eApi {
-    id: String,
+    id: ThreemaId,
     secret: String,
     private_key: SecretKey,
     endpoint: Cow<'static, str>,
@@ -239,15 +239,15 @@ pub struct E2eApi {
 impl E2eApi {
     /// Initialize the simple API with the Gateway ID, the Gateway Secret and
     /// the Private Key.
-    pub(crate) fn new<I: Into<String>, S: Into<String>>(
+    pub(crate) fn new<S: Into<String>>(
         endpoint: Cow<'static, str>,
-        id: I,
+        id: ThreemaId,
         secret: S,
         private_key: SecretKey,
         client: Client,
     ) -> Self {
         E2eApi {
-            id: id.into(),
+            id,
             secret: secret.into(),
             private_key,
             endpoint,
@@ -373,7 +373,7 @@ impl E2eApi {
     /// Cost: 1 credit.
     pub async fn send(
         &self,
-        to: &str,
+        to: &ThreemaId,
         message: &EncryptedMessage,
         delivery_receipts: bool,
     ) -> Result<MessageId, ApiError> {
@@ -422,7 +422,7 @@ impl E2eApi {
     #[doc(hidden)]
     pub async fn send_with_params(
         &self,
-        to: &str,
+        to: &ThreemaId,
         message: &EncryptedMessage,
         delivery_receipts: bool,
         additional_params: HashMap<String, String>,
@@ -597,9 +597,9 @@ impl E2eApi {
 /// ## Simple API
 ///
 /// ```
-/// use threema_gateway::{ApiBuilder, SimpleApi};
+/// use threema_gateway::{ApiBuilder, SimpleApi, ThreemaId};
 ///
-/// let gateway_id = "*3MAGWID";
+/// let gateway_id = ThreemaId::try_from("*3MAGWID").unwrap();
 /// let api_secret = "hihghrg98h00ghrg";
 ///
 /// let api: SimpleApi = ApiBuilder::new(gateway_id, api_secret).into_simple();
@@ -608,9 +608,9 @@ impl E2eApi {
 /// ## E2E API
 ///
 /// ```
-/// use threema_gateway::{ApiBuilder, E2eApi};
+/// use threema_gateway::{ApiBuilder, E2eApi, ThreemaId};
 ///
-/// let gateway_id = "*3MAGWID";
+/// let gateway_id = ThreemaId::try_from("*3MAGWID").unwrap();
 /// let api_secret = "hihghrg98h00ghrg";
 /// let private_key = "998730fbcac1c57dbb181139de41d12835b3fae6af6acdf6ce91670262e88453";
 ///
@@ -621,7 +621,7 @@ impl E2eApi {
 /// ```
 #[derive(Debug)]
 pub struct ApiBuilder {
-    id: String,
+    id: ThreemaId,
     secret: String,
     private_key: Option<SecretKey>,
     endpoint: Cow<'static, str>,
@@ -630,9 +630,9 @@ pub struct ApiBuilder {
 
 impl ApiBuilder {
     /// Initialize the `ApiBuilder` with the Gateway ID and the Gateway Secret.
-    pub fn new<I: Into<String>, S: Into<String>>(id: I, secret: S) -> Self {
+    pub fn new<S: Into<String>>(id: ThreemaId, secret: S) -> Self {
         ApiBuilder {
-            id: id.into(),
+            id,
             secret: secret.into(),
             private_key: None,
             endpoint: Cow::Borrowed(MSGAPI_URL),
@@ -742,7 +742,7 @@ mod tests {
 
             let api = E2eApi::new(
                 "endpoint".into(),
-                "HELOWRLD",
+                "HELOWRLD".try_into().unwrap(),
                 "fakescrt",
                 SecretKey::from_slice(&private_bytes).unwrap(),
                 Client::new(),

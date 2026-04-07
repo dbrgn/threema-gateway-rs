@@ -1,8 +1,13 @@
 //! Example: Lookup public key
-#![allow(clippy::print_stdout, clippy::unimplemented, reason = "Example code")]
+#![allow(
+    clippy::print_stdout,
+    clippy::unimplemented,
+    clippy::unwrap_used,
+    reason = "Example code"
+)]
 
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, cache::PublicKeyCache};
+use threema_gateway::{ApiBuilder, ThreemaId, cache::PublicKeyCache};
 
 const USAGE: &str = "
 Usage: lookup_pubkey [--with-cache] <our_id> <secret> <their_id>
@@ -18,8 +23,8 @@ async fn main() {
         .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
-    let our_id = args.get_str("<our_id>");
-    let their_id = args.get_str("<their_id>");
+    let our_id = ThreemaId::try_from(args.get_str("<our_id>")).unwrap();
+    let their_id = ThreemaId::try_from(args.get_str("<their_id>")).unwrap();
     let secret = args.get_str("<secret>");
     let simulate_cache = args.get_bool("--with-cache");
 
@@ -27,14 +32,14 @@ async fn main() {
     let api = ApiBuilder::new(our_id, secret).into_simple();
     let pubkey = if simulate_cache {
         let cache = SimulatedCache;
-        api.lookup_pubkey_with_cache(their_id, &cache)
+        api.lookup_pubkey_with_cache(&their_id, &cache)
             .await
             .unwrap_or_else(|error| {
                 println!("Could not fetch public key: {error}");
                 std::process::exit(1);
             })
     } else {
-        api.lookup_pubkey(their_id).await.unwrap_or_else(|error| {
+        api.lookup_pubkey(&their_id).await.unwrap_or_else(|error| {
             println!("Could not fetch and cache public key: {error}");
             std::process::exit(1);
         })
@@ -51,7 +56,7 @@ impl PublicKeyCache for SimulatedCache {
 
     async fn store(
         &self,
-        identity: &str,
+        identity: &ThreemaId,
         _key: &threema_gateway::RecipientKey,
     ) -> Result<(), Self::Error> {
         println!("[cache] Storing public key for identity {identity}");
@@ -60,7 +65,7 @@ impl PublicKeyCache for SimulatedCache {
 
     async fn load(
         &self,
-        _identity: &str,
+        _identity: &ThreemaId,
     ) -> Result<Option<threema_gateway::RecipientKey>, Self::Error> {
         unimplemented!("Not implemented in this example")
     }

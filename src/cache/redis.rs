@@ -5,7 +5,9 @@ use std::time::Duration;
 use redis::{AsyncCommands as _, aio::ConnectionLike};
 use thiserror::Error;
 
-use crate::{cache::PublicKeyCache, crypto::RecipientKey, errors::CryptoError};
+use crate::{
+    cache::PublicKeyCache, crypto::RecipientKey, errors::CryptoError, protocol::ThreemaId,
+};
 
 /// Errors when interacting with the [`RedisPublicKeyCache`].
 #[derive(Debug, Error)]
@@ -14,7 +16,7 @@ pub enum RedisPublicKeyCacheError {
     #[error("invalid recipient key for {identity} encountered in cache: {error}")]
     CorruptedCache {
         /// Identity for which the lookup failed
-        identity: String,
+        identity: ThreemaId,
         /// Underlying error
         error: CryptoError,
     },
@@ -33,7 +35,7 @@ pub enum RedisPublicKeyCacheError {
 ///
 /// ```no_run
 /// use std::time::Duration;
-/// use threema_gateway::{ApiBuilder, cache::RedisPublicKeyCache};
+/// use threema_gateway::{ApiBuilder, ThreemaId, cache::RedisPublicKeyCache};
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// // Connect to Redis
@@ -48,8 +50,10 @@ pub enum RedisPublicKeyCacheError {
 /// );
 ///
 /// // Use with the Threema Gateway API
-/// let api = ApiBuilder::new("YOUR_GATEWAY_ID", "YOUR_API_SECRET").into_simple();
-/// let pubkey = api.lookup_pubkey_with_cache("ECHOECHO", &cache).await?;
+/// let gateway_id = ThreemaId::try_from("*GATEWAY").unwrap();
+/// let api = ApiBuilder::new(gateway_id, "YOUR_API_SECRET").into_simple();
+/// let recipient = ThreemaId::try_from("ECHOECHO").unwrap();
+/// let pubkey = api.lookup_pubkey_with_cache(&recipient, &cache).await?;
 /// # Ok(())
 /// # }
 /// ```
@@ -58,7 +62,7 @@ pub enum RedisPublicKeyCacheError {
 ///
 /// ```no_run
 /// use std::time::Duration;
-/// use threema_gateway::{RecipientKey, cache::{PublicKeyCache, RedisPublicKeyCache}};
+/// use threema_gateway::{RecipientKey, ThreemaId, cache::{PublicKeyCache, RedisPublicKeyCache}};
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// let client = redis::Client::open("redis://127.0.0.1:6379")?;
@@ -69,8 +73,9 @@ pub enum RedisPublicKeyCacheError {
 ///
 /// // Store and load keys directly
 /// # let some_key = RecipientKey::from_bytes(&[0u8; 32])?;
-/// cache.store("TESTID01", &some_key).await?;
-/// let loaded = cache.load("TESTID01").await?;
+/// let identity = ThreemaId::try_from("TESTID01").unwrap();
+/// cache.store(&identity, &some_key).await?;
+/// let loaded = cache.load(&identity).await?;
 /// # Ok(())
 /// # }
 /// ```
@@ -99,7 +104,7 @@ impl<C> RedisPublicKeyCache<C> {
     }
 
     /// Build the full Redis key for an identity.
-    fn cache_key(&self, identity: &str) -> String {
+    fn cache_key(&self, identity: ThreemaId) -> String {
         format!("{}{identity}", self.key_prefix)
     }
 }
@@ -110,8 +115,8 @@ where
 {
     type Error = RedisPublicKeyCacheError;
 
-    async fn store(&self, identity: &str, key: &RecipientKey) -> Result<(), Self::Error> {
-        let cache_key = self.cache_key(identity);
+    async fn store(&self, identity: &ThreemaId, key: &RecipientKey) -> Result<(), Self::Error> {
+        let cache_key = self.cache_key(*identity);
         let key_bytes = key.as_bytes().to_vec();
         let mut conn = self.connection.clone();
         match self.ttl {
@@ -127,8 +132,8 @@ where
         Ok(())
     }
 
-    async fn load(&self, identity: &str) -> Result<Option<RecipientKey>, Self::Error> {
-        let cache_key = self.cache_key(identity);
+    async fn load(&self, identity: &ThreemaId) -> Result<Option<RecipientKey>, Self::Error> {
+        let cache_key = self.cache_key(*identity);
 
         let mut conn = self.connection.clone();
         let result: Option<Vec<u8>> = conn.get(&cache_key).await?;
@@ -136,7 +141,7 @@ where
         if let Some(key_bytes) = result {
             let recipient_key = RecipientKey::from_bytes(&key_bytes).map_err(|error| {
                 RedisPublicKeyCacheError::CorruptedCache {
-                    identity: identity.to_owned(),
+                    identity: *identity,
                     error,
                 }
             })?;

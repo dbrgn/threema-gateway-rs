@@ -7,7 +7,7 @@
 
 use core::future::Future;
 
-use crate::crypto::RecipientKey;
+use crate::{crypto::RecipientKey, protocol::ThreemaId};
 
 #[cfg(feature = "public-key-cache-inmemory")]
 mod in_memory;
@@ -27,13 +27,13 @@ pub trait PublicKeyCache {
     /// Store a public key for `identity` in the cache
     fn store(
         &self,
-        identity: &str,
+        identity: &ThreemaId,
         key: &RecipientKey,
     ) -> impl Future<Output = Result<(), Self::Error>>;
 
     /// Retrieve a public key for `identity` from the cache
     fn load(
         &self,
-        identity: &str,
+        identity: &ThreemaId,
     ) -> impl Future<Output = Result<Option<RecipientKey>, Self::Error>>;
 }

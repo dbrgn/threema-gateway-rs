@@ -1,8 +1,8 @@
 //! Example: Lookup capabilities
-#![allow(clippy::print_stdout, reason = "Example code")]
+#![allow(clippy::print_stdout, clippy::unwrap_used, reason = "Example code")]
 
 use docopt::Docopt;
-use threema_gateway::ApiBuilder;
+use threema_gateway::{ApiBuilder, ThreemaId};
 
 const USAGE: &str = "
 Usage: lookup_capabilities [options] <our_id> <secret> <their_id>
@@ -18,13 +18,13 @@ async fn main() {
         .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
-    let our_id = args.get_str("<our_id>");
-    let their_id = args.get_str("<their_id>");
+    let our_id = ThreemaId::try_from(args.get_str("<our_id>")).unwrap();
+    let their_id = ThreemaId::try_from(args.get_str("<their_id>")).unwrap();
     let secret = args.get_str("<secret>");
 
     // Fetch public key
     let api = ApiBuilder::new(our_id, secret).into_simple();
-    let pubkey = api.lookup_capabilities(their_id).await;
+    let pubkey = api.lookup_capabilities(&their_id).await;
 
     // Show result
     match pubkey {

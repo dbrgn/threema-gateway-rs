@@ -1,10 +1,10 @@
 //! Example: Send simple text message without E2EE
-#![allow(clippy::print_stdout, reason = "Example code")]
+#![allow(clippy::print_stdout, clippy::unwrap_used, reason = "Example code")]
 
 use std::borrow::Cow;
 
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, Recipient};
+use threema_gateway::{ApiBuilder, Recipient, ThreemaId};
 
 const USAGE: &str = "
 Usage: send_simple [options] <from> id <to-id> <secret> <text>...
@@ -22,13 +22,13 @@ async fn main() {
         .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
-    let from = args.get_str("<from>");
+    let from = ThreemaId::try_from(args.get_str("<from>")).unwrap();
     let secret = args.get_str("<secret>");
     let text = args.get_vec("<text>").join(" ");
 
     // Determine recipient
     let recipient = if args.get_bool("id") {
-        Recipient::Id(Cow::from(args.get_str("<to-id>")))
+        Recipient::Id(ThreemaId::try_from(args.get_str("<to-id>")).unwrap())
     } else if args.get_bool("email") {
         Recipient::Email(Cow::from(args.get_str("<to-email>")))
     } else if args.get_bool("phone") {

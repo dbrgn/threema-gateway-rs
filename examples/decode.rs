@@ -9,7 +9,7 @@
 
 use data_encoding::HEXLOWER_PERMISSIVE;
 use docopt::Docopt;
-use threema_gateway::{ApiBuilder, SecretKey};
+use threema_gateway::{ApiBuilder, SecretKey, ThreemaId};
 
 const USAGE: &str = "
 Usage: decode [options] <our-id> <secret> <private-key> <request-body>
@@ -25,7 +25,7 @@ async fn main() {
         .unwrap_or_else(|error| error.exit());
 
     // Command line arguments
-    let our_id = args.get_str("<our-id>");
+    let our_id = ThreemaId::try_from(args.get_str("<our-id>")).unwrap();
     let secret = args.get_str("<secret>");
     let key_bytes = HEXLOWER_PERMISSIVE
         .decode(args.get_str("<private-key>").as_bytes())

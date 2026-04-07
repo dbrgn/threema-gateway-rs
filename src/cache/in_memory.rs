@@ -5,7 +5,7 @@ use std::time::Duration;
 use moka::future::Cache;
 use thiserror::Error;
 
-use crate::{RecipientKey, cache::PublicKeyCache, errors::CryptoError};
+use crate::{RecipientKey, cache::PublicKeyCache, errors::CryptoError, protocol::ThreemaId};
 
 /// Errors when interacting with the [`InMemoryPublicKeyCache`].
 #[derive(Debug, Error)]
@@ -14,7 +14,7 @@ pub enum InMemoryPublicKeyCacheError {
     #[error("invalid recipient key for {identity} encountered in cache: {error}")]
     CorruptedCache {
         /// Identity for which the lookup failed
-        identity: String,
+        identity: ThreemaId,
         /// Underlying error
         error: CryptoError,
     },
@@ -48,19 +48,19 @@ impl InMemoryPublicKeyCache {
 impl PublicKeyCache for InMemoryPublicKeyCache {
     type Error = InMemoryPublicKeyCacheError;
 
-    async fn store(&self, identity: &str, key: &RecipientKey) -> Result<(), Self::Error> {
+    async fn store(&self, identity: &ThreemaId, key: &RecipientKey) -> Result<(), Self::Error> {
         self.cache
-            .insert(identity.to_owned(), key.as_bytes().to_vec())
+            .insert(identity.to_string(), key.as_bytes().to_vec())
             .await;
         log::trace!("Inserted into cache: {identity}");
         Ok(())
     }
 
-    async fn load(&self, identity: &str) -> Result<Option<RecipientKey>, Self::Error> {
-        if let Some(key_bytes) = self.cache.get(identity).await {
+    async fn load(&self, identity: &ThreemaId) -> Result<Option<RecipientKey>, Self::Error> {
+        if let Some(key_bytes) = self.cache.get(identity.as_str()).await {
             let recipient_key = RecipientKey::from_bytes(&key_bytes).map_err(|error| {
                 InMemoryPublicKeyCacheError::CorruptedCache {
-                    identity: identity.to_owned(),
+                    identity: *identity,
                     error,
                 }
             })?;
@@ -84,6 +84,11 @@ mod tests {
         RecipientKey::from_str(hex).expect("Failed to create test key")
     }
 
+    /// Helper to create a test `ThreemaId`
+    fn tid(id: &str) -> ThreemaId {
+        ThreemaId::try_from(id).expect("Failed to create test ThreemaId")
+    }
+
     mod store {
         use super::*;
 
@@ -92,7 +97,7 @@ mod tests {
             let cache = InMemoryPublicKeyCache::new(10, Duration::from_secs(60));
             let key = test_key("5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0");
 
-            let result = cache.store("TESTID01", &key).await;
+            let result = cache.store(&tid("TESTID01"), &key).await;
             assert!(result.is_ok());
 
             // Sync the cache to ensure entry count is updated
@@ -106,8 +111,8 @@ mod tests {
             let key1 = test_key("5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0");
             let key2 = test_key("ff000000000000000000000000000000000000000000000000000000000000ee");
 
-            cache.store("TESTID01", &key1).await.unwrap();
-            cache.store("TESTID01", &key2).await.unwrap();
+            cache.store(&tid("TESTID01"), &key1).await.unwrap();
+            cache.store(&tid("TESTID01"), &key2).await.unwrap();
 
             // Sync the cache to ensure entry count is updated
             cache.cache.run_pending_tasks().await;
@@ -116,7 +121,7 @@ mod tests {
             assert_eq!(cache.cache.entry_count(), 1);
 
             // Should have the second key
-            let loaded = cache.load("TESTID01").await.unwrap();
+            let loaded = cache.load(&tid("TESTID01")).await.unwrap();
             assert_eq!(loaded, Some(key2));
         }
 
@@ -127,9 +132,9 @@ mod tests {
             let key2 = test_key("ff000000000000000000000000000000000000000000000000000000000000ee");
             let key3 = test_key("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
 
-            cache.store("TESTID01", &key1).await.unwrap();
-            cache.store("TESTID02", &key2).await.unwrap();
-            cache.store("TESTID03", &key3).await.unwrap();
+            cache.store(&tid("TESTID01"), &key1).await.unwrap();
+            cache.store(&tid("TESTID02"), &key2).await.unwrap();
+            cache.store(&tid("TESTID03"), &key3).await.unwrap();
 
             // Sync the cache to ensure entry count is updated
             cache.cache.run_pending_tasks().await;
@@ -143,7 +148,7 @@ mod tests {
         #[tokio::test]
         async fn returns_none_for_nonexistent_key() {
             let cache = InMemoryPublicKeyCache::new(10, Duration::from_secs(60));
-            let result = cache.load("NONEXIST").await.unwrap();
+            let result = cache.load(&tid("NONEXIST")).await.unwrap();
             assert_eq!(result, None);
         }
 
@@ -152,8 +157,8 @@ mod tests {
             let cache = InMemoryPublicKeyCache::new(10, Duration::from_secs(60));
             let key = test_key("5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0");
 
-            cache.store("TESTID01", &key).await.unwrap();
-            let loaded = cache.load("TESTID01").await.unwrap();
+            cache.store(&tid("TESTID01"), &key).await.unwrap();
+            let loaded = cache.load(&tid("TESTID01")).await.unwrap();
 
             assert_eq!(loaded, Some(key));
         }
@@ -164,11 +169,11 @@ mod tests {
             let key1 = test_key("5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0");
             let key2 = test_key("ff000000000000000000000000000000000000000000000000000000000000ee");
 
-            cache.store("TESTID01", &key1).await.unwrap();
-            cache.store("TESTID02", &key2).await.unwrap();
+            cache.store(&tid("TESTID01"), &key1).await.unwrap();
+            cache.store(&tid("TESTID02"), &key2).await.unwrap();
 
-            let loaded1 = cache.load("TESTID01").await.unwrap();
-            let loaded2 = cache.load("TESTID02").await.unwrap();
+            let loaded1 = cache.load(&tid("TESTID01")).await.unwrap();
+            let loaded2 = cache.load(&tid("TESTID02")).await.unwrap();
 
             assert_eq!(loaded1, Some(key1));
             assert_eq!(loaded2, Some(key2));
@@ -177,14 +182,15 @@ mod tests {
         #[tokio::test]
         async fn returns_error_for_corrupted_cache() {
             let cache = InMemoryPublicKeyCache::new(10, Duration::from_secs(60));
+            let corrupt_id = tid("CORRUPTT");
 
             // Manually insert invalid data into the cache
             cache
                 .cache
-                .insert("CORRUPT".to_owned(), vec![1, 2, 3])
+                .insert(corrupt_id.to_string(), vec![1, 2, 3])
                 .await;
 
-            let result = cache.load("CORRUPT").await;
+            let result = cache.load(&corrupt_id).await;
             assert!(result.is_err());
             assert!(matches!(
                 result.unwrap_err(),
@@ -197,12 +203,12 @@ mod tests {
             let cache = InMemoryPublicKeyCache::new(10, Duration::from_millis(100));
             let key = test_key("5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0");
 
-            cache.store("TESTID01", &key).await.unwrap();
+            cache.store(&tid("TESTID01"), &key).await.unwrap();
 
             // Wait for TTL to expire
             tokio::time::sleep(Duration::from_millis(150)).await;
 
-            let loaded = cache.load("TESTID01").await.unwrap();
+            let loaded = cache.load(&tid("TESTID01")).await.unwrap();
             assert_eq!(loaded, None);
         }
     }
@@ -217,9 +223,9 @@ mod tests {
             let key2 = test_key("ff000000000000000000000000000000000000000000000000000000000000ee");
             let key3 = test_key("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
 
-            cache.store("TESTID01", &key1).await.unwrap();
-            cache.store("TESTID02", &key2).await.unwrap();
-            cache.store("TESTID03", &key3).await.unwrap();
+            cache.store(&tid("TESTID01"), &key1).await.unwrap();
+            cache.store(&tid("TESTID02"), &key2).await.unwrap();
+            cache.store(&tid("TESTID03"), &key3).await.unwrap();
 
             // Should not exceed capacity
             cache.cache.run_pending_tasks().await;
@@ -236,10 +242,10 @@ mod tests {
             let key = test_key("5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0");
 
             // Store key
-            cache.store("TESTID01", &key).await.unwrap();
+            cache.store(&tid("TESTID01"), &key).await.unwrap();
 
             // Load key
-            let loaded = cache.load("TESTID01").await.unwrap().unwrap();
+            let loaded = cache.load(&tid("TESTID01")).await.unwrap().unwrap();
 
             // Verify bytes are identical
             assert_eq!(key.as_bytes(), loaded.as_bytes());
@@ -252,37 +258,26 @@ mod tests {
             let key2 = test_key("ff000000000000000000000000000000000000000000000000000000000000ee");
 
             // Store first key
-            cache.store("ALICE___", &key1).await.unwrap();
+            cache.store(&tid("ALICE000"), &key1).await.unwrap();
 
             // Load first key
-            let loaded1 = cache.load("ALICE___").await.unwrap();
+            let loaded1 = cache.load(&tid("ALICE000")).await.unwrap();
             assert_eq!(loaded1, Some(key1.clone()));
 
             // Store second key with different identity
-            cache.store("BOB_____", &key2).await.unwrap();
+            cache.store(&tid("BOB00000"), &key2).await.unwrap();
 
             // Load both keys
-            let loaded1 = cache.load("ALICE___").await.unwrap();
-            let loaded2 = cache.load("BOB_____").await.unwrap();
+            let loaded1 = cache.load(&tid("ALICE000")).await.unwrap();
+            let loaded2 = cache.load(&tid("BOB00000")).await.unwrap();
 
             assert_eq!(loaded1, Some(key1));
             assert_eq!(loaded2, Some(key2.clone()));
 
             // Update first key
-            cache.store("ALICE___", &key2).await.unwrap();
-            let updated = cache.load("ALICE___").await.unwrap();
+            cache.store(&tid("ALICE000"), &key2).await.unwrap();
+            let updated = cache.load(&tid("ALICE000")).await.unwrap();
             assert_eq!(updated, Some(key2));
-        }
-
-        #[tokio::test]
-        async fn handles_empty_identity() {
-            let cache = InMemoryPublicKeyCache::new(10, Duration::from_secs(60));
-            let key = test_key("5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0");
-
-            cache.store("", &key).await.unwrap();
-            let loaded = cache.load("").await.unwrap();
-
-            assert_eq!(loaded, Some(key));
         }
     }
 }
