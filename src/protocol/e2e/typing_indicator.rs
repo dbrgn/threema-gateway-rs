@@ -75,6 +75,10 @@ pub struct InvalidTypingIndicatorValue(pub u8);
 /// A typing indicator message.
 ///
 /// Contains a single byte indicating whether the contact is typing or not.
+///
+/// Note: While active, typing indicators should be re-sent every 10s. When no
+/// typing indicator message is received for 15s, the clients will stop showing
+/// the typing status.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct TypingIndicatorMessage {
     /// The typing indicator status
