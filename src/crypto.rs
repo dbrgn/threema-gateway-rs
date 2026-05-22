@@ -12,7 +12,7 @@ use crypto_secretbox::{
     cipher::generic_array::GenericArray,
 };
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
-use rand::Rng as _;
+use rand::RngExt as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 

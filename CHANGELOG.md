@@ -26,6 +26,7 @@ sufficiently large.
 
 - [changed] Rename `IncomingMessage.date` to `created_at` and change field type
   from `usize` to `u32` (#117)
+- [changed] Update `hmac`, `sha2` and `rand` dependencies
 
 ### v0.20.0 (2026-04-07)
 
