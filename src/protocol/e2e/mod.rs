@@ -619,22 +619,102 @@ mod tests {
     }
 
     mod e2e_message_type {
-        use crate::{E2eMessage, protocol::e2e::MessageType};
+        use rstest::rstest;
+
+        use super::*;
+
+        #[rstest]
+        #[case::text(E2eMessage::Text("hello".into()), MessageType::Text)]
+        #[case::file(E2eMessage::File(sample_file_message()), MessageType::File)]
+        #[case::location(
+            E2eMessage::Location(location::LocationMessage::builder(1.0, 2.0).build().unwrap()),
+            MessageType::Location
+        )]
+        #[case::delivery_receipt(
+            E2eMessage::DeliveryReceipt(delivery_receipt::DeliveryReceiptMessage::new(
+                delivery_receipt::DeliveryReceipt::Received,
+                MessageId::from_u64(1),
+            )),
+            MessageType::DeliveryReceipt
+        )]
+        #[case::typing_indicator(
+            E2eMessage::TypingIndicator(typing_indicator::TypingIndicatorMessage::new(
+                typing_indicator::TypingStatus::Typing,
+            )),
+            MessageType::TypingIndicator
+        )]
+        #[case::edit(
+            E2eMessage::Edit(edit_delete::EditMessage::new(MessageId::from_u64(1), "x".into())),
+            MessageType::Edit
+        )]
+        #[case::delete(
+            E2eMessage::Delete(edit_delete::DeleteMessage::new(MessageId::from_u64(1))),
+            MessageType::Delete
+        )]
+        #[case::other(
+            E2eMessage::Other { message_type: MessageType::Video, message_bytes: vec![] },
+            MessageType::Video
+        )]
+        fn message_type(#[case] msg: E2eMessage, #[case] expected: MessageType) {
+            assert_eq!(msg.message_type(), expected);
+        }
+    }
+
+    mod from {
+        use super::*;
 
         #[test]
-        fn message_type_text() {
-            let message_type = E2eMessage::Text("hello".into()).message_type();
-            assert_eq!(message_type, MessageType::Text);
+        fn string() {
+            let msg = E2eMessage::from("hello".to_owned());
+            assert_eq!(msg, E2eMessage::Text("hello".into()));
         }
 
         #[test]
-        fn message_type_other() {
-            let message_type = E2eMessage::Other {
-                message_type: MessageType::Video,
-                message_bytes: vec![],
-            }
-            .message_type();
-            assert_eq!(message_type, MessageType::Video);
+        fn file_message() {
+            let msg = E2eMessage::from(sample_file_message());
+            assert!(matches!(msg, E2eMessage::File(_)));
+        }
+
+        #[test]
+        fn location_message() {
+            let loc = location::LocationMessage::builder(47.3769, 8.5417)
+                .build()
+                .unwrap();
+            let msg = E2eMessage::from(loc);
+            assert!(matches!(msg, E2eMessage::Location(_)));
+        }
+
+        #[test]
+        fn delivery_receipt_message() {
+            let receipt = delivery_receipt::DeliveryReceiptMessage::new(
+                delivery_receipt::DeliveryReceipt::Received,
+                MessageId::from_u64(1),
+            );
+            let msg = E2eMessage::from(receipt);
+            assert!(matches!(msg, E2eMessage::DeliveryReceipt(_)));
+        }
+
+        #[test]
+        fn typing_indicator_message() {
+            let indicator = typing_indicator::TypingIndicatorMessage::new(
+                typing_indicator::TypingStatus::Typing,
+            );
+            let msg = E2eMessage::from(indicator);
+            assert!(matches!(msg, E2eMessage::TypingIndicator(_)));
+        }
+
+        #[test]
+        fn edit_message() {
+            let edit = edit_delete::EditMessage::new(MessageId::from_u64(1), "updated".into());
+            let msg = E2eMessage::from(edit);
+            assert!(matches!(msg, E2eMessage::Edit(_)));
+        }
+
+        #[test]
+        fn delete_message() {
+            let delete = edit_delete::DeleteMessage::new(MessageId::from_u64(1));
+            let msg = E2eMessage::from(delete);
+            assert!(matches!(msg, E2eMessage::Delete(_)));
         }
     }
 }
