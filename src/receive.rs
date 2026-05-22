@@ -5,7 +5,7 @@ use std::{borrow::Cow, collections::HashMap};
 use crypto_box::{PublicKey, SalsaBox, SecretKey, aead::Aead as _};
 use crypto_secretbox::{Nonce, aead::Payload};
 use data_encoding::HEXLOWER_PERMISSIVE;
-use hmac::{Hmac, Mac as _};
+use hmac::{Hmac, KeyInit as _, Mac as _};
 use serde::{Deserialize, Deserializer};
 use sha2::Sha256;
 

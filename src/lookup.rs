@@ -4,7 +4,7 @@ use std::{collections::HashMap, fmt, str};
 
 use crypto_box::KEY_SIZE;
 use data_encoding::{HEXLOWER, HEXLOWER_PERMISSIVE};
-use hmac::{Hmac, Mac as _};
+use hmac::{Hmac, KeyInit as _, Mac as _};
 use log::{debug, warn};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
