@@ -422,32 +422,219 @@ mod test {
         insta::assert_json_snapshot!(msg);
     }
 
-    #[test]
-    fn builder_works() {
-        let key_bytes = [
-            1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1,
-            2, 3, 4,
-        ];
-        let key: Key = key_bytes.into();
-        let file_blob_id = BlobId::from_str("0123456789abcdef0123456789abcdef").unwrap();
-        let thumb_blob_id = BlobId::from_str("abcdef0123456789abcdef0123456789").unwrap();
-        let msg = FileMessage::builder(file_blob_id.clone(), key, "image/jpeg", 2048)
-            .thumbnail(thumb_blob_id.clone(), "image/png")
-            .file_name("hello.jpg")
-            .description(String::from("An image file"))
-            .rendering_type(RenderingType::Media)
-            .build()
-            .unwrap();
+    mod builder {
+        use super::*;
 
-        assert_eq!(msg.file_blob_id, file_blob_id);
-        assert_eq!(msg.file_media_type, "image/jpeg");
-        assert_eq!(msg.thumbnail_blob_id, Some(thumb_blob_id));
-        assert_eq!(msg.thumbnail_media_type, Some("image/png".into()));
-        assert_eq!(&**msg.blob_encryption_key.as_ref(), key_bytes);
-        assert_eq!(msg.file_name, Some("hello.jpg".to_owned()));
-        assert_eq!(msg.file_size_bytes, 2048);
-        assert_eq!(msg.description, Some("An image file".to_owned()));
-        assert_eq!(msg.rendering_type, RenderingType::Media);
-        assert_eq!(msg.legacy_rendering_type, 1);
+        fn make_builder() -> FileMessageBuilder {
+            let key = Key::from([
+                1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4,
+                1, 2, 3, 4,
+            ]);
+            let blob_id = "0123456789abcdef0123456789abcdef"
+                .parse::<BlobId>()
+                .unwrap();
+            FileMessage::builder(blob_id, key, "application/octet-stream", 1024)
+        }
+
+        fn thumb_blob_id() -> BlobId {
+            "abcdef0123456789abcdef0123456789"
+                .parse::<BlobId>()
+                .unwrap()
+        }
+
+        #[test]
+        fn builder_works() {
+            let key_bytes = [
+                1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4,
+                1, 2, 3, 4,
+            ];
+            let key: Key = key_bytes.into();
+            let file_blob_id = "0123456789abcdef0123456789abcdef"
+                .parse::<BlobId>()
+                .unwrap();
+            let msg = FileMessage::builder(file_blob_id.clone(), key, "image/jpeg", 2048)
+                .thumbnail(thumb_blob_id(), "image/png")
+                .file_name("hello.jpg")
+                .description(String::from("An image file"))
+                .rendering_type(RenderingType::Media)
+                .build()
+                .unwrap();
+            assert_eq!(msg.file_blob_id, file_blob_id);
+            assert_eq!(msg.file_media_type, "image/jpeg");
+            assert_eq!(msg.thumbnail_blob_id, Some(thumb_blob_id()));
+            assert_eq!(msg.thumbnail_media_type, Some("image/png".into()));
+            assert_eq!(&**msg.blob_encryption_key.as_ref(), key_bytes);
+            assert_eq!(msg.file_name, Some("hello.jpg".to_owned()));
+            assert_eq!(msg.file_size_bytes, 2048);
+            assert_eq!(msg.description, Some("An image file".to_owned()));
+            assert_eq!(msg.rendering_type, RenderingType::Media);
+            assert_eq!(msg.legacy_rendering_type, 1);
+        }
+
+        #[test]
+        fn thumbnail_opt_clears_value() {
+            let msg = make_builder()
+                .thumbnail(thumb_blob_id(), "image/jpeg")
+                .thumbnail_opt(None::<(BlobId, String)>)
+                .build()
+                .unwrap();
+            assert_eq!(msg.thumbnail_blob_id, None);
+            assert_eq!(msg.thumbnail_media_type, None);
+        }
+
+        #[test]
+        fn animated_sets_metadata() {
+            let msg = make_builder()
+                .rendering_type(RenderingType::Media)
+                .animated(true)
+                .build()
+                .unwrap();
+            assert_eq!(msg.metadata.unwrap().animated, Some(true));
+        }
+
+        #[test]
+        fn dimensions_sets_metadata() {
+            let msg = make_builder()
+                .rendering_type(RenderingType::Media)
+                .dimensions(1920, 1080)
+                .build()
+                .unwrap();
+            let meta = msg.metadata.unwrap();
+            assert_eq!(meta.height, Some(1920));
+            assert_eq!(meta.width, Some(1080));
+        }
+
+        #[test]
+        fn duration_sets_metadata() {
+            let msg = make_builder()
+                .rendering_type(RenderingType::Media)
+                .duration(42.5)
+                .build()
+                .unwrap();
+            assert_eq!(msg.metadata.unwrap().duration_seconds, Some(42.5));
+        }
+
+        #[test]
+        fn illegal_combination_file_with_animated() {
+            let err = make_builder()
+                .rendering_type(RenderingType::File)
+                .animated(true)
+                .build()
+                .unwrap_err();
+            assert!(
+                matches!(err, FileMessageBuilderError::IllegalCombination(_)),
+                "expected IllegalCombination, got {err:?}"
+            );
+        }
+
+        #[test]
+        fn illegal_combination_file_with_duration() {
+            let err = make_builder()
+                .rendering_type(RenderingType::File)
+                .duration(5.0)
+                .build()
+                .unwrap_err();
+            assert!(
+                matches!(err, FileMessageBuilderError::IllegalCombination(_)),
+                "expected IllegalCombination, got {err:?}"
+            );
+        }
+
+        #[test]
+        fn illegal_combination_file_with_dimensions() {
+            let err = make_builder()
+                .rendering_type(RenderingType::File)
+                .dimensions(100, 100)
+                .build()
+                .unwrap_err();
+            assert!(
+                matches!(err, FileMessageBuilderError::IllegalCombination(_)),
+                "expected IllegalCombination, got {err:?}"
+            );
+        }
+
+        #[test]
+        fn illegal_combination_sticker_with_duration() {
+            let err = make_builder()
+                .rendering_type(RenderingType::Sticker)
+                .duration(5.0)
+                .build()
+                .unwrap_err();
+            assert!(
+                matches!(err, FileMessageBuilderError::IllegalCombination(_)),
+                "expected IllegalCombination, got {err:?}"
+            );
+        }
+
+        #[test]
+        fn sticker_with_animated_is_valid() {
+            let msg = make_builder()
+                .rendering_type(RenderingType::Sticker)
+                .animated(true)
+                .build()
+                .unwrap();
+            assert_eq!(msg.metadata.unwrap().animated, Some(true));
+        }
+
+        #[test]
+        fn sticker_with_dimensions_is_valid() {
+            let msg = make_builder()
+                .rendering_type(RenderingType::Sticker)
+                .dimensions(512, 512)
+                .build()
+                .unwrap();
+            let meta = msg.metadata.unwrap();
+            assert_eq!(meta.height, Some(512));
+            assert_eq!(meta.width, Some(512));
+        }
+
+        #[test]
+        fn legacy_rendering_type_is_1_for_media() {
+            let msg = make_builder()
+                .rendering_type(RenderingType::Media)
+                .build()
+                .unwrap();
+            assert_eq!(msg.legacy_rendering_type, 1);
+        }
+
+        #[test]
+        fn legacy_rendering_type_is_0_for_file() {
+            let msg = make_builder().build().unwrap();
+            assert_eq!(msg.legacy_rendering_type, 0);
+        }
+
+        #[test]
+        fn legacy_rendering_type_is_0_for_sticker() {
+            let msg = make_builder()
+                .rendering_type(RenderingType::Sticker)
+                .build()
+                .unwrap();
+            assert_eq!(msg.legacy_rendering_type, 0);
+        }
+
+        #[test]
+        fn fully_populated() {
+            let msg = make_builder()
+                .thumbnail(thumb_blob_id(), "image/png")
+                .file_name("video.mp4")
+                .description("A video file")
+                .rendering_type(RenderingType::Media)
+                .animated(false)
+                .dimensions(1920, 1080)
+                .duration(120.0)
+                .build()
+                .unwrap();
+            assert_eq!(msg.thumbnail_blob_id, Some(thumb_blob_id()));
+            assert_eq!(msg.thumbnail_media_type, Some("image/png".into()));
+            assert_eq!(msg.file_name, Some("video.mp4".into()));
+            assert_eq!(msg.description, Some("A video file".into()));
+            assert_eq!(msg.rendering_type, RenderingType::Media);
+            assert_eq!(msg.legacy_rendering_type, 1);
+            let meta = msg.metadata.unwrap();
+            assert_eq!(meta.animated, Some(false));
+            assert_eq!(meta.height, Some(1920));
+            assert_eq!(meta.width, Some(1080));
+            assert_eq!(meta.duration_seconds, Some(120.0));
+        }
     }
 }
