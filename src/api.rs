@@ -33,7 +33,7 @@ use crate::{errors::CryptoOrMessageDecodeError, receive::IncomingMessage};
 
 fn make_reqwest_client() -> Client {
     Client::builder()
-        .timeout(Duration::from_secs(120))
+        .timeout(Duration::from_mins(2))
         .user_agent(crate::SDK_USER_AGENT)
         .build()
         .expect("Could not build client")

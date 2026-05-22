@@ -1,6 +1,7 @@
 # Rust SDK for Threema Gateway
 
 [![GitHub CI][github-actions-badge]][github-actions]
+[![Code Coverage][codecov-badge]][codecov]
 [![Crates.io Version][crates-io-badge]][crates-io]
 [![Crates.io Downloads][crates-io-download-badge]][crates-io-download]
 
@@ -110,6 +111,18 @@ discussion](https://users.rust-lang.org/t/rust-version-requirement-change-as-sem
 This library uses [rustls](https://github.com/rustls/rustls) with native
 (system-provided) root certificates to establish a TLS connection.
 
+## Development
+
+To measure test coverage locally, install the required tooling once:
+
+    rustup component add llvm-tools-preview
+    cargo install cargo-llvm-cov
+
+Then run:
+
+    cargo llvm-cov --all-features          # terminal summary
+    cargo llvm-cov --all-features --open   # HTML report in browser
+
 ## License
 
 Licensed under either of
@@ -129,6 +142,8 @@ be dual licensed as above, without any additional terms or conditions.
 
 [github-actions]: https://github.com/threema-ch/threema-msgapi-sdk-rust/actions?query=branch%3Amain
 [github-actions-badge]: https://github.com/threema-ch/threema-msgapi-sdk-rust/workflows/CI/badge.svg
+[codecov]: https://codecov.io/gh/threema-ch/threema-msgapi-sdk-rust
+[codecov-badge]: https://codecov.io/gh/threema-ch/threema-msgapi-sdk-rust/graph/badge.svg
 [crates-io]: https://crates.io/crates/threema-gateway
 [crates-io-badge]: https://img.shields.io/crates/v/threema-gateway.svg?maxAge=3600
 [crates-io-download]: https://crates.io/crates/threema-gateway
