@@ -67,11 +67,18 @@ jobs:
       - uses: taiki-e/install-action@cargo-llvm-cov
       - name: Measure code coverage
         run: |
-          cargo llvm-cov --all-features --summary-only > coverage.txt
-          cat coverage.txt
+          cargo llvm-cov --all-features --lcov --output-path lcov.info
+          cargo llvm-cov report --summary-only > /tmp/coverage.txt
+          cat /tmp/coverage.txt
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          cat coverage.txt >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/coverage.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v6
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info
+          fail_ci_if_error: true
 
   audit:
     name: run cargo audit
