@@ -57,7 +57,7 @@ async fn main() {
     println!("  From: {}", msg.from);
     println!("  To: {}", msg.to);
     println!("  Message ID: {}", msg.message_id);
-    println!("  Timestamp: {}", msg.date);
+    println!("  Timestamp: {}", msg.created_at);
     println!("  Sender nickname: {:?}", msg.nickname);
 
     // Fetch sender public key

@@ -11,6 +11,22 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### v0.21.0 (unreleased)
+
+This release contains a small breaking change in the `IncomingMessage` type:
+The `date` type was changed from `usize` to `u32`, and on that occasion it was
+renamed to `created_at` to align more closely with our usual protocol
+terminology.
+
+The reason for the change is that when parsing a date with the `chrono` crate,
+one needed to convert the `usize` into `i64`, which is fallible and needed to
+be handled by the library consumer. By using `u32`, that becomes an infallible
+conversion. The data type `u32` can represent a date up to 2106-02-07 which is
+sufficiently large.
+
+- [changed] Rename `IncomingMessage.date` to `created_at` and change field type
+  from `usize` to `u32` (#117)
+
 ### v0.20.0 (2026-04-07)
 
 This release adds support for end-to-end message encoding and decoding. Besides
