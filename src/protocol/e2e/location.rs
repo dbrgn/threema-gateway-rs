@@ -360,25 +360,25 @@ mod tests {
 
         #[test]
         fn valid() {
-            let c = Coordinates::new(47.3769, 8.5417).unwrap();
-            assert_eq!(c.latitude(), 47.3769);
-            assert_eq!(c.longitude(), 8.5417);
+            let coords = Coordinates::new(47.3769, 8.5417).unwrap();
+            assert_eq!(coords.latitude(), 47.3769);
+            assert_eq!(coords.longitude(), 8.5417);
         }
 
         #[test]
         fn boundary_latitude() {
-            let c = Coordinates::new(-90.0, 0.0).unwrap();
-            assert_eq!(c.latitude(), -90.0);
-            let c = Coordinates::new(90.0, 0.0).unwrap();
-            assert_eq!(c.latitude(), 90.0);
+            let coords = Coordinates::new(-90.0, 0.0).unwrap();
+            assert_eq!(coords.latitude(), -90.0);
+            let coords = Coordinates::new(90.0, 0.0).unwrap();
+            assert_eq!(coords.latitude(), 90.0);
         }
 
         #[test]
         fn boundary_longitude() {
-            let c = Coordinates::new(0.0, -180.0).unwrap();
-            assert_eq!(c.longitude(), -180.0);
-            let c = Coordinates::new(0.0, 180.0).unwrap();
-            assert_eq!(c.longitude(), 180.0);
+            let coords = Coordinates::new(0.0, -180.0).unwrap();
+            assert_eq!(coords.longitude(), -180.0);
+            let coords = Coordinates::new(0.0, 180.0).unwrap();
+            assert_eq!(coords.longitude(), 180.0);
         }
 
         #[test]
@@ -403,7 +403,7 @@ mod tests {
         fn nan_latitude() {
             let err = Coordinates::new(f64::NAN, 0.0).unwrap_err();
             assert!(
-                matches!(err, CoordinatesError::LatitudeOutOfRange(v) if v.is_nan()),
+                matches!(err, CoordinatesError::LatitudeOutOfRange(val) if val.is_nan()),
                 "expected LatitudeOutOfRange(NaN), got {err:?}"
             );
         }
@@ -412,7 +412,7 @@ mod tests {
         fn nan_longitude() {
             let err = Coordinates::new(0.0, f64::NAN).unwrap_err();
             assert!(
-                matches!(err, CoordinatesError::LongitudeOutOfRange(v) if v.is_nan()),
+                matches!(err, CoordinatesError::LongitudeOutOfRange(val) if val.is_nan()),
                 "expected LongitudeOutOfRange(NaN), got {err:?}"
             );
         }
@@ -678,8 +678,8 @@ mod tests {
                 matches!(
                     err,
                     LocationMessageParseError::InvalidCoordinates(
-                        CoordinatesError::LongitudeOutOfRange(v)
-                    ) if v.is_nan()
+                        CoordinatesError::LongitudeOutOfRange(val)
+                    ) if val.is_nan()
                 ),
                 "expected LongitudeOutOfRange(NaN), got {err:?}"
             );
