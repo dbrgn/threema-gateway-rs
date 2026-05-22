@@ -50,8 +50,9 @@ pub struct IncomingMessage {
     pub to: ThreemaId,
     /// Message ID assigned by the sender
     pub message_id: MessageId,
-    /// Message date set by the sender (UNIX timestamp)
-    pub date: usize,
+    /// Message creation date set by the sender (UNIX timestamp in seconds)
+    #[serde(rename = "date")]
+    pub created_at: u32,
     /// Nonce used for encryption (24 bytes, hex encoded)
     #[serde(deserialize_with = "deserialize_hex_string")]
     pub nonce: Vec<u8>,
@@ -226,7 +227,7 @@ mod tests {
                 from: "AAAAAAAA".try_into().unwrap(),
                 to: "*BBBBBBB".try_into().unwrap(),
                 message_id: MessageId::from_u64(0x0011_2233),
-                date: 0,
+                created_at: 0,
                 nonce: nonce.to_vec(),
                 box_data,
                 nickname: None,
@@ -249,7 +250,7 @@ mod tests {
                 from: "AAAAAAAA".try_into().unwrap(),
                 to: "*BBBBBBB".try_into().unwrap(),
                 message_id: MessageId::from_u64(0x0011_2233),
-                date: 0,
+                created_at: 0,
                 nonce: vec![1, 2, 3, 4], // Nonce too short!
                 box_data: vec![0],
                 nickname: None,
@@ -282,7 +283,7 @@ mod tests {
                 from: "AAAAAAAA".try_into().unwrap(),
                 to: "*BBBBBBB".try_into().unwrap(),
                 message_id: MessageId::from_u64(0x0011_2233),
-                date: 0,
+                created_at: 0,
                 nonce: nonce.to_vec(),
                 box_data,
                 nickname: None,
