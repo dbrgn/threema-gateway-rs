@@ -110,6 +110,18 @@ discussion](https://users.rust-lang.org/t/rust-version-requirement-change-as-sem
 This library uses [rustls](https://github.com/rustls/rustls) with native
 (system-provided) root certificates to establish a TLS connection.
 
+## Development
+
+To measure test coverage locally, install the required tooling once:
+
+    rustup component add llvm-tools-preview
+    cargo install cargo-llvm-cov
+
+Then run:
+
+    cargo llvm-cov --all-features          # terminal summary
+    cargo llvm-cov --all-features --open   # HTML report in browser
+
 ## License
 
 Licensed under either of
