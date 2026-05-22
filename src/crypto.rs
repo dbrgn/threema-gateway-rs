@@ -333,6 +333,8 @@ pub fn decrypt_file_data(
 mod test {
     use std::str::FromStr as _;
 
+    use rstest::rstest;
+
     use crate::{
         api::ApiBuilder,
         protocol::{BlobId, e2e::MessageType},
@@ -340,6 +342,12 @@ mod test {
     use crypto_box::{Nonce, PublicKey, SalsaBox, SecretKey};
 
     use super::*;
+
+    #[test]
+    fn file_and_thumb_nonces_are_distinct() {
+        // Sanity test
+        assert_ne!(get_file_nonce(), get_thumb_nonce());
+    }
 
     #[test]
     fn randombytes_uniform() {
@@ -417,6 +425,75 @@ mod test {
     }
 
     #[test]
+    fn encrypt_raw_roundtrip() {
+        // Generate keys
+        let sender_sk = SecretKey::generate(&mut OsRng);
+        let sender_pk = sender_sk.public_key();
+        let recipient_sk = SecretKey::generate(&mut OsRng);
+        let recipient_pk = recipient_sk.public_key();
+
+        // Encrypt bytes
+        let plaintext = b"hello world";
+        let encrypted = encrypt_raw(plaintext, &recipient_pk, &sender_sk).unwrap();
+
+        // Decrypt bytes
+        let crypto_box = SalsaBox::new(&sender_pk, &recipient_sk);
+        let decrypted = crypto_box
+            .decrypt(
+                &encrypted.nonce,
+                Payload::from(encrypted.ciphertext.as_ref()),
+            )
+            .unwrap();
+        assert_eq!(decrypted, plaintext);
+    }
+
+    #[test]
+    fn encrypt_output_structure() {
+        // Generate keys
+        let sender_sk = SecretKey::generate(&mut OsRng);
+        let sender_pk = sender_sk.public_key();
+        let recipient_sk = SecretKey::generate(&mut OsRng);
+        let recipient_pk = recipient_sk.public_key();
+
+        // Encrypt message
+        let plaintext = b"test";
+        let msgtype = MessageType::Text;
+        let encrypted = encrypt(plaintext, msgtype, &recipient_pk, &sender_sk).unwrap();
+
+        // Decrypt message into raw bytes
+        let crypto_box = SalsaBox::new(&sender_pk, &recipient_sk);
+        let decrypted = crypto_box
+            .decrypt(
+                &encrypted.nonce,
+                Payload::from(encrypted.ciphertext.as_ref()),
+            )
+            .unwrap();
+
+        // Validate PKCS#7-style padding
+        let padding_byte = *decrypted.last().unwrap();
+        let padding_amount = padding_byte as usize;
+        assert!(padding_byte >= 1, "padding must be at least 1 byte");
+        let padding = &decrypted[decrypted.len() - padding_amount..];
+        assert!(
+            padding.iter().all(|&byte| byte == padding_byte),
+            "all padding bytes must equal the padding length"
+        );
+
+        // Validate message structure: type byte + plaintext
+        let unpadded = &decrypted[..decrypted.len() - padding_amount];
+        let expected_type: u8 = msgtype.into();
+        assert_eq!(
+            unpadded[0], expected_type,
+            "first byte must be message type"
+        );
+        assert_eq!(
+            &unpadded[1..],
+            plaintext,
+            "remaining bytes must be plaintext"
+        );
+    }
+
+    #[test]
     fn recipient_key_from_publickey() {
         let bytes = [0; 32];
         let key = PublicKey::from_slice(&bytes).unwrap();
@@ -440,23 +517,18 @@ mod test {
         assert!(recipient.is_err());
     }
 
-    #[test]
-    fn recipient_key_from_str() {
-        let encoded = "5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0";
-        let recipient = RecipientKey::from_str(encoded);
-        assert!(recipient.is_ok());
+    #[rstest]
+    #[case::lowercase("5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0")]
+    #[case::uppercase("5CF143CD8F3652F31D9B44786C323FBC222ECFCBB8DAC5CAF5CAA257AC272DF0")]
+    fn recipient_key_from_str_valid(#[case] input: &str) {
+        assert!(RecipientKey::from_str(input).is_ok());
+    }
 
-        let encoded = "5CF143CD8F3652F31D9B44786C323FBC222ECFCBB8DAC5CAF5CAA257AC272DF0";
-        let recipient = RecipientKey::from_str(encoded);
-        assert!(recipient.is_ok());
-
-        let too_short = "5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5ca";
-        let recipient = RecipientKey::from_str(too_short);
-        assert!(recipient.is_err());
-
-        let invalid = "qyz143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0";
-        let recipient = RecipientKey::from_str(invalid);
-        assert!(recipient.is_err());
+    #[rstest]
+    #[case::too_short("5cf143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5ca")]
+    #[case::invalid_hex("qyz143cd8f3652f31d9b44786c323fbc222ecfcbb8dac5caf5caa257ac272df0")]
+    fn recipient_key_from_str_invalid(#[case] input: &str) {
+        assert!(RecipientKey::from_str(input).is_err());
     }
 
     #[test]
@@ -597,6 +669,15 @@ mod test {
                 "\"zz02030401020304010203040102030401020304010203040102030401020304\"",
             );
             assert!(result.is_err(), "Should reject invalid hex");
+        }
+
+        #[test]
+        fn try_from_wrong_size() {
+            let result = Key::try_from(vec![0_u8; 16]);
+            assert!(
+                matches!(result, Err(CryptoError::BadKey(_))),
+                "expected BadKey error for wrong-size key, got {result:?}"
+            );
         }
     }
 }
