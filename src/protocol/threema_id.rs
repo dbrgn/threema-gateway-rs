@@ -176,6 +176,44 @@ mod tests {
         ));
     }
 
+    #[rstest]
+    #[case::gateway("*RICHTIG", true)]
+    #[case::alphanumeric("ECHOECHO", false)]
+    fn is_gateway_id(#[case] input: &str, #[case] expected: bool) {
+        let id = ThreemaId::try_from(input).unwrap();
+        assert_eq!(id.is_gateway_id(), expected);
+    }
+
+    #[test]
+    fn as_bytes() {
+        let id = ThreemaId::try_from("ECHOECHO").unwrap();
+        assert_eq!(id.as_bytes(), b"ECHOECHO");
+    }
+
+    #[test]
+    fn display() {
+        let id = ThreemaId::try_from("ECHOECHO").unwrap();
+        assert_eq!(format!("{id}"), "ECHOECHO");
+    }
+
+    #[test]
+    fn debug() {
+        let id = ThreemaId::try_from("ECHOECHO").unwrap();
+        assert_eq!(format!("{id:?}"), "ThreemaId(\"ECHOECHO\")");
+    }
+
+    #[test]
+    fn into_string() {
+        let id = ThreemaId::try_from("ECHOECHO").unwrap();
+        assert_eq!(String::from(id), "ECHOECHO");
+    }
+
+    #[test]
+    fn from_str() {
+        let id: ThreemaId = "ECHOECHO".parse().unwrap();
+        assert_eq!(id.as_str(), "ECHOECHO");
+    }
+
     mod deserialize {
         use super::ThreemaId;
 
@@ -192,6 +230,13 @@ mod tests {
             let value = serde_json::Value::String("ECHOECHO".to_owned());
             let id: ThreemaId = serde_json::from_value(value).unwrap();
             assert_eq!(id.as_str(), "ECHOECHO");
+        }
+
+        /// Trigger the `expecting` error message by passing a non-string value.
+        #[test]
+        fn from_non_string_fails() {
+            let result: Result<ThreemaId, _> = serde_json::from_str("42");
+            assert!(result.is_err());
         }
     }
 }
