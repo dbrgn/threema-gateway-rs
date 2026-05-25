@@ -74,6 +74,7 @@ jobs:
           cat /tmp/coverage.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
       - name: Upload coverage to Codecov
+        if: github.event.pull_request.head.repo.full_name == github.repository
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
