@@ -1,6 +1,6 @@
 [package]
 name = "threema-gateway"
-version = "0.20.0"
+version = "0.21.0"
 authors = ["Threema GmbH <opensource@threema.ch>"]
 documentation = "https://docs.rs/threema-gateway"
 repository = "https://github.com/threema-ch/threema-msgapi-sdk-rust/"

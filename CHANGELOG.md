@@ -11,7 +11,7 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
-### v0.21.0 (unreleased)
+### v0.21.0 (2026-06-02)
 
 This release contains a small breaking change in the `IncomingMessage` type:
 The `date` type was changed from `usize` to `u32`, and on that occasion it was
