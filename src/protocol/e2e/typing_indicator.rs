@@ -118,7 +118,30 @@ mod tests {
     use super::*;
 
     mod typing_indicator {
+        use rstest::rstest;
+
         use super::*;
+
+        #[rstest]
+        #[case::typing(TypingStatus::Typing, true)]
+        #[case::not_typing(TypingStatus::NotTyping, false)]
+        fn is_typing(#[case] status: TypingStatus, #[case] expected: bool) {
+            assert_eq!(status.is_typing(), expected);
+        }
+
+        #[rstest]
+        #[case::typing(TypingStatus::Typing, true)]
+        #[case::not_typing(TypingStatus::NotTyping, false)]
+        fn from_status_to_bool(#[case] status: TypingStatus, #[case] expected: bool) {
+            assert_eq!(bool::from(status), expected);
+        }
+
+        #[rstest]
+        #[case::typing(true, TypingStatus::Typing)]
+        #[case::not_typing(false, TypingStatus::NotTyping)]
+        fn from_bool_to_status(#[case] val: bool, #[case] expected: TypingStatus) {
+            assert_eq!(TypingStatus::from(val), expected);
+        }
 
         #[test]
         fn to_u8() {
