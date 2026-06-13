@@ -58,6 +58,52 @@ impl<'de> Deserialize<'de> for BlobId {
     }
 }
 
+#[cfg(feature = "sqlx")]
+impl<DB> sqlx::Type<DB> for BlobId
+where
+    DB: sqlx::Database,
+    Vec<u8>: sqlx::Type<DB>,
+{
+    fn type_info() -> <DB as sqlx::Database>::TypeInfo {
+        <Vec<u8> as sqlx::Type<DB>>::type_info()
+    }
+
+    fn compatible(ty: &<DB as sqlx::Database>::TypeInfo) -> bool {
+        <Vec<u8> as sqlx::Type<DB>>::compatible(ty)
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl<'enc, DB> sqlx::Encode<'enc, DB> for BlobId
+where
+    DB: sqlx::Database,
+    Vec<u8>: sqlx::Encode<'enc, DB>,
+{
+    fn encode_by_ref(
+        &self,
+        buf: &mut <DB as sqlx::Database>::ArgumentBuffer<'enc>,
+    ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
+        <Vec<u8> as sqlx::Encode<'enc, DB>>::encode(self.0.to_vec(), buf)
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl<'dec, DB> sqlx::Decode<'dec, DB> for BlobId
+where
+    DB: sqlx::Database,
+    Vec<u8>: sqlx::Decode<'dec, DB>,
+{
+    fn decode(
+        value: <DB as sqlx::Database>::ValueRef<'dec>,
+    ) -> Result<Self, sqlx::error::BoxDynError> {
+        let bytes = <Vec<u8> as sqlx::Decode<'dec, DB>>::decode(value)?;
+        let arr: [u8; 16] = bytes
+            .try_into()
+            .map_err(|bytes: Vec<u8>| format!("BlobId requires 16 bytes, got {}", bytes.len()))?;
+        Ok(BlobId::new(arr))
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -88,6 +134,21 @@ mod test {
 
             let deserialized: BlobId = serde_json::from_str(&json).unwrap();
             assert_eq!(deserialized, blob_id);
+        }
+
+        #[cfg(feature = "sqlx")]
+        mod sqlx_bounds {
+            use super::BlobId;
+
+            #[test]
+            fn implements_sqlx_traits() {
+                fn assert_type<T: sqlx::Type<sqlx::Sqlite>>() {}
+                fn assert_encode<T: for<'enc> sqlx::Encode<'enc, sqlx::Sqlite>>() {}
+                fn assert_decode<T: for<'dec> sqlx::Decode<'dec, sqlx::Sqlite>>() {}
+                assert_type::<BlobId>();
+                assert_encode::<BlobId>();
+                assert_decode::<BlobId>();
+            }
         }
     }
 }

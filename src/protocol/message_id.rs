@@ -89,6 +89,49 @@ impl<'de> Deserialize<'de> for MessageId {
     }
 }
 
+#[cfg(feature = "sqlx")]
+impl<DB> sqlx::Type<DB> for MessageId
+where
+    DB: sqlx::Database,
+    String: sqlx::Type<DB>,
+{
+    fn type_info() -> <DB as sqlx::Database>::TypeInfo {
+        <String as sqlx::Type<DB>>::type_info()
+    }
+
+    fn compatible(ty: &<DB as sqlx::Database>::TypeInfo) -> bool {
+        <String as sqlx::Type<DB>>::compatible(ty)
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl<'enc, DB> sqlx::Encode<'enc, DB> for MessageId
+where
+    DB: sqlx::Database,
+    String: sqlx::Encode<'enc, DB>,
+{
+    fn encode_by_ref(
+        &self,
+        buf: &mut <DB as sqlx::Database>::ArgumentBuffer<'enc>,
+    ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
+        <String as sqlx::Encode<'enc, DB>>::encode(self.to_hex_le(), buf)
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl<'dec, DB> sqlx::Decode<'dec, DB> for MessageId
+where
+    DB: sqlx::Database,
+    String: sqlx::Decode<'dec, DB>,
+{
+    fn decode(
+        value: <DB as sqlx::Database>::ValueRef<'dec>,
+    ) -> Result<Self, sqlx::error::BoxDynError> {
+        let hex = <String as sqlx::Decode<'dec, DB>>::decode(value)?;
+        MessageId::from_hex_le(&hex).map_err(Into::into)
+    }
+}
+
 /// A non-empty collection of [`MessageId`]s.
 ///
 /// This newtype guarantees at construction time that at least one message ID is
@@ -343,6 +386,21 @@ mod tests {
                 MessageIds::from_slice(&[mid(5), mid(6)]).expect("non-empty slice should succeed");
             let vec: Vec<MessageId> = ids.into();
             assert_eq!(vec, vec![mid(5), mid(6)]);
+        }
+    }
+
+    #[cfg(feature = "sqlx")]
+    mod sqlx_bounds {
+        use super::MessageId;
+
+        #[test]
+        fn implements_sqlx_traits() {
+            fn assert_type<T: sqlx::Type<sqlx::Sqlite>>() {}
+            fn assert_encode<T: for<'enc> sqlx::Encode<'enc, sqlx::Sqlite>>() {}
+            fn assert_decode<T: for<'dec> sqlx::Decode<'dec, sqlx::Sqlite>>() {}
+            assert_type::<MessageId>();
+            assert_encode::<MessageId>();
+            assert_decode::<MessageId>();
         }
     }
 }

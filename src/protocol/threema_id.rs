@@ -124,6 +124,49 @@ impl FromStr for ThreemaId {
     }
 }
 
+#[cfg(feature = "sqlx")]
+impl<DB> sqlx::Type<DB> for ThreemaId
+where
+    DB: sqlx::Database,
+    String: sqlx::Type<DB>,
+{
+    fn type_info() -> <DB as sqlx::Database>::TypeInfo {
+        <String as sqlx::Type<DB>>::type_info()
+    }
+
+    fn compatible(ty: &<DB as sqlx::Database>::TypeInfo) -> bool {
+        <String as sqlx::Type<DB>>::compatible(ty)
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl<'enc, DB> sqlx::Encode<'enc, DB> for ThreemaId
+where
+    DB: sqlx::Database,
+    String: sqlx::Encode<'enc, DB>,
+{
+    fn encode_by_ref(
+        &self,
+        buf: &mut <DB as sqlx::Database>::ArgumentBuffer<'enc>,
+    ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
+        <String as sqlx::Encode<'enc, DB>>::encode(self.as_str().to_owned(), buf)
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl<'dec, DB> sqlx::Decode<'dec, DB> for ThreemaId
+where
+    DB: sqlx::Database,
+    String: sqlx::Decode<'dec, DB>,
+{
+    fn decode(
+        value: <DB as sqlx::Database>::ValueRef<'dec>,
+    ) -> Result<Self, sqlx::error::BoxDynError> {
+        let decoded = <String as sqlx::Decode<'dec, DB>>::decode(value)?;
+        ThreemaId::try_from(decoded.as_str()).map_err(Into::into)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -237,6 +280,21 @@ mod tests {
         fn from_non_string_fails() {
             let result: Result<ThreemaId, _> = serde_json::from_str("42");
             assert!(result.is_err());
+        }
+    }
+
+    #[cfg(feature = "sqlx")]
+    mod sqlx_bounds {
+        use super::ThreemaId;
+
+        #[test]
+        fn implements_sqlx_traits() {
+            fn assert_type<T: sqlx::Type<sqlx::Sqlite>>() {}
+            fn assert_encode<T: for<'enc> sqlx::Encode<'enc, sqlx::Sqlite>>() {}
+            fn assert_decode<T: for<'dec> sqlx::Decode<'dec, sqlx::Sqlite>>() {}
+            assert_type::<ThreemaId>();
+            assert_encode::<ThreemaId>();
+            assert_decode::<ThreemaId>();
         }
     }
 }
