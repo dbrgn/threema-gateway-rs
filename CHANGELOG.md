@@ -11,6 +11,11 @@ Possible log types:
 - `[fixed]` for any bug fixes.
 - `[security]` to invite users to upgrade in case of vulnerabilities.
 
+### Unreleased
+
+- [added] Optional [sqlx](https://docs.rs/sqlx/) support for the following
+  newtypes: `ThreemaId`, `MessageId`, `BlobId`, `RecipientKey`
+
 ### v0.21.0 (2026-06-02)
 
 This release contains a small breaking change in the `IncomingMessage` type:

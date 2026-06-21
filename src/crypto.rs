@@ -188,6 +188,49 @@ impl FromStr for RecipientKey {
     }
 }
 
+#[cfg(feature = "sqlx")]
+impl<DB> sqlx::Type<DB> for RecipientKey
+where
+    DB: sqlx::Database,
+    Vec<u8>: sqlx::Type<DB>,
+{
+    fn type_info() -> <DB as sqlx::Database>::TypeInfo {
+        <Vec<u8> as sqlx::Type<DB>>::type_info()
+    }
+
+    fn compatible(ty: &<DB as sqlx::Database>::TypeInfo) -> bool {
+        <Vec<u8> as sqlx::Type<DB>>::compatible(ty)
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl<'enc, DB> sqlx::Encode<'enc, DB> for RecipientKey
+where
+    DB: sqlx::Database,
+    Vec<u8>: sqlx::Encode<'enc, DB>,
+{
+    fn encode_by_ref(
+        &self,
+        buf: &mut <DB as sqlx::Database>::ArgumentBuffer<'enc>,
+    ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
+        <Vec<u8> as sqlx::Encode<'enc, DB>>::encode(self.as_bytes().to_vec(), buf)
+    }
+}
+
+#[cfg(feature = "sqlx")]
+impl<'dec, DB> sqlx::Decode<'dec, DB> for RecipientKey
+where
+    DB: sqlx::Database,
+    Vec<u8>: sqlx::Decode<'dec, DB>,
+{
+    fn decode(
+        value: <DB as sqlx::Database>::ValueRef<'dec>,
+    ) -> Result<Self, sqlx::error::BoxDynError> {
+        let bytes = <Vec<u8> as sqlx::Decode<'dec, DB>>::decode(value)?;
+        RecipientKey::from_bytes(&bytes).map_err(Into::into)
+    }
+}
+
 /// Encrypt raw data for the recipient.
 pub fn encrypt_raw(
     data: &[u8],
@@ -678,6 +721,21 @@ mod test {
                 matches!(result, Err(CryptoError::BadKey(_))),
                 "expected BadKey error for wrong-size key, got {result:?}"
             );
+        }
+    }
+
+    #[cfg(feature = "sqlx")]
+    mod sqlx_bounds {
+        use super::RecipientKey;
+
+        #[test]
+        fn implements_sqlx_traits() {
+            fn assert_type<T: sqlx::Type<sqlx::Sqlite>>() {}
+            fn assert_encode<T: for<'enc> sqlx::Encode<'enc, sqlx::Sqlite>>() {}
+            fn assert_decode<T: for<'dec> sqlx::Decode<'dec, sqlx::Sqlite>>() {}
+            assert_type::<RecipientKey>();
+            assert_encode::<RecipientKey>();
+            assert_decode::<RecipientKey>();
         }
     }
 }

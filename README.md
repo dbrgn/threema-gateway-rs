@@ -97,6 +97,8 @@ This library offers the following optional features:
 - `public-key-cache-inmemory`: Add support for `InMemoryPublicKeyCache` implementation backed by
   [moka](https://crates.io/crates/moka).
 - `public-key-cache-redis`: Add support for `RedisPublicKeyCache` implementation.
+- `sqlx`: Provide database-generic [`sqlx`](https://crates.io/crates/sqlx) `Type`, `Encode`, and
+  `Decode` impls for the following newtypes: `ThreemaId`, `MessageId`, `BlobId`, `RecipientKey`.
 
 ## Rust Version Requirements (MSRV)
 
