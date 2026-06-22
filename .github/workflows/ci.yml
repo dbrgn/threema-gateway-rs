@@ -89,3 +89,46 @@ jobs:
       - uses: actions/checkout@v6
       - name: Audit all used dependencies
         run: cargo audit
+
+  ffi-bindings:
+    name: verify FFI bindings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: $RUST_VERSION
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      - name: Build FFI cdylib
+        run: cargo build -p threema-gateway-ffi
+      - name: Regenerate Python bindings
+        # `uniffi-bindgen` lives outside the workspace, so it needs its own manifest path.
+        # Must use the same uniffi version as the FFI crate (both pinned to =0.31.2).
+        run: |
+          cargo run --manifest-path uniffi-bindgen/Cargo.toml -- \
+            generate --library target/debug/libthreema_gateway_ffi.so \
+            --language python \
+            --out-dir bindings/python/
+      - name: Verify checked-in bindings match source
+        # If this fails, the FFI surface changed without regenerating the foreign-side bindings.
+        # Run the command above locally and commit the regenerated files.
+        run: |
+          if ! git diff --exit-code bindings/; then
+            echo "::error::FFI surface changed but bindings/ was not regenerated. See bindings/README.md."
+            exit 1
+          fi
+      - name: Smoke test Python bindings
+        # Loading the module runs uniffi's contract-version check; we also explicitly invoke the
+        # per-function checksum verifier (it's generated but commented out by default in the .py).
+        working-directory: bindings/python
+        run: |
+          cp ../../target/debug/libthreema_gateway_ffi.so .
+          python3 -c "
+          import threema_gateway_ffi as m
+          m._uniffi_check_api_checksums(m._UniffiLib)
+          assert m.SimpleApi is not None
+          assert m.ApiError.NoCredits is not None
+          print('FFI bindings load OK')
+          "
