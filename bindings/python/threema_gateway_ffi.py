@@ -1101,10 +1101,10 @@ class _UniffiFfiConverterTypeRecipientKey(_UniffiConverterRustBuffer):
 # namespace.
 class ApiError(Exception):
     """
-    Errors when interacting with the API.
+    Errors raised by the Gateway API.
 
-    This is a flat error type, i.e. variant payloads are not exposed to the
-    foreign side. Instead, the `Display` representation is used.
+    Match on specific variants for programmatic handling; the `Display`
+    representation is suitable for logging.
 """
     pass
 
@@ -1112,26 +1112,193 @@ _UniffiTempApiError = ApiError
 
 class ApiError:  # type: ignore
     """
-    Errors when interacting with the API.
+    Errors raised by the Gateway API.
 
-    This is a flat error type, i.e. variant payloads are not exposed to the
-    foreign side. Instead, the `Display` representation is used.
+    Match on specific variants for programmatic handling; the `Display`
+    representation is suitable for logging.
 """
     
-    class Api(_UniffiTempApiError):
-        """
-        See [`lib::errors::ApiError`].
-"""
-        def __repr__(self):
-            return "ApiError.Api({})".format(repr(str(self)))
-    _UniffiTempApiError.Api = Api # type: ignore
     class InvalidThreemaId(_UniffiTempApiError):
         """
-        Invalid Threema ID passed from the foreign side.
+        The provided Threema ID was malformed (wrong length or invalid
+        characters). Raised at the FFI boundary before any network call is
+        made.
 """
+        
+        def __init__(self, message):
+            super().__init__(", ".join([
+                "message={!r}".format(message),
+            ]))
+            self.message = message
+
         def __repr__(self):
-            return "ApiError.InvalidThreemaId({})".format(repr(str(self)))
+            return "ApiError.InvalidThreemaId({})".format(str(self))
     _UniffiTempApiError.InvalidThreemaId = InvalidThreemaId # type: ignore
+    class BadSenderOrRecipient(_UniffiTempApiError):
+        """
+        The recipient identity is invalid or the account is not set up for the
+        requested mode.
+"""
+        
+        def __init__(self):
+            pass
+
+        def __repr__(self):
+            return "ApiError.BadSenderOrRecipient({})".format(str(self))
+    _UniffiTempApiError.BadSenderOrRecipient = BadSenderOrRecipient # type: ignore
+    class BadCredentials(_UniffiTempApiError):
+        """
+        Gateway ID or secret is incorrect.
+"""
+        
+        def __init__(self):
+            pass
+
+        def __repr__(self):
+            return "ApiError.BadCredentials({})".format(str(self))
+    _UniffiTempApiError.BadCredentials = BadCredentials # type: ignore
+    class NoCredits(_UniffiTempApiError):
+        """
+        No credits remain on the Gateway account.
+"""
+        
+        def __init__(self):
+            pass
+
+        def __repr__(self):
+            return "ApiError.NoCredits({})".format(str(self))
+    _UniffiTempApiError.NoCredits = NoCredits # type: ignore
+    class IdNotFound(_UniffiTempApiError):
+        """
+        Target ID not found in the directory.
+"""
+        
+        def __init__(self):
+            pass
+
+        def __repr__(self):
+            return "ApiError.IdNotFound({})".format(str(self))
+    _UniffiTempApiError.IdNotFound = IdNotFound # type: ignore
+    class MessageTooLong(_UniffiTempApiError):
+        """
+        Message exceeded the maximum size.
+"""
+        
+        def __init__(self):
+            pass
+
+        def __repr__(self):
+            return "ApiError.MessageTooLong({})".format(str(self))
+    _UniffiTempApiError.MessageTooLong = MessageTooLong # type: ignore
+    class ServerError(_UniffiTempApiError):
+        """
+        Internal Threema Gateway server error (5xx).
+"""
+        
+        def __init__(self):
+            pass
+
+        def __repr__(self):
+            return "ApiError.ServerError({})".format(str(self))
+    _UniffiTempApiError.ServerError = ServerError # type: ignore
+    class BadHashLength(_UniffiTempApiError):
+        """
+        Provided hash had wrong length (phone or email hash lookup).
+"""
+        
+        def __init__(self):
+            pass
+
+        def __repr__(self):
+            return "ApiError.BadHashLength({})".format(str(self))
+    _UniffiTempApiError.BadHashLength = BadHashLength # type: ignore
+    class BadBlob(_UniffiTempApiError):
+        """
+        Bad blob (size or content).
+"""
+        
+        def __init__(self):
+            pass
+
+        def __repr__(self):
+            return "ApiError.BadBlob({})".format(str(self))
+    _UniffiTempApiError.BadBlob = BadBlob # type: ignore
+    class BadBlobId(_UniffiTempApiError):
+        """
+        Invalid blob ID.
+"""
+        
+        def __init__(self):
+            pass
+
+        def __repr__(self):
+            return "ApiError.BadBlobId({})".format(str(self))
+    _UniffiTempApiError.BadBlobId = BadBlobId # type: ignore
+    class InvalidMac(_UniffiTempApiError):
+        """
+        MAC verification failed on an incoming message.
+"""
+        
+        def __init__(self):
+            pass
+
+        def __repr__(self):
+            return "ApiError.InvalidMac({})".format(str(self))
+    _UniffiTempApiError.InvalidMac = InvalidMac # type: ignore
+    class RateLimitReached(_UniffiTempApiError):
+        """
+        Too many requests; rate limit reached.
+"""
+        
+        def __init__(self):
+            pass
+
+        def __repr__(self):
+            return "ApiError.RateLimitReached({})".format(str(self))
+    _UniffiTempApiError.RateLimitReached = RateLimitReached # type: ignore
+    class Transport(_UniffiTempApiError):
+        """
+        HTTP transport or network failure (DNS, TLS, connection, I/O, URL).
+"""
+        
+        def __init__(self, message):
+            super().__init__(", ".join([
+                "message={!r}".format(message),
+            ]))
+            self.message = message
+
+        def __repr__(self):
+            return "ApiError.Transport({})".format(str(self))
+    _UniffiTempApiError.Transport = Transport # type: ignore
+    class Parse(_UniffiTempApiError):
+        """
+        Could not parse the server response.
+"""
+        
+        def __init__(self, message):
+            super().__init__(", ".join([
+                "message={!r}".format(message),
+            ]))
+            self.message = message
+
+        def __repr__(self):
+            return "ApiError.Parse({})".format(str(self))
+    _UniffiTempApiError.Parse = Parse # type: ignore
+    class Other(_UniffiTempApiError):
+        """
+        Any other API error not covered by the variants above. Inspect
+        `message` for details before resorting to programmatic handling.
+"""
+        
+        def __init__(self, message):
+            super().__init__(", ".join([
+                "message={!r}".format(message),
+            ]))
+            self.message = message
+
+        def __repr__(self):
+            return "ApiError.Other({})".format(str(self))
+    _UniffiTempApiError.Other = Other # type: ignore
 
 ApiError = _UniffiTempApiError # type: ignore
 del _UniffiTempApiError
@@ -1142,28 +1309,129 @@ class _UniffiFfiConverterTypeApiError(_UniffiConverterRustBuffer):
     def read(buf):
         variant = buf.read_i32()
         if variant == 1:
-            return ApiError.Api(
+            return ApiError.InvalidThreemaId(
                 _UniffiFfiConverterString.read(buf),
             )
         if variant == 2:
-            return ApiError.InvalidThreemaId(
+            return ApiError.BadSenderOrRecipient(
+            )
+        if variant == 3:
+            return ApiError.BadCredentials(
+            )
+        if variant == 4:
+            return ApiError.NoCredits(
+            )
+        if variant == 5:
+            return ApiError.IdNotFound(
+            )
+        if variant == 6:
+            return ApiError.MessageTooLong(
+            )
+        if variant == 7:
+            return ApiError.ServerError(
+            )
+        if variant == 8:
+            return ApiError.BadHashLength(
+            )
+        if variant == 9:
+            return ApiError.BadBlob(
+            )
+        if variant == 10:
+            return ApiError.BadBlobId(
+            )
+        if variant == 11:
+            return ApiError.InvalidMac(
+            )
+        if variant == 12:
+            return ApiError.RateLimitReached(
+            )
+        if variant == 13:
+            return ApiError.Transport(
+                _UniffiFfiConverterString.read(buf),
+            )
+        if variant == 14:
+            return ApiError.Parse(
+                _UniffiFfiConverterString.read(buf),
+            )
+        if variant == 15:
+            return ApiError.Other(
                 _UniffiFfiConverterString.read(buf),
             )
         raise InternalError("Raw enum value doesn't match any cases")
 
     @staticmethod
     def check_lower(value):
-        if isinstance(value, ApiError.Api):
-            return
         if isinstance(value, ApiError.InvalidThreemaId):
+            _UniffiFfiConverterString.check_lower(value.message)
+            return
+        if isinstance(value, ApiError.BadSenderOrRecipient):
+            return
+        if isinstance(value, ApiError.BadCredentials):
+            return
+        if isinstance(value, ApiError.NoCredits):
+            return
+        if isinstance(value, ApiError.IdNotFound):
+            return
+        if isinstance(value, ApiError.MessageTooLong):
+            return
+        if isinstance(value, ApiError.ServerError):
+            return
+        if isinstance(value, ApiError.BadHashLength):
+            return
+        if isinstance(value, ApiError.BadBlob):
+            return
+        if isinstance(value, ApiError.BadBlobId):
+            return
+        if isinstance(value, ApiError.InvalidMac):
+            return
+        if isinstance(value, ApiError.RateLimitReached):
+            return
+        if isinstance(value, ApiError.Transport):
+            _UniffiFfiConverterString.check_lower(value.message)
+            return
+        if isinstance(value, ApiError.Parse):
+            _UniffiFfiConverterString.check_lower(value.message)
+            return
+        if isinstance(value, ApiError.Other):
+            _UniffiFfiConverterString.check_lower(value.message)
             return
 
     @staticmethod
     def write(value, buf):
-        if isinstance(value, ApiError.Api):
-            buf.write_i32(1)
         if isinstance(value, ApiError.InvalidThreemaId):
+            buf.write_i32(1)
+            _UniffiFfiConverterString.write(value.message, buf)
+        if isinstance(value, ApiError.BadSenderOrRecipient):
             buf.write_i32(2)
+        if isinstance(value, ApiError.BadCredentials):
+            buf.write_i32(3)
+        if isinstance(value, ApiError.NoCredits):
+            buf.write_i32(4)
+        if isinstance(value, ApiError.IdNotFound):
+            buf.write_i32(5)
+        if isinstance(value, ApiError.MessageTooLong):
+            buf.write_i32(6)
+        if isinstance(value, ApiError.ServerError):
+            buf.write_i32(7)
+        if isinstance(value, ApiError.BadHashLength):
+            buf.write_i32(8)
+        if isinstance(value, ApiError.BadBlob):
+            buf.write_i32(9)
+        if isinstance(value, ApiError.BadBlobId):
+            buf.write_i32(10)
+        if isinstance(value, ApiError.InvalidMac):
+            buf.write_i32(11)
+        if isinstance(value, ApiError.RateLimitReached):
+            buf.write_i32(12)
+        if isinstance(value, ApiError.Transport):
+            buf.write_i32(13)
+            _UniffiFfiConverterString.write(value.message, buf)
+        if isinstance(value, ApiError.Parse):
+            buf.write_i32(14)
+            _UniffiFfiConverterString.write(value.message, buf)
+        if isinstance(value, ApiError.Other):
+            buf.write_i32(15)
+            _UniffiFfiConverterString.write(value.message, buf)
 
 
 
