@@ -1,2 +1,10 @@
+# This directory holds only the Python packaging config (pyproject.toml + README.md).
+# maturin generates the bindings module into the cargo target dir at build time; it is
+# not committed. The entries below are local/CI build artifacts only.
+/dist
 __pycache__
+
+# Present only if you manually generate bindings here to inspect them (the cdylib and the
+# generated module); both are otherwise produced by maturin under the cargo target dir.
+/threema_gateway.py
 *.so

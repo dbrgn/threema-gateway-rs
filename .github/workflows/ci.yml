@@ -90,45 +90,49 @@ jobs:
       - name: Audit all used dependencies
         run: cargo audit
 
-  ffi-bindings:
-    name: verify FFI bindings
+  python-wheels:
+    name: build Python wheels (Linux)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@v1
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
         with:
-          toolchain: $RUST_VERSION
-      - uses: actions/setup-python@v6
+          working-directory: bindings/python
+          command: build
+          # maturin shells out to `uniffi-bindgen`. Our generator is a workspace-excluded
+          # crate (it pulls in uniffi's `cli` feature, which must not leak into the cdylib),
+          # so install our pinned copy onto PATH inside the manylinux container. `--locked`
+          # keeps it at the exact uniffi version; a mismatch surfaces as a runtime checksum
+          # error, not a build failure. `before-script-linux` runs in `working-directory`.
+          before-script-linux: cargo install --path ../../uniffi-bindgen --locked
+          args: --release --out dist
+          manylinux: auto
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
         with:
-          python-version: "3.x"
-      - name: Build FFI cdylib
-        run: cargo build -p threema-gateway-ffi
-      - name: Regenerate Python bindings
-        # `uniffi-bindgen` lives outside the workspace, so it needs its own manifest path.
-        # Must use the same uniffi version as the FFI crate (both pinned to =0.31.2).
+          working-directory: bindings/python
+          command: sdist
+          args: --out dist
+      - name: Smoke test built wheel
+        # Importing runs uniffi's contract-version check. We also invoke the per-function
+        # checksum verifier explicitly (it lives in the inner module and is not called at
+        # import). In the maturin flow the .py and .so come from the same build, but it
+        # asserts full ABI agreement for free.
         run: |
-          cargo run --manifest-path uniffi-bindgen/Cargo.toml -- \
-            generate --library target/debug/libthreema_gateway_ffi.so \
-            --language python \
-            --out-dir bindings/python/
-      - name: Verify checked-in bindings match source
-        # If this fails, the FFI surface changed without regenerating the foreign-side bindings.
-        # Run the command above locally and commit the regenerated files.
-        run: |
-          if ! git diff --exit-code bindings/; then
-            echo "::error::FFI surface changed but bindings/ was not regenerated. See bindings/README.md."
-            exit 1
-          fi
-      - name: Smoke test Python bindings
-        # Loading the module runs uniffi's contract-version check; we also explicitly invoke the
-        # per-function checksum verifier (it's generated but commented out by default in the .py).
-        working-directory: bindings/python
-        run: |
-          cp ../../target/debug/libthreema_gateway_ffi.so .
-          python3 -c "
-          import threema_gateway_ffi as m
-          m._uniffi_check_api_checksums(m._UniffiLib)
+          python3 -m venv /tmp/wheel-venv
+          /tmp/wheel-venv/bin/pip install bindings/python/dist/*.whl
+          /tmp/wheel-venv/bin/python -c "
+          import threema_gateway as m
+          from threema_gateway.threema_gateway import _uniffi_check_api_checksums, _UniffiLib
+          _uniffi_check_api_checksums(_UniffiLib)
           assert m.SimpleApi is not None
+          assert m.ThreemaId('*MYID123').as_str() == '*MYID123'
           assert m.ApiError.NoCredits is not None
-          print('FFI bindings load OK')
+          print('wheel import OK')
           "
+      - name: Upload wheels and sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dist-linux
+          path: bindings/python/dist

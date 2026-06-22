@@ -1,0 +1,39 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "threema-gateway"
+description = "Official Python bindings for the Threema Gateway SDK."
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT OR Apache-2.0"
+authors = [{ name = "Threema GmbH", email = "opensource@threema.ch" }]
+keywords = ["threema", "gateway"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "Topic :: Communications :: Chat",
+]
+# Read from the crate version in Cargo.toml by maturin.
+dynamic = ["version"]
+
+[project.urls]
+source = "https://github.com/threema-ch/threema-msgapi-sdk-rust/"
+
+[tool.maturin]
+# UniFFI library mode: maturin builds the cdylib, generates the foreign-language
+# module from it (namespace `threema_gateway`, set via `setup_scaffolding!` in the
+# crate's `src/lib.rs`), and bundles both into the wheel.
+bindings = "uniffi"
+# Import name of the published package. Defaults to the cargo lib name
+# (`threema_gateway_ffi`); we expose the cleaner `threema_gateway` instead.
+module-name = "threema_gateway"
+# This packaging project is decoupled from the Rust crate: the crate stays
+# language-agnostic (it knows nothing about Python), and this directory holds
+# only the Python-specific packaging. The path is relative to this file.
+manifest-path = "../../threema-gateway-ffi/Cargo.toml"

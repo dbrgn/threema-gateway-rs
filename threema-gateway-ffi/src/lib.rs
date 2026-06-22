@@ -37,13 +37,6 @@
 //! with strict concurrency enabled must mark their conforming class `@unchecked Sendable`
 //! or arrange for actual `Sendable` correctness. Surface this in the README example for
 //! the trait when it lands, then remove this note.
-//!
-//! ## Regenerating bindings
-//!
-//! Every change to the FFI surface (new method, signature change, new variant) changes
-//! the per-function checksums embedded on both sides. The checked-in Python file in
-//! `bindings/python/` must be regenerated, otherwise foreign-side import fails at runtime
-//! with a checksum mismatch - `cargo check` will not catch this.
 
 mod errors;
 mod lookup;
@@ -51,7 +44,7 @@ mod recipient;
 mod simple_api;
 mod threema_id;
 
-uniffi::setup_scaffolding!();
+uniffi::setup_scaffolding!("threema_gateway");
 
 pub use crate::{
     errors::ApiError,
