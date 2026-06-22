@@ -1,7 +1,11 @@
 [workspace]
 resolver = "3"
 members = [
-    "threema-gateway"
+    "threema-gateway",
+    "threema-gateway-ffi",
+]
+exclude = [
+    "uniffi-bindgen",
 ]
 
 [workspace.lints.rust]

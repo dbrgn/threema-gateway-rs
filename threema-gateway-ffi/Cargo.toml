@@ -1,0 +1,18 @@
+[package]
+name = "threema-gateway-ffi"
+version = "0.21.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["lib", "cdylib"]
+name = "threema_gateway_ffi"
+
+[dependencies]
+thiserror = "2"
+threema-gateway = { path = "../threema-gateway" }
+tokio = { version = "1", features = ["rt-multi-thread"] }
+uniffi = "0.31"
+
+[lints]
+workspace = true
