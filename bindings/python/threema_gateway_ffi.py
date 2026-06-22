@@ -479,19 +479,19 @@ def _uniffi_check_contract_api_version(lib):
         raise InternalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
 
 def _uniffi_check_api_checksums(lib):
-    if lib.uniffi_threema_gateway_ffi_checksum_constructor_simpleapi_new() != 12066:
+    if lib.uniffi_threema_gateway_ffi_checksum_constructor_simpleapi_new() != 4625:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_threema_gateway_ffi_checksum_constructor_simpleapi_new_with_endpoint() != 3945:
+    if lib.uniffi_threema_gateway_ffi_checksum_constructor_simpleapi_new_with_endpoint() != 16968:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_capabilities() != 14048:
+    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_capabilities() != 44558:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_credits() != 58484:
+    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_credits() != 13812:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_id() != 20419:
+    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_id() != 14072:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_pubkey() != 19856:
+    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_pubkey() != 19463:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_send() != 46609:
+    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_send() != 39535:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
 
 # A ctypes library to expose the extern-C FFI definitions.
@@ -1103,7 +1103,7 @@ class ApiError(Exception):
     """
     Errors raised by the Gateway API.
 
-    Match on specific variants for programmatic handling; the `Display`
+    Match on specific variants for programmatic handling. The `Display`
     representation is suitable for logging.
 """
     pass
@@ -1114,15 +1114,14 @@ class ApiError:  # type: ignore
     """
     Errors raised by the Gateway API.
 
-    Match on specific variants for programmatic handling; the `Display`
+    Match on specific variants for programmatic handling. The `Display`
     representation is suitable for logging.
 """
     
     class InvalidThreemaId(_UniffiTempApiError):
         """
-        The provided Threema ID was malformed (wrong length or invalid
-        characters). Raised at the FFI boundary before any network call is
-        made.
+        The provided Threema ID was malformed (wrong length or invalid characters). Raised at the FFI boundary
+        before any network call is made.
 """
         
         def __init__(self, message):
@@ -1136,8 +1135,7 @@ class ApiError:  # type: ignore
     _UniffiTempApiError.InvalidThreemaId = InvalidThreemaId # type: ignore
     class BadSenderOrRecipient(_UniffiTempApiError):
         """
-        The recipient identity is invalid or the account is not set up for the
-        requested mode.
+        The recipient identity is invalid or the account is not set up for the requested mode.
 """
         
         def __init__(self):
@@ -1247,7 +1245,7 @@ class ApiError:  # type: ignore
     _UniffiTempApiError.InvalidMac = InvalidMac # type: ignore
     class RateLimitReached(_UniffiTempApiError):
         """
-        Too many requests; rate limit reached.
+        Too many requests, rate limit reached.
 """
         
         def __init__(self):
@@ -1286,8 +1284,8 @@ class ApiError:  # type: ignore
     _UniffiTempApiError.Parse = Parse # type: ignore
     class Other(_UniffiTempApiError):
         """
-        Any other API error not covered by the variants above. Inspect
-        `message` for details before resorting to programmatic handling.
+        Any other API error not covered by the variants above. Inspect `message` for details before resorting
+        to programmatic handling.
 """
         
         def __init__(self, message):
