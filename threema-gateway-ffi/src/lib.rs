@@ -49,6 +49,7 @@ mod errors;
 mod lookup;
 mod recipient;
 mod simple_api;
+mod threema_id;
 
 uniffi::setup_scaffolding!();
 
@@ -57,4 +58,5 @@ pub use crate::{
     lookup::{Capabilities, LookupCriterion},
     recipient::{Recipient, RecipientKey},
     simple_api::SimpleApi,
+    threema_id::ThreemaId,
 };

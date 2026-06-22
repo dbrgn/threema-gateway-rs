@@ -479,19 +479,25 @@ def _uniffi_check_contract_api_version(lib):
         raise InternalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
 
 def _uniffi_check_api_checksums(lib):
-    if lib.uniffi_threema_gateway_ffi_checksum_constructor_simpleapi_new() != 4625:
+    if lib.uniffi_threema_gateway_ffi_checksum_constructor_simpleapi_new() != 10848:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_threema_gateway_ffi_checksum_constructor_simpleapi_new_with_endpoint() != 16968:
+    if lib.uniffi_threema_gateway_ffi_checksum_constructor_simpleapi_new_with_endpoint() != 27385:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_capabilities() != 44558:
+    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_capabilities() != 1789:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_credits() != 13812:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_id() != 14072:
+    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_id() != 65111:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_pubkey() != 19463:
+    if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_pubkey() != 56671:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_send() != 39535:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_threema_gateway_ffi_checksum_constructor_threemaid_new() != 57652:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_threema_gateway_ffi_checksum_method_threemaid_as_str() != 56654:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_threema_gateway_ffi_checksum_method_threemaid_is_gateway_id() != 2414:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
 
 # A ctypes library to expose the extern-C FFI definitions.
@@ -766,14 +772,24 @@ _UniffiLib.uniffi_threema_gateway_ffi_fn_free_simpleapi.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_threema_gateway_ffi_fn_free_simpleapi.restype = None
+_UniffiLib.uniffi_threema_gateway_ffi_fn_clone_threemaid.argtypes = (
+    ctypes.c_uint64,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_threema_gateway_ffi_fn_clone_threemaid.restype = ctypes.c_uint64
+_UniffiLib.uniffi_threema_gateway_ffi_fn_free_threemaid.argtypes = (
+    ctypes.c_uint64,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_threema_gateway_ffi_fn_free_threemaid.restype = None
 _UniffiLib.uniffi_threema_gateway_ffi_fn_constructor_simpleapi_new.argtypes = (
-    _UniffiRustBuffer,
+    ctypes.c_uint64,
     _UniffiRustBuffer,
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_threema_gateway_ffi_fn_constructor_simpleapi_new.restype = ctypes.c_uint64
 _UniffiLib.uniffi_threema_gateway_ffi_fn_constructor_simpleapi_new_with_endpoint.argtypes = (
-    _UniffiRustBuffer,
+    ctypes.c_uint64,
     _UniffiRustBuffer,
     _UniffiRustBuffer,
     ctypes.POINTER(_UniffiRustCallStatus),
@@ -781,7 +797,7 @@ _UniffiLib.uniffi_threema_gateway_ffi_fn_constructor_simpleapi_new_with_endpoint
 _UniffiLib.uniffi_threema_gateway_ffi_fn_constructor_simpleapi_new_with_endpoint.restype = ctypes.c_uint64
 _UniffiLib.uniffi_threema_gateway_ffi_fn_method_simpleapi_lookup_capabilities.argtypes = (
     ctypes.c_uint64,
-    _UniffiRustBuffer,
+    ctypes.c_uint64,
 )
 _UniffiLib.uniffi_threema_gateway_ffi_fn_method_simpleapi_lookup_capabilities.restype = ctypes.c_uint64
 _UniffiLib.uniffi_threema_gateway_ffi_fn_method_simpleapi_lookup_credits.argtypes = (
@@ -795,7 +811,7 @@ _UniffiLib.uniffi_threema_gateway_ffi_fn_method_simpleapi_lookup_id.argtypes = (
 _UniffiLib.uniffi_threema_gateway_ffi_fn_method_simpleapi_lookup_id.restype = ctypes.c_uint64
 _UniffiLib.uniffi_threema_gateway_ffi_fn_method_simpleapi_lookup_pubkey.argtypes = (
     ctypes.c_uint64,
-    _UniffiRustBuffer,
+    ctypes.c_uint64,
 )
 _UniffiLib.uniffi_threema_gateway_ffi_fn_method_simpleapi_lookup_pubkey.restype = ctypes.c_uint64
 _UniffiLib.uniffi_threema_gateway_ffi_fn_method_simpleapi_send.argtypes = (
@@ -804,6 +820,21 @@ _UniffiLib.uniffi_threema_gateway_ffi_fn_method_simpleapi_send.argtypes = (
     _UniffiRustBuffer,
 )
 _UniffiLib.uniffi_threema_gateway_ffi_fn_method_simpleapi_send.restype = ctypes.c_uint64
+_UniffiLib.uniffi_threema_gateway_ffi_fn_constructor_threemaid_new.argtypes = (
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_threema_gateway_ffi_fn_constructor_threemaid_new.restype = ctypes.c_uint64
+_UniffiLib.uniffi_threema_gateway_ffi_fn_method_threemaid_as_str.argtypes = (
+    ctypes.c_uint64,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_threema_gateway_ffi_fn_method_threemaid_as_str.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_threema_gateway_ffi_fn_method_threemaid_is_gateway_id.argtypes = (
+    ctypes.c_uint64,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_threema_gateway_ffi_fn_method_threemaid_is_gateway_id.restype = ctypes.c_int8
 _UniffiLib.ffi_threema_gateway_ffi_uniffi_contract_version.argtypes = (
 )
 _UniffiLib.ffi_threema_gateway_ffi_uniffi_contract_version.restype = ctypes.c_uint32
@@ -828,6 +859,15 @@ _UniffiLib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_lookup_pubkey.re
 _UniffiLib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_send.argtypes = (
 )
 _UniffiLib.uniffi_threema_gateway_ffi_checksum_method_simpleapi_send.restype = ctypes.c_uint16
+_UniffiLib.uniffi_threema_gateway_ffi_checksum_constructor_threemaid_new.argtypes = (
+)
+_UniffiLib.uniffi_threema_gateway_ffi_checksum_constructor_threemaid_new.restype = ctypes.c_uint16
+_UniffiLib.uniffi_threema_gateway_ffi_checksum_method_threemaid_as_str.argtypes = (
+)
+_UniffiLib.uniffi_threema_gateway_ffi_checksum_method_threemaid_as_str.restype = ctypes.c_uint16
+_UniffiLib.uniffi_threema_gateway_ffi_checksum_method_threemaid_is_gateway_id.argtypes = (
+)
+_UniffiLib.uniffi_threema_gateway_ffi_checksum_method_threemaid_is_gateway_id.restype = ctypes.c_uint16
 
 _uniffi_check_contract_api_version(_UniffiLib)
 # _uniffi_check_api_checksums(_UniffiLib)
@@ -1641,6 +1681,133 @@ class _UniffiFfiConverterTypeLookupCriterion(_UniffiConverterRustBuffer):
 
 
 
+class ThreemaIdProtocol(typing.Protocol):
+    """
+    A Threema ID.
+
+    Construction validates the input — once a `ThreemaId` exists, callers can pass it to API
+    methods without paying for re-validation at each call site.
+"""
+    
+    def as_str(self, ) -> str:
+        """
+        String representation of this Threema ID (8 ASCII characters).
+"""
+        raise NotImplementedError
+    def is_gateway_id(self, ) -> bool:
+        """
+        Whether this is a gateway ID (starts with `*`).
+"""
+        raise NotImplementedError
+
+class ThreemaId(ThreemaIdProtocol):
+    """
+    A Threema ID.
+
+    Construction validates the input — once a `ThreemaId` exists, callers can pass it to API
+    methods without paying for re-validation at each call site.
+"""
+    
+    _handle: ctypes.c_uint64
+    def __init__(self, value: str):
+        """
+        Parse a Threema ID from its string representation.
+
+        A Threema ID is 8 ASCII characters from `[0-9A-Z]`, optionally prefixed with `*` for
+        gateway IDs. Returns `ApiError.InvalidThreemaId` on wrong length or invalid characters.
+"""
+        
+        _UniffiFfiConverterString.check_lower(value)
+        _uniffi_lowered_args = (
+            _UniffiFfiConverterString.lower(value),
+        )
+        _uniffi_lift_return = _UniffiFfiConverterTypeThreemaId.lift
+        _uniffi_error_converter = _UniffiFfiConverterTypeApiError
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_threema_gateway_ffi_fn_constructor_threemaid_new,
+            *_uniffi_lowered_args,
+        )
+        self._handle = _uniffi_ffi_result
+
+    def __del__(self):
+        # In case of partial initialization of instances.
+        handle = getattr(self, "_handle", None)
+        if handle is not None:
+            _uniffi_rust_call(_UniffiLib.uniffi_threema_gateway_ffi_fn_free_threemaid, handle)
+
+    def _uniffi_clone_handle(self):
+        return _uniffi_rust_call(_UniffiLib.uniffi_threema_gateway_ffi_fn_clone_threemaid, self._handle)
+
+    # Used by alternative constructors or any methods which return this type.
+    @classmethod
+    def _uniffi_make_instance(cls, handle):
+        # Lightly yucky way to bypass the usual __init__ logic
+        # and just create a new instance with the required handle.
+        inst = cls.__new__(cls)
+        inst._handle = handle
+        return inst
+    def as_str(self, ) -> str:
+        """
+        String representation of this Threema ID (8 ASCII characters).
+"""
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+        )
+        _uniffi_lift_return = _UniffiFfiConverterString.lift
+        _uniffi_error_converter = None
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_threema_gateway_ffi_fn_method_threemaid_as_str,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+    def is_gateway_id(self, ) -> bool:
+        """
+        Whether this is a gateway ID (starts with `*`).
+"""
+        _uniffi_lowered_args = (
+            self._uniffi_clone_handle(),
+        )
+        _uniffi_lift_return = _UniffiFfiConverterBoolean.lift
+        _uniffi_error_converter = None
+        _uniffi_ffi_result = _uniffi_rust_call_with_error(
+            _uniffi_error_converter,
+            _UniffiLib.uniffi_threema_gateway_ffi_fn_method_threemaid_is_gateway_id,
+            *_uniffi_lowered_args,
+        )
+        return _uniffi_lift_return(_uniffi_ffi_result)
+
+
+
+
+
+class _UniffiFfiConverterTypeThreemaId:
+    @staticmethod
+    def lift(value: int) -> ThreemaId:
+        return ThreemaId._uniffi_make_instance(value)
+
+    @staticmethod
+    def check_lower(value: ThreemaId):
+        if not isinstance(value, ThreemaId):
+            raise TypeError("Expected ThreemaId instance, {} found".format(type(value).__name__))
+
+    @staticmethod
+    def lower(value: ThreemaId) -> ctypes.c_uint64:
+        return value._uniffi_clone_handle()
+
+    @classmethod
+    def read(cls, buf: _UniffiRustBuffer) -> ThreemaId:
+        ptr = buf.read_u64()
+        if ptr == 0:
+            raise InternalError("Raw handle value was null")
+        return cls.lift(ptr)
+
+    @classmethod
+    def write(cls, value: ThreemaId, buf: _UniffiRustBuffer):
+        buf.write_u64(cls.lower(value))
+
+
 
 
 
@@ -1656,10 +1823,10 @@ class Recipient:
     @dataclass
     class ID:
         """
-        Recipient identity (8 characters).
+        Recipient identity.
 """
         
-        def __init__(self, id:str):
+        def __init__(self, id:ThreemaId):
             self.id = id
             
             
@@ -1768,7 +1935,7 @@ class _UniffiFfiConverterTypeRecipient(_UniffiConverterRustBuffer):
         variant = buf.read_i32()
         if variant == 1:
             return Recipient.ID(
-                _UniffiFfiConverterString.read(buf),
+                _UniffiFfiConverterTypeThreemaId.read(buf),
             )
         if variant == 2:
             return Recipient.PHONE(
@@ -1783,7 +1950,7 @@ class _UniffiFfiConverterTypeRecipient(_UniffiConverterRustBuffer):
     @staticmethod
     def check_lower(value):
         if value.is_ID():
-            _UniffiFfiConverterString.check_lower(value.id)
+            _UniffiFfiConverterTypeThreemaId.check_lower(value.id)
             return
         if value.is_PHONE():
             _UniffiFfiConverterString.check_lower(value.phone)
@@ -1797,7 +1964,7 @@ class _UniffiFfiConverterTypeRecipient(_UniffiConverterRustBuffer):
     def write(value, buf):
         if value.is_ID():
             buf.write_i32(1)
-            _UniffiFfiConverterString.write(value.id, buf)
+            _UniffiFfiConverterTypeThreemaId.write(value.id, buf)
         if value.is_PHONE():
             buf.write_i32(2)
             _UniffiFfiConverterString.write(value.phone, buf)
@@ -1826,7 +1993,7 @@ class SimpleApiProtocol(typing.Protocol):
     Threema Gateway Simple API (without end-to-end encryption).
 """
     
-    async def lookup_capabilities(self, id: str) -> Capabilities:
+    async def lookup_capabilities(self, id: ThreemaId) -> Capabilities:
         """
         Look up the capabilities of a Threema ID.
 """
@@ -1836,12 +2003,12 @@ class SimpleApiProtocol(typing.Protocol):
         Look up remaining gateway credits.
 """
         raise NotImplementedError
-    async def lookup_id(self, criterion: LookupCriterion) -> str:
+    async def lookup_id(self, criterion: LookupCriterion) -> ThreemaId:
         """
         Look up a Threema ID in the directory by phone number or e-mail.
 """
         raise NotImplementedError
-    async def lookup_pubkey(self, id: str) -> RecipientKey:
+    async def lookup_pubkey(self, id: ThreemaId) -> RecipientKey:
         """
         Fetch the public key for the specified Threema ID.
 """
@@ -1860,20 +2027,20 @@ class SimpleApi(SimpleApiProtocol):
 """
     
     _handle: ctypes.c_uint64
-    def __init__(self, id: str,secret: str):
+    def __init__(self, id: ThreemaId,secret: str):
         """
         Create a new Simple API instance.
 """
         
-        _UniffiFfiConverterString.check_lower(id)
+        _UniffiFfiConverterTypeThreemaId.check_lower(id)
 
         _UniffiFfiConverterString.check_lower(secret)
         _uniffi_lowered_args = (
-            _UniffiFfiConverterString.lower(id),
+            _UniffiFfiConverterTypeThreemaId.lower(id),
             _UniffiFfiConverterString.lower(secret),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeSimpleApi.lift
-        _uniffi_error_converter = _UniffiFfiConverterTypeApiError
+        _uniffi_error_converter = None
         _uniffi_ffi_result = _uniffi_rust_call_with_error(
             _uniffi_error_converter,
             _UniffiLib.uniffi_threema_gateway_ffi_fn_constructor_simpleapi_new,
@@ -1881,23 +2048,23 @@ class SimpleApi(SimpleApiProtocol):
         )
         self._handle = _uniffi_ffi_result
     @classmethod
-    def new_with_endpoint(cls, id: str,secret: str,endpoint: str) -> SimpleApi:
+    def new_with_endpoint(cls, id: ThreemaId,secret: str,endpoint: str) -> SimpleApi:
         """
         Create a new Simple API instance with a custom endpoint URL.
 """
         
-        _UniffiFfiConverterString.check_lower(id)
+        _UniffiFfiConverterTypeThreemaId.check_lower(id)
 
         _UniffiFfiConverterString.check_lower(secret)
 
         _UniffiFfiConverterString.check_lower(endpoint)
         _uniffi_lowered_args = (
-            _UniffiFfiConverterString.lower(id),
+            _UniffiFfiConverterTypeThreemaId.lower(id),
             _UniffiFfiConverterString.lower(secret),
             _UniffiFfiConverterString.lower(endpoint),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeSimpleApi.lift
-        _uniffi_error_converter = _UniffiFfiConverterTypeApiError
+        _uniffi_error_converter = None
         _uniffi_ffi_result = _uniffi_rust_call_with_error(
             _uniffi_error_converter,
             _UniffiLib.uniffi_threema_gateway_ffi_fn_constructor_simpleapi_new_with_endpoint,
@@ -1922,15 +2089,15 @@ class SimpleApi(SimpleApiProtocol):
         inst = cls.__new__(cls)
         inst._handle = handle
         return inst
-    async def lookup_capabilities(self, id: str) -> Capabilities:
+    async def lookup_capabilities(self, id: ThreemaId) -> Capabilities:
         """
         Look up the capabilities of a Threema ID.
 """
         
-        _UniffiFfiConverterString.check_lower(id)
+        _UniffiFfiConverterTypeThreemaId.check_lower(id)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
-            _UniffiFfiConverterString.lower(id),
+            _UniffiFfiConverterTypeThreemaId.lower(id),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeCapabilities.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeApiError
@@ -1959,7 +2126,7 @@ class SimpleApi(SimpleApiProtocol):
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def lookup_id(self, criterion: LookupCriterion) -> str:
+    async def lookup_id(self, criterion: LookupCriterion) -> ThreemaId:
         """
         Look up a Threema ID in the directory by phone number or e-mail.
 """
@@ -1969,25 +2136,25 @@ class SimpleApi(SimpleApiProtocol):
             self._uniffi_clone_handle(),
             _UniffiFfiConverterTypeLookupCriterion.lower(criterion),
         )
-        _uniffi_lift_return = _UniffiFfiConverterString.lift
+        _uniffi_lift_return = _UniffiFfiConverterTypeThreemaId.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeApiError
         return await _uniffi_rust_call_async(
             _UniffiLib.uniffi_threema_gateway_ffi_fn_method_simpleapi_lookup_id(*_uniffi_lowered_args),
-            _UniffiLib.ffi_threema_gateway_ffi_rust_future_poll_rust_buffer,
-            _UniffiLib.ffi_threema_gateway_ffi_rust_future_complete_rust_buffer,
-            _UniffiLib.ffi_threema_gateway_ffi_rust_future_free_rust_buffer,
+            _UniffiLib.ffi_threema_gateway_ffi_rust_future_poll_u64,
+            _UniffiLib.ffi_threema_gateway_ffi_rust_future_complete_u64,
+            _UniffiLib.ffi_threema_gateway_ffi_rust_future_free_u64,
             _uniffi_lift_return,
             _uniffi_error_converter,
         )
-    async def lookup_pubkey(self, id: str) -> RecipientKey:
+    async def lookup_pubkey(self, id: ThreemaId) -> RecipientKey:
         """
         Fetch the public key for the specified Threema ID.
 """
         
-        _UniffiFfiConverterString.check_lower(id)
+        _UniffiFfiConverterTypeThreemaId.check_lower(id)
         _uniffi_lowered_args = (
             self._uniffi_clone_handle(),
-            _UniffiFfiConverterString.lower(id),
+            _UniffiFfiConverterTypeThreemaId.lower(id),
         )
         _uniffi_lift_return = _UniffiFfiConverterTypeRecipientKey.lift
         _uniffi_error_converter = _UniffiFfiConverterTypeApiError
@@ -2074,6 +2241,8 @@ __all__ = [
     "Recipient",
     "Capabilities",
     "RecipientKey",
+    "ThreemaId",
+    "ThreemaIdProtocol",
     "SimpleApi",
     "SimpleApiProtocol",
 ]

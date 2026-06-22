@@ -1,28 +1,30 @@
 //! Message recipient and their public key.
 
+use std::sync::Arc;
+
 use threema_gateway as lib;
+
+use crate::threema_id::ThreemaId;
 
 /// Different ways to specify a message recipient in basic mode.
 #[derive(uniffi::Enum)]
 #[expect(missing_docs, reason = "UniFFI enum variant fields")]
 pub enum Recipient {
-    /// Recipient identity (8 characters).
-    Id { id: String },
+    /// Recipient identity.
+    Id { id: Arc<ThreemaId> },
     /// Recipient phone number (E.164), without leading +.
     Phone { phone: String },
     /// Recipient e-mail address.
     Email { email: String },
 }
 
-impl TryFrom<Recipient> for lib::Recipient<'static> {
-    type Error = lib::ThreemaIdError;
-
-    fn try_from(val: Recipient) -> Result<Self, Self::Error> {
-        Ok(match val {
-            Recipient::Id { id } => lib::Recipient::new_id(id.parse()?),
+impl From<Recipient> for lib::Recipient<'static> {
+    fn from(val: Recipient) -> Self {
+        match val {
+            Recipient::Id { id } => lib::Recipient::new_id(id.inner),
             Recipient::Phone { phone } => lib::Recipient::new_phone(phone),
             Recipient::Email { email } => lib::Recipient::new_email(email),
-        })
+        }
     }
 }
 
@@ -45,55 +47,17 @@ impl From<lib::RecipientKey> for RecipientKey {
 mod tests {
     use super::*;
 
-    mod try_from_recipient {
+    mod from_recipient {
         use super::*;
 
         #[test]
-        fn id_valid() {
-            let ffi = Recipient::Id {
-                id: "ECHOECHO".to_owned(),
-            };
-            let result = lib::Recipient::try_from(ffi).expect("ECHOECHO is a valid Threema ID");
-            let lib::Recipient::Id(id) = result else {
+        fn id() {
+            let threema_id = ThreemaId::new("ECHOECHO").expect("valid Threema ID");
+            let ffi = Recipient::Id { id: threema_id };
+            let lib::Recipient::Id(id) = lib::Recipient::from(ffi) else {
                 unreachable!("expected Id variant")
             };
             assert_eq!(id.as_str(), "ECHOECHO");
-        }
-
-        #[test]
-        fn id_gateway() {
-            let ffi = Recipient::Id {
-                id: "*MYGATWY".to_owned(),
-            };
-            let result = lib::Recipient::try_from(ffi).expect("gateway IDs start with *");
-            assert!(matches!(result, lib::Recipient::Id(_)));
-        }
-
-        #[test]
-        fn id_too_short() {
-            let ffi = Recipient::Id {
-                id: "SHORT".to_owned(),
-            };
-            let result = lib::Recipient::try_from(ffi);
-            assert!(matches!(result, Err(lib::ThreemaIdError::InvalidLength)));
-        }
-
-        #[test]
-        fn id_too_long() {
-            let ffi = Recipient::Id {
-                id: "MUCHTOOLONG".to_owned(),
-            };
-            let result = lib::Recipient::try_from(ffi);
-            assert!(matches!(result, Err(lib::ThreemaIdError::InvalidLength)));
-        }
-
-        #[test]
-        fn id_invalid_chars() {
-            let ffi = Recipient::Id {
-                id: "echoecho".to_owned(),
-            };
-            let result = lib::Recipient::try_from(ffi);
-            assert!(matches!(result, Err(lib::ThreemaIdError::InvalidSymbols)));
         }
 
         #[test]
@@ -101,8 +65,7 @@ mod tests {
             let ffi = Recipient::Phone {
                 phone: "41791234567".to_owned(),
             };
-            let result = lib::Recipient::try_from(ffi).expect("phone is not validated");
-            let lib::Recipient::Phone(phone) = result else {
+            let lib::Recipient::Phone(phone) = lib::Recipient::from(ffi) else {
                 unreachable!("expected Phone variant")
             };
             assert_eq!(phone.as_ref(), "41791234567");
@@ -113,8 +76,7 @@ mod tests {
             let ffi = Recipient::Email {
                 email: "user@example.com".to_owned(),
             };
-            let result = lib::Recipient::try_from(ffi).expect("email is not validated");
-            let lib::Recipient::Email(email) = result else {
+            let lib::Recipient::Email(email) = lib::Recipient::from(ffi) else {
                 unreachable!("expected Email variant")
             };
             assert_eq!(email.as_ref(), "user@example.com");

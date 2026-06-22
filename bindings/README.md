@@ -31,28 +31,34 @@ module:
 
 ```python
 import asyncio
-from threema_gateway_ffi import ApiError, Recipient, SimpleApi
+from threema_gateway_ffi import ApiError, Recipient, SimpleApi, ThreemaId
 
 async def main():
-    # The constructor parses the Threema ID and raises ApiError.InvalidThreemaId
-    # if the ID is malformed (wrong length, invalid characters).
-    api = SimpleApi("*MYID123", "mysecret")
+    # ThreemaId(...) validates the input once and raises ApiError.InvalidThreemaId
+    # on a wrong length or invalid characters. Once constructed, the value can be
+    # passed to API methods without re-validation.
+    sender = ThreemaId("*MYID123")
+    recipient = ThreemaId("ECHOECHO")
+
+    api = SimpleApi(sender, "mysecret")
 
     try:
-        msg_id = await api.send(Recipient.ID(id="ECHOECHO"), "Hello!")
+        msg_id = await api.send(Recipient.ID(id=recipient), "Hello!")
         print(f"Sent message: {msg_id}")
     except ApiError.NoCredits:
         print("Gateway account is out of credits")
     except ApiError.RateLimitReached:
         print("Rate limited; back off and retry")
-    except ApiError.InvalidThreemaId as e:
-        print(f"Bad recipient ID: {e.message}")
     except ApiError.Transport as e:
         print(f"Network problem: {e.message}")
     except ApiError as e:
         # Catch-all for variants not handled above.
         print(f"API error: {e}")
+```
 
+Run `main()` with asyncio:
+
+```python
 asyncio.run(main())
 ```
 
