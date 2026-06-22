@@ -9,4 +9,6 @@ name = "uniffi-bindgen"
 path = "src/main.rs"
 
 [dependencies]
-uniffi = { version = "0.31", features = ["cli"] }
+# Must match the version pin in `threema-gateway-ffi/Cargo.toml`.
+# Mismatches surface as checksum failures at foreign-side import time, not at `cargo check`.
+uniffi = { version = "=0.31.2", features = ["cli"] }
