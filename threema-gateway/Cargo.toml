@@ -1,0 +1,75 @@
+[package]
+name = "threema-gateway"
+version = "0.21.0"
+authors = ["Threema GmbH <opensource@threema.ch>"]
+documentation = "https://docs.rs/threema-gateway"
+repository = "https://github.com/threema-ch/threema-msgapi-sdk-rust/"
+license = "MIT OR Apache-2.0"
+description = "Official Rust SDK for Threema Gateway."
+readme = "README.md"
+keywords = ["threema", "end-to-end", "e2e", "e2ee", "gateway"]
+categories = ["api-bindings"]
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+]
+edition = "2024"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["receive"]
+receive = ["form_urlencoded", "serde_urlencoded"] # Support for receiving and decrypting incoming messages
+public-key-cache-inmemory = ["moka"] # In-memory cache backed by moka
+public-key-cache-redis = ["redis"] # Redis-backed cache
+sqlx = ["dep:sqlx"] # `sqlx::Type`/`Encode`/`Decode` impls for newtypes (database-generic)
+
+[dependencies]
+byteorder = "1.0"
+crypto_box = "0.9.1"
+crypto_secretbox = "0.1.1"
+data-encoding = "2.1"
+form_urlencoded = { version = "1", optional = true }
+hmac = "0.13"
+log = "0.4"
+moka = { version = "0.12", features = ["future"], optional = true }
+prost = "0.14"
+redis = { version = "1", features = ["tokio-comp", "aio"], optional = true }
+reqwest = { version = "0.13", features = ["multipart", "json", "query", "form"] }
+rand = "0.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_urlencoded = { version = "0.7", optional = true }
+sha2 = "0.11"
+sqlx = { version = "0.8", optional = true, default-features = false }
+thiserror = "2"
+url = "2.5.4"
+zeroize = { version = "1", features = ["zeroize_derive"], default-features = false }
+
+[dev-dependencies]
+axum = "0.8"
+docopt = "1.1.0"
+imagesize = "0.14"
+insta = { version = "1", features = ["json"] }
+mime_guess = "2.0.0"
+rstest = "0.26"
+sqlx = { version = "0.8", default-features = false, features = ["sqlite"] }
+tokio = { version = "1", features = ["macros", "net", "rt"], default-features = false }
+tokio-test = "0.4"
+
+[[example]]
+name = "receive"
+required-features = ["receive", "public-key-cache-inmemory"]
+
+[[example]]
+name = "decode"
+required-features = ["receive"]
+
+[lints]
+workspace = true

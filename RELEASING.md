@@ -7,12 +7,12 @@ Set variables:
 
 Update version numbers:
 
-    $ vim -p Cargo.toml
+    $ vim threema-gateway/Cargo.toml
     $ cargo update
 
 Update changelog:
 
-    $ vim CHANGELOG.md
+    $ vim threema-gateway/CHANGELOG.md
 
 Commit & tag:
 
@@ -21,5 +21,5 @@ Commit & tag:
 
 Publish:
 
-    $ cargo publish
+    $ cargo publish -p threema-gateway
     $ git push && git push --tags
