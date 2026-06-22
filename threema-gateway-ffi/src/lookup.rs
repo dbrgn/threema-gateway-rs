@@ -51,13 +51,115 @@ pub struct Capabilities {
 
 impl From<lib::Capabilities> for Capabilities {
     fn from(val: lib::Capabilities) -> Self {
+        // Destructured so a new field added upstream fails to compile here, rather than being
+        // silently dropped on the foreign side.
+        let lib::Capabilities {
+            text,
+            image,
+            video,
+            audio,
+            file,
+            other,
+        } = val;
         Self {
-            text: val.text,
-            image: val.image,
-            video: val.video,
-            audio: val.audio,
-            file: val.file,
-            other: val.other,
+            text,
+            image,
+            video,
+            audio,
+            file,
+            other,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod from_lookup_criterion {
+        use super::*;
+
+        #[test]
+        fn phone() {
+            let ffi = LookupCriterion::Phone {
+                phone: "41791234567".to_owned(),
+            };
+            assert_eq!(
+                lib::LookupCriterion::from(ffi),
+                lib::LookupCriterion::Phone("41791234567".to_owned())
+            );
+        }
+
+        #[test]
+        fn phone_hash() {
+            let hex = "a".repeat(64);
+            let ffi = LookupCriterion::PhoneHash {
+                phone_hash: hex.clone(),
+            };
+            assert_eq!(
+                lib::LookupCriterion::from(ffi),
+                lib::LookupCriterion::PhoneHash(hex)
+            );
+        }
+
+        #[test]
+        fn email() {
+            let ffi = LookupCriterion::Email {
+                email: "user@example.com".to_owned(),
+            };
+            assert_eq!(
+                lib::LookupCriterion::from(ffi),
+                lib::LookupCriterion::Email("user@example.com".to_owned())
+            );
+        }
+
+        #[test]
+        fn email_hash() {
+            let hex = "b".repeat(64);
+            let ffi = LookupCriterion::EmailHash {
+                email_hash: hex.clone(),
+            };
+            assert_eq!(
+                lib::LookupCriterion::from(ffi),
+                lib::LookupCriterion::EmailHash(hex)
+            );
+        }
+    }
+
+    mod from_capabilities {
+        use super::*;
+
+        #[test]
+        fn all_fields_preserved() {
+            let upstream = lib::Capabilities {
+                text: true,
+                image: false,
+                video: true,
+                audio: false,
+                file: true,
+                other: vec!["call".to_owned(), "video-call".to_owned()],
+            };
+            let ffi = Capabilities::from(upstream);
+            assert!(ffi.text);
+            assert!(!ffi.image);
+            assert!(ffi.video);
+            assert!(!ffi.audio);
+            assert!(ffi.file);
+            assert_eq!(ffi.other, vec!["call".to_owned(), "video-call".to_owned()]);
+        }
+
+        #[test]
+        fn empty_other_preserved() {
+            let upstream = lib::Capabilities {
+                text: false,
+                image: false,
+                video: false,
+                audio: false,
+                file: false,
+                other: Vec::new(),
+            };
+            let ffi = Capabilities::from(upstream);
+            assert!(ffi.other.is_empty());
         }
     }
 }
