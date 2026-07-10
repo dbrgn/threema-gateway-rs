@@ -55,7 +55,7 @@ zeroize = { version = "1", features = ["zeroize_derive"], default-features = fal
 [dev-dependencies]
 axum = "0.8"
 docopt = "1.1.0"
-imagesize = "0.14"
+imagesize = "0.15"
 insta = { version = "1", features = ["json"] }
 mime_guess = "2.0.0"
 rstest = "0.26"
