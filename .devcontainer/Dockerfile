@@ -7,7 +7,7 @@ RUN apt-get update \
     build-essential pkg-config musl-tools ca-certificates man-db \
     neovim less git curl wget unzip ripgrep locales file procps net-tools \
     bubblewrap socat \
-    protobuf-compiler \
+    protobuf-compiler python3 \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Locale setup

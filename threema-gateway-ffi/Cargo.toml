@@ -1,0 +1,20 @@
+[package]
+name = "threema-gateway-ffi"
+version = "0.21.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["lib", "cdylib"]
+name = "threema_gateway_ffi"
+
+[dependencies]
+thiserror = "2"
+threema-gateway = { path = "../threema-gateway" }
+# Pinned exactly: uniffi patch releases ship foreign-language codegen changes (e.g. Swift Sendable, async
+# memory fixes) that `cargo check` cannot catch. Bump deliberately and regenerate all bindings. Must match the
+# version in `uniffi-bindgen/Cargo.toml`.
+uniffi = { version = "=0.31.2", features = ["tokio"] }
+
+[lints]
+workspace = true

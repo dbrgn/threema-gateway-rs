@@ -23,13 +23,13 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
       - name: Build with default features
-        run: cargo build --all-targets
+        run: cargo build --workspace --all-targets
       - name: Build without default features
-        run: cargo build --no-default-features
+        run: cargo build --workspace --no-default-features
       - name: Build with all features
-        run: cargo build --all-targets --all-features
+        run: cargo build --workspace --all-targets --all-features
       - name: Run tests
-        run: cargo test --all-features
+        run: cargo test --workspace --all-features
 
   fmt:
     name: run rustfmt
@@ -53,7 +53,7 @@ jobs:
           toolchain: "${RUST_VERSION}"
           components: clippy
       - name: Check if there are clippy warnings
-        run: cargo clippy --all-features -- -D warnings
+        run: cargo clippy --workspace --all-features -- -D warnings
 
   coverage:
     name: measure coverage
@@ -67,8 +67,8 @@ jobs:
       - uses: taiki-e/install-action@cargo-llvm-cov
       - name: Measure code coverage
         run: |
-          cargo llvm-cov --all-features --lcov --output-path lcov.info
-          cargo llvm-cov report --summary-only > /tmp/coverage.txt
+          cargo llvm-cov -p threema-gateway --all-features --lcov --output-path lcov.info
+          cargo llvm-cov -p threema-gateway report --summary-only > /tmp/coverage.txt
           cat /tmp/coverage.txt
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat /tmp/coverage.txt >> "$GITHUB_STEP_SUMMARY"
@@ -89,3 +89,50 @@ jobs:
       - uses: actions/checkout@v7
       - name: Audit all used dependencies
         run: cargo audit
+
+  python-wheels:
+    name: build Python wheels (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: bindings/python
+          command: build
+          # maturin shells out to `uniffi-bindgen`. Our generator is a workspace-excluded
+          # crate (it pulls in uniffi's `cli` feature, which must not leak into the cdylib),
+          # so install our pinned copy onto PATH inside the manylinux container. `--locked`
+          # keeps it at the exact uniffi version; a mismatch surfaces as a runtime checksum
+          # error, not a build failure. `before-script-linux` runs in `working-directory`.
+          before-script-linux: cargo install --path ../../uniffi-bindgen --locked
+          args: --release --out dist
+          manylinux: auto
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          working-directory: bindings/python
+          command: sdist
+          args: --out dist
+      - name: Smoke test built wheel
+        # Importing runs uniffi's contract-version check. We also invoke the per-function
+        # checksum verifier explicitly (it lives in the inner module and is not called at
+        # import). In the maturin flow the .py and .so come from the same build, but it
+        # asserts full ABI agreement for free.
+        run: |
+          python3 -m venv /tmp/wheel-venv
+          /tmp/wheel-venv/bin/pip install bindings/python/dist/*.whl
+          /tmp/wheel-venv/bin/python -c "
+          import threema_gateway as m
+          from threema_gateway.threema_gateway import _uniffi_check_api_checksums, _UniffiLib
+          _uniffi_check_api_checksums(_UniffiLib)
+          assert m.SimpleApi is not None
+          assert m.ThreemaId('*MYID123').as_str() == '*MYID123'
+          assert m.ApiError.NoCredits is not None
+          print('wheel import OK')
+          "
+      - name: Upload wheels and sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-dist-linux
+          path: bindings/python/dist
