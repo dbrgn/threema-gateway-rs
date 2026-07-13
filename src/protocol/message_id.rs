@@ -112,7 +112,7 @@ where
 {
     fn encode_by_ref(
         &self,
-        buf: &mut <DB as sqlx::Database>::ArgumentBuffer<'enc>,
+        buf: &mut <DB as sqlx::Database>::ArgumentBuffer,
     ) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
         <String as sqlx::Encode<'enc, DB>>::encode(self.to_hex_le(), buf)
     }
